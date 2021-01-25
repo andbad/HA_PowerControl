@@ -18,3 +18,10 @@ Il pacchetto è funzionante ma non ottimizzato.
 
 # Configurazione
 Impostare i parametri di configurazione dell'interfaccia grafica Lovelace.
+
+# Sensore potenza carichi
+La soluzione più efficace è utilizzare un sensore di potenza a monte dell'impianto, poco prima del contatore. In tal caso basta selezionare il sensore appropriato nella configurazione.
+In alternativa è possibile utilizzare i sensori di potenza dei maggiori carichi utilizzati (sensor.potenza_carichi_virtuale) e mantenere un certo margine di tolleranza.
+Questo comporta di monitorare tutti i maggiori carichi (forno, fornelli, phon, condizionatori, ecc...).
+Naturalmente in questo modo non si può valutare il consumo complessivo, quindi si potrebbe superare il valore limite senza che intervenga il controllo carichi.
+Ma utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando sulla tolleranze di 180 minuti fino al 80% (nell'es. 3,6kW) dovrebbe essere funzionale.
