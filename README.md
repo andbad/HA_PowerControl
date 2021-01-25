@@ -25,3 +25,8 @@ In alternativa è possibile utilizzare i sensori di potenza dei maggiori carichi
 Questo comporta di monitorare tutti i maggiori carichi (forno, fornelli, phon, condizionatori, ecc...).
 Naturalmente in questo modo non si può valutare il consumo complessivo, quindi si potrebbe superare il valore limite senza che intervenga il controllo carichi.
 Ma utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando sulla tolleranze di 180 minuti fino al 80% (nell'es. 3,6kW) dovrebbe essere funzionale.
+
+# Screenshot
+![Screeshot 1](https://user-images.githubusercontent.com/7837288/105701283-609ac700-5f0a-11eb-89f4-7247a5a82a36.png)
+
+![Screenshot 2](https://user-images.githubusercontent.com/7837288/105701281-5f699a00-5f0a-11eb-804b-0b9013cb245f.png)
