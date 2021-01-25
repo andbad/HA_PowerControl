@@ -1,0 +1,234 @@
+  - title: PC
+    path: pc
+    icon: 'hass:car-cruise-control'
+    badges: []
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: history-graph
+            entities:
+              - entity: sensor.potenza_massima
+                name: Massima
+              - entity: sensor.potenza_carichi_selezionato
+                name: In uso
+              - entity: sensor.potenza_carichi_phantom
+                name: In attesa
+            refresh_interval: 0
+            title: Grafico Potenza
+            hours_to_show: 48
+          - type: entities
+            entities:
+              - entity: input_boolean.attiva_power_control
+                icon: 'hass:car-cruise-control'
+              - entity: input_boolean.impostazioni_power_control
+                icon: 'hass:car-cruise-control'
+              - entity: sensor.potenza_carichi_selezionato
+                name: Potenza in uso
+                icon: 'hass:power-plug'
+              - entity: sensor.potenza_carichi_phantom
+                name: Potenza in attesa
+                icon: 'hass:power-plug-off'
+              - entity: script.controllo_carichi_reset
+                name: Resetta stato potenza in attesa
+            state_color: true
+            show_header_toggle: false
+          - type: markdown
+            content: ' Per forzare la riattivazione di un carico disattivato, utilizzare i pulsanti sottostanti.'
+            title: Riattivazione manuale Carichi
+          - type: horizontal-stack
+            cards:
+              - type: button
+                tap_action:
+                  action: call-service
+                  service: script.controllo_carichi_start_manuale_1
+                entity: script.controllo_carichi_start_manuale_1
+                icon: 'hass:numeric-1-circle'
+                show_name: false
+              - type: button
+                tap_action:
+                  action: call-service
+                  service: script.controllo_carichi_start_manuale_2
+                entity: script.controllo_carichi_start_manuale_2
+                icon: 'hass:numeric-2-circle'
+                show_name: false
+              - type: button
+                tap_action:
+                  action: call-service
+                  service: script.controllo_carichi_start_manuale_3
+                entity: script.controllo_carichi_start_manuale_3
+                icon: 'hass:numeric-3-circle'
+                show_name: false
+              - type: button
+                tap_action:
+                  action: call-service
+                  service: script.controllo_carichi_start_manuale_4
+                entity: script.controllo_carichi_start_manuale_4
+                icon: 'hass:numeric-4-circle'
+                show_name: false
+              - type: button
+                tap_action:
+                  action: call-service
+                  service: script.controllo_carichi_start_manuale_5
+                entity: script.controllo_carichi_start_manuale_5
+                icon: 'hass:numeric-5-circle'
+                show_name: false
+          - type: horizontal-stack
+            cards:
+              - type: button
+                tap_action:
+                  action: call-service
+                  service: script.controllo_carichi_start_manuale_6
+                entity: script.controllo_carichi_start_manuale_6
+                icon: 'hass:numeric-6-circle'
+                show_name: false
+              - type: button
+                tap_action:
+                  action: call-service
+                  service: script.controllo_carichi_start_manuale_7
+                entity: script.controllo_carichi_start_manuale_7
+                icon: 'hass:numeric-7-circle'
+                show_name: false
+              - type: button
+                tap_action:
+                  action: call-service
+                  service: script.controllo_carichi_start_manuale_8
+                entity: script.controllo_carichi_start_manuale_8
+                icon: 'hass:numeric-8-circle'
+                show_name: false
+              - type: button
+                tap_action:
+                  action: call-service
+                  service: script.controllo_carichi_start_manuale_9
+                entity: script.controllo_carichi_start_manuale_9
+                icon: 'hass:numeric-9-circle'
+                show_name: false
+              - type: button
+                tap_action:
+                  action: call-service
+                  service: script.controllo_carichi_start_manuale_10
+                entity: script.controllo_carichi_start_manuale_10
+                icon: 'hass:numeric-10-circle'
+                show_name: false
+      - type: conditional
+        conditions:
+          - entity: input_boolean.impostazioni_power_control
+            state: 'on'
+        card:
+          type: vertical-stack
+          cards:
+            - type: markdown
+              content: >
+                **Sensore potenza carichi**
+
+                Selezionare il sensore del consumo istantaneo globale. Se non
+                disponibile, è possibile selezionare il sensore
+                "sensor.potenza_carichi_virtuale" che è la somma della potenza
+                utilizzata dai carichi inseriti nei campi sottostanti.
+
+
+                **Potenza Massima**
+
+                Indicare il valore di potenza utilizzata oltre il quale verranno
+                iniziati a scollegare i carichi, ovvero la soglia di intervento
+                del sistema.
+
+
+                **Tempo distacco**
+
+                Dopo tot SECONDI di superamento della potenza massima, inizia il
+                distacco. (suggerito 30)
+
+
+                **Tempo riattivazione**
+
+                Dopo tot MINUTI che la potenza utilizzata è rientrata nei
+                limiti, inizia a riattivare i carichi. (suggerito 3)
+
+
+                **Secondi tra gli Stop**
+
+                Attende tot SECONDI tra un distacco e l'altro. (suggerito 10)
+
+
+                **Minuti tra gli Start**
+
+                Attende tot MINUTI tra una riattivazione e l'altra per dare il
+                tempo al carico di riprendere il suo normale assorbimento.
+                (suggerito 5)
+              title: Configurazione
+            - type: entities
+              entities:
+                - entity: input_select.potenza_carichi
+                  icon: 'hass:chart-line'
+                - entity: input_number.potenza_massima
+                  name: Potenza Massima
+                  icon: 'hass:chart-bell-curve'
+                - entity: input_number.tempo_stop
+                  name: Tempo distacco
+                - entity: input_number.tempo_start
+                  name: Tempo riattivazione
+                - entity: input_number.attesa_stop
+                  name: Secondi tra gli stop
+                - entity: input_number.attesa_start
+                  name: Minuti tra gli start
+              state_color: true
+              show_header_toggle: false
+      - type: conditional
+        conditions:
+          - entity: input_boolean.impostazioni_power_control
+            state: 'on'
+        card:
+          type: vertical-stack
+          cards:
+            - type: markdown
+              content: >
+                **Sensore Carichi**
+
+                Selezionare i sensori di potenza (W) dei carichi da monitorare e
+                scollegare in caso di eccessiva richiesta. I carichi saranno
+                scollegati dal meno prioritario (carico 10) a quello a maggiore
+                priorità.
+            - type: entities
+              entities:
+                - entity: input_select.carico_1_potenza
+                - entity: input_select.carico_2_potenza
+                - entity: input_select.carico_3_potenza
+                - entity: input_select.carico_4_potenza
+                - entity: input_select.carico_5_potenza
+                - entity: input_select.carico_6_potenza
+                - entity: input_select.carico_7_potenza
+                - entity: input_select.carico_8_potenza
+                - entity: input_select.carico_9_potenza
+                - entity: input_select.carico_10_potenza
+              title: Sensori potenza carichi
+      - type: conditional
+        conditions:
+          - entity: input_boolean.impostazioni_power_control
+            state: 'on'
+        card:
+          type: vertical-stack
+          cards:
+            - type: markdown
+              content: >-
+                **Interruttori Carichi**
+
+                Selezionare gli switch relativi ai carichi monitorati nel
+                corrispettivo sensore. I carichi verrrano scollegati in ordine
+                di priorità, a partire dal Carico 10 fino al Carico 1. Dopo che
+                la richiesta di potenza rientra nei limiti, verranno
+                progressivamente ricollegati a partire dal Carico 1 fino al
+                Carico 10.
+            - type: entities
+              entities:
+                - entity: input_select.carico_1_switch
+                - entity: input_select.carico_2_switch
+                - entity: input_select.carico_3_switch
+                - entity: input_select.carico_4_switch
+                - entity: input_select.carico_5_switch
+                - entity: input_select.carico_6_switch
+                - entity: input_select.carico_7_switch
+                - entity: input_select.carico_8_switch
+                - entity: input_select.carico_9_switch
+                - entity: input_select.carico_10_switch
+              title: Interruttori Carichi
+

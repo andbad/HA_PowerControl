@@ -1,0 +1,1518 @@
+#################################################################
+#################PACKAGE CONTROLLO CARICHI#######################
+#################################################################
+
+
+# Il package seguente, unito allo script python "update_entities.py" mira ad evitare il distacco del contatore a causa della troppa potenza assorbita dai vari elettrodomestici (carichi).
+# Requisito hardware fondamentale è la presenza di switch sui carichi da controllare e di un sensore che misura la potenza dei singoli carichi. 
+# Personalmente ho utilizzato dispositivi Shelly 1PM e Shelly Plug S, perfetti per lo scopo.
+# E' consigliato, ma non tassativo, l'utilizzo di un sensore che monitori il consumo complessivo dell'impianto (es. Shelly EM).
+# La logica prevede che in caso l'utilizzo complessivo superi il valore limite impostato, il pacchetto inizi il distacco dei carichi a minore priorità fino a quelli a maggiore priorità,
+# fino a che l'utilizzo complessivo della potenza rientri nel limite prefissato.
+# Lo script tiene memoria dell'assorbimento del carico prima del distacco e lo ricollega solo quando la disponibilità di potenza è sufficiente a non causare un nuovo distacco.
+# La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo di notifica (notify.tutti) che va impostato manualmente.
+# Il pacchetto è funzionante ma non ottimizzato.
+
+
+recorder:
+  include:
+    entities:
+      - sensor.potenza_carichi_selezionato
+      - sensor.potenza_carichi_phantom
+      - sensor.potenza_massima
+
+#################################################################
+########################## SENSORI ##############################
+#################################################################
+sensor:
+
+# La soluzione più efficace è utilizzare un sensore di potenza a monte dell'impianto, poco prima del contatore.
+# In tal caso basta selezionare il sensore appropriato nella configurazione.
+# Nell'esempio seguente è utilizzato uno ShellyEM, nel canale 1.
+#  - platform: mqtt
+#      name: "Potenza carichi"
+#      state_topic: "shellies/NOME_SHELLY/emeter/0/power"
+#      value_template: "{{ value }}"
+#      unit_of_measurement : "Watt"
+#      icon: mdi:speedometer
+
+# In alternativa è possibile utilizzare i sensori di potenza dei maggiori carichi utilizzati e mantenere un certo margine di tolleranza.
+# Questo comporta di monitorare tutti i maggiori carichi (forno, fornelli, phon, condizionatori, ecc...).
+# Naturalmente in questo modo non si può valutare il consumo complessivo, quindi si potrebbe superare il valore limite senza che intervenga il controllo carichi.
+# Ma utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando sulla tolleranze di 180 minuti fino al 80% (nell'es. 3,6kW) dovrebbe essere funzionale.
+  - platform: template
+    sensors:
+      potenza_carichi_virtuale:
+        unit_of_measurement: 'W'
+        value_template: >
+          {{ states(states('input_text.carico_1_potenza'))|int +
+             states(states('input_text.carico_2_potenza'))|int +
+             states(states('input_text.carico_3_potenza'))|int +
+             states(states('input_text.carico_4_potenza'))|int +
+             states(states('input_text.carico_5_potenza'))|int +
+             states(states('input_text.carico_6_potenza'))|int +
+             states(states('input_text.carico_7_potenza'))|int +
+             states(states('input_text.carico_8_potenza'))|int +
+             states(states('input_text.carico_9_potenza'))|int +
+             states(states('input_text.carico_10_potenza'))|int }}
+
+# Somma di tutte le potenza "phantom", ovvero i carichi che erano in funzione con un dato assorbimento ma sono stati disattivati.
+  - platform: template
+    sensors:
+      potenza_carichi_phantom:
+        unit_of_measurement: 'W'
+        value_template: >
+          {{ states('input_number.potenza_1_phantom')|int + 
+             states('input_number.potenza_2_phantom')|int + 
+             states('input_number.potenza_3_phantom')|int + 
+             states('input_number.potenza_4_phantom')|int + 
+             states('input_number.potenza_5_phantom')|int + 
+             states('input_number.potenza_6_phantom')|int + 
+             states('input_number.potenza_7_phantom')|int + 
+             states('input_number.potenza_8_phantom')|int + 
+             states('input_number.potenza_9_phantom')|int + 
+             states('input_number.potenza_10_phantom')|int}}
+
+  - platform: template
+    sensors:
+      potenza_carichi_selezionato:
+        unit_of_measurement: 'W'
+        value_template: >
+          {{ states(states('input_text.potenza_carichi')) |int }}
+
+# Valore massimo che i carichi possono impegnare prima di cominciare il distacco
+  - platform: template
+    sensors:
+      potenza_massima:
+        unit_of_measurement: 'W'
+        value_template: >
+           {{ states('input_number.potenza_massima')|int }}
+
+#################################################################
+######################### INPUT_* ###############################
+#################################################################
+input_text:
+  carico_1_potenza:
+  carico_2_potenza:
+  carico_3_potenza:
+  carico_4_potenza:
+  carico_5_potenza:
+  carico_6_potenza:
+  carico_7_potenza:
+  carico_8_potenza:
+  carico_9_potenza:
+  carico_10_potenza:
+
+  carico_1_switch:
+  carico_2_switch:
+  carico_3_switch:
+  carico_4_switch: 
+  carico_5_switch: 
+  carico_6_switch: 
+  carico_7_switch: 
+  carico_8_switch: 
+  carico_9_switch: 
+  carico_10_switch: 
+
+  potenza_carichi:
+
+input_boolean:
+# Switch per l'interfaccia grafica 
+  attiva_power_control:
+    name: Attiva Power Control 
+    icon: mdi:car-cruise-control
+
+  impostazioni_power_control:
+    name: Mostra Impostazioni Power Control
+    icon: mdi:car-cruise-control
+
+input_number:
+
+# Uso interno. Mantengono memoria della potenza utilizzata al momento del distacco, per valutare la riattivazione.
+   potenza_1_phantom:
+     initial: 0
+     min: 0
+     max: 10000
+   potenza_2_phantom:
+     initial: 0
+     min: 0
+     max: 10000
+   potenza_3_phantom:
+     initial: 0
+     min: 0
+     max: 10000
+   potenza_4_phantom:
+     initial: 0
+     min: 0
+     max: 10000
+   potenza_5_phantom:
+     initial: 0
+     min: 0
+     max: 10000
+   potenza_6_phantom:
+     initial: 0
+     min: 0
+     max: 10000
+   potenza_7_phantom:
+     initial: 0
+     min: 0
+     max: 10000
+   potenza_8_phantom:
+     initial: 0
+     min: 0
+     max: 10000
+   potenza_9_phantom:
+     initial: 0
+     min: 0
+     max: 10000
+   potenza_10_phantom:
+     initial: 0
+     min: 0
+     max: 10000
+
+#Slider per la configurazione della potenza massima utilizzabile
+   potenza_massima:
+     min: 0
+     max: 7200
+     step: 100
+
+
+#Slider per la configurazione dei tempi di intervento
+#Dopo tot SECONDI di superamento della potenza massima, inizia il distacco
+   tempo_stop:
+     min: 0
+     max: 60
+     step: 1
+
+#Dopo tot MINUTI che la potenza utilizzata è rientrata nei limiti, inizia a riattivare i carichi
+   tempo_start:
+     min: 0
+     max: 60
+     step: 1  
+
+#Attende tot SECONDI tra un distacco e l'altro.
+   attesa_stop:
+     min: 0
+     max: 60
+     step: 1  
+
+#Attende tot MINUTI tra una riattivazione e l'altra per dare il tempo al carico di riprendere il suo normale assorbimento
+   attesa_start:
+     min: 0
+     max: 60
+     step: 1  
+
+
+# Drop-down per la configurazione di PC. L'elenco di interruttori e sensori viene aggiornato all'avvio di HA.
+input_select:
+
+# Selezione dele sensore di  potenza utilizzata. Se non configurato, viene utilizzato il sensore virtuale 
+  potenza_carichi:
+    name: Sensore potenza carichi
+    options:
+      - Seleziona
+
+# Interruttore carichi
+  carico_1_switch:
+    name: Interruttore Carico Priorità 1
+    options:
+      - Seleziona
+  carico_2_switch:
+    name: Interruttore Carico Priorità 2
+    options:
+      - Seleziona
+  carico_3_switch:
+    name: Interruttore Carico Priorità 3
+    options:
+      - Seleziona
+  carico_4_switch:
+    name: Interruttore Carico Priorità 4
+    options:
+      - Seleziona
+  carico_5_switch:
+    name: Interruttore Carico Priorità 5
+    options:
+      - Seleziona
+  carico_6_switch:
+    name: Interruttore Carico Priorità 6
+    options:
+      - Seleziona
+  carico_7_switch:
+    name: Interruttore Carico Priorità 7
+    options:
+      - Seleziona
+  carico_8_switch:
+    name: Interruttore Carico Priorità 8
+    options:
+      - Seleziona
+  carico_9_switch:
+    name: Interruttore Carico Priorità 9
+    options:
+      - Seleziona
+  carico_10_switch:
+    name: Interruttore Carico Priorità 10
+    options:
+      - Seleziona
+
+# Sensori potenza carichi
+  carico_1_potenza:
+    name: Sensore Carico Priorità 1
+    options:
+      - Seleziona
+  carico_2_potenza:
+    name: Sensore Carico Priorità 2
+    options:
+      - Seleziona
+  carico_3_potenza:
+    name: Sensore Carico Priorità 3
+    options:
+      - Seleziona
+  carico_4_potenza:
+    name: Sensore Carico Priorità 4
+    options:
+      - Seleziona
+  carico_5_potenza:
+    name: Sensore Carico Priorità 5
+    options:
+      - Seleziona
+  carico_6_potenza:
+    name: Sensore Carico Priorità 6
+    options:
+      - Seleziona
+  carico_7_potenza:
+    name: Sensore Carico Priorità 7
+    options:
+      - Seleziona
+  carico_8_potenza:
+    name: Sensore Carico Priorità 8
+    options:
+      - Seleziona
+  carico_9_potenza:
+    name: Sensore Carico Priorità 9
+    options:
+      - Seleziona
+  carico_10_potenza:
+    name: Sensore Carico Priorità 10
+    options:
+      - Seleziona
+
+#################################################################
+####################### AUTOMAZIONI #############################
+#################################################################
+
+automation:
+#Automazione che si triggera nel momento in cui la la potenza utilizzata supera la potenza massima impostata.
+#Agisce dopo TOT secondi dal superamento del limite, avvia lo script di distacco ed invia notifica di intervento.
+#Ripete l'avvio dello script di distacco finché la potenza impegnata non rientra nel limite.
+  - id: '1601646713411'
+    alias: PowerControl - Carichi Stop
+    description: ''
+    trigger:
+    - platform: template
+      value_template: "{{ states(states('input_text.potenza_carichi')) |int > states.sensor.potenza_massima.state|int }}"
+      for: 
+        seconds: "{{ states.input_number.tempo_stop.state }}"
+    condition:
+    - condition: state
+      entity_id: input_boolean.attiva_power_control
+      state: 'on'
+    action:
+    - repeat:
+        sequence:
+          - service: script.turn_on
+            data: {}
+            entity_id: script.stop_carichi
+        until:
+          - condition: template
+            value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int }}"
+    mode: single
+
+# Se per TOT minuti il limite di potenza è rispettato, avvia lo script di riattivazione dei carichi fino a che la potenza "phantom" non è zero.
+  - id: '1603804036559'
+    alias: PowerControl - Carichi Start
+    description: ''
+    trigger:
+    - platform: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int }}"
+      for:
+        minutes: "{{ states.input_number.tempo_start.state }}"
+    condition:
+    - condition: state
+      entity_id: input_boolean.attiva_power_control 
+      state: 'on'
+    - condition: template
+      value_template: "{{ states.sensor.potenza_carichi_phantom.state|int > 0 }}"
+    action:
+    - repeat:
+        until:
+        - condition: template
+          value_template: '{{ states.sensor.potenza_carichi_phantom.state|int > 0 }}'
+        sequence:
+        - service: script.turn_on
+          data: {}
+          entity_id: script.start_carichi
+    mode: single
+
+# All'avvio di HA, aggiorna gli input_slider con la lista delle entità per i campi di configurazione.
+  - id: '1603804036666'
+    alias: PowerControl - Configurazione- Popola entità
+    trigger:
+      - platform: homeassistant
+        event: start
+    action:
+      - service: python_script.update_entities
+    mode: single
+
+# All'avvio di HA carica la configurazione di interrutti e sensori di potenza.
+  - alias: PowerControl - Configurazione - Carica
+    trigger:
+      platform: homeassistant
+      event: start
+    action:
+      - delay:
+          seconds: 15
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.potenza_carichi
+          option: "{{ states.input_text.potenza_carichi.state }}"
+
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_1_potenza
+          option: "{{ states.input_text.carico_1_potenza.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_2_potenza  
+          option: "{{ states.input_text.carico_2_potenza.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_3_potenza  
+          option: "{{ states.input_text.carico_3_potenza.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_4_potenza  
+          option: "{{ states.input_text.carico_4_potenza.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_5_potenza  
+          option: "{{ states.input_text.carico_5_potenza.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_6_potenza  
+          option: "{{ states.input_text.carico_6_potenza.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_7_potenza  
+          option: "{{ states.input_text.carico_7_potenza.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_8_potenza  
+          option: "{{ states.input_text.carico_8_potenza.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_9_potenza  
+          option: "{{ states.input_text.carico_9_potenza.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_10_potenza  
+          option: "{{ states.input_text.carico_10_potenza.state }}"
+
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_1_switch
+          option: "{{ states.input_text.carico_1_switch.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_2_switch  
+          option: "{{ states.input_text.carico_3_switch.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_3_switch  
+          option: "{{ states.input_text.carico_3_switch.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_4_switch  
+          option: "{{ states.input_text.carico_4_switch.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_5_switch  
+          option: "{{ states.input_text.carico_5_switch.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_6_switch  
+          option: "{{ states.input_text.carico_6_switch.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_7_switch  
+          option: "{{ states.input_text.carico_7_switch.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_8_switch  
+          option: "{{ states.input_text.carico_8_switch.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_9_switch  
+          option: "{{ states.input_text.carico_9_switch.state }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.carico_10_switch  
+          option: "{{ states.input_text.carico_10_switch.state }}"
+
+# Quando viene modificato un parametro nella configurazione di PC tramite gli input_select, carica il valore nell'input_text relativo.
+  - alias: PowerControl - Configurazione - Salva
+    trigger:
+      platform: state
+      entity_id: input_select.potenza_carichi
+    action:
+      - delay:
+          seconds: 20
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.potenza_carichi
+          value: "{{ states.input_select.potenza_carichi.state }}"
+
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_1_potenza
+          value: "{{ states.input_select.carico_1_potenza.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_2_potenza
+          value: "{{ states.input_select.carico_2_potenza.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_3_potenza
+          value: "{{ states.input_select.carico_3_potenza.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_4_potenza
+          value: "{{ states.input_select.carico_4_potenza.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_5_potenza
+          value: "{{ states.input_select.carico_5_potenza.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_6_potenza
+          value: "{{ states.input_select.carico_6_potenza.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_7_potenza
+          value: "{{ states.input_select.carico_7_potenza.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_8_potenza
+          value: "{{ states.input_select.carico_8_potenza.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_9_potenza
+          value: "{{ states.input_select.carico_9_potenza.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_10_potenza
+          value: "{{ states.input_select.carico_10_potenza.state }}"
+
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_1_switch
+          value: "{{ states.input_select.carico_1_switch.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_2_switch
+          value: "{{ states.input_select.carico_2_switch.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_3_switch
+          value: "{{ states.input_select.carico_3_switch.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_4_switch
+          value: "{{ states.input_select.carico_4_switch.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_5_switch
+          value: "{{ states.input_select.carico_5_switch.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_6_switch
+          value: "{{ states.input_select.carico_6_switch.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_7_switch
+          value: "{{ states.input_select.carico_7_switch.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_8_switch
+          value: "{{ states.input_select.carico_8_switch.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_9_switch
+          value: "{{ states.input_select.carico_9_switch.state }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.carico_10_switch
+          value: "{{ states.input_select.carico_10_switch.state }}"
+
+#################################################################
+######################### SCRIPT  ###############################
+#################################################################
+
+script:
+
+# I carichi vengono disattivati secondo l'ordine numerico inverso (da minore priorità a maggiore).
+# Attende il completamente di uno script prima di passare al successivo.
+  stop_carichi:
+    alias: PowerControl - Stop carichi
+    sequence:
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_stop_10
+    - wait_template: "{{ is_state('script.controllo_carichi_stop_10', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_stop_9
+    - wait_template: "{{ is_state('script.controllo_carichi_stop_9', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_stop_8
+    - wait_template: "{{ is_state('script.controllo_carichi_stop_8', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_stop_7
+    - wait_template: "{{ is_state('script.controllo_carichi_stop_7', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_stop_6
+    - wait_template: "{{ is_state('script.controllo_carichi_stop_6', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_stop_5
+    - wait_template: "{{ is_state('script.controllo_carichi_stop_5', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_stop_4
+    - wait_template: "{{ is_state('script.controllo_carichi_stop_4', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_stop_3
+    - wait_template: "{{ is_state('script.controllo_carichi_stop_3', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_stop_2
+    - wait_template: "{{ is_state('script.controllo_carichi_stop_2', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_stop_1
+    - wait_template: "{{ is_state('script.controllo_carichi_stop_1', 'off') }}"
+    mode: single
+
+# I carichi vengono riattivati secondo l'ordine numerico (da maggiore priorità a minore priorità)
+# Attende il completamente di uno script prima di passare al successivo.
+  start_carichi:
+    alias: PowerControl - Start carichi
+    sequence:
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_start_1
+    - wait_template: "{{ is_state('script.controllo_carichi_start_1', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_start_2
+    - wait_template: "{{ is_state('script.controllo_carichi_start_2', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_start_3
+    - wait_template: "{{ is_state('script.controllo_carichi_start_3', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_start_4
+    - wait_template: "{{ is_state('script.controllo_carichi_start_4', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_start_5
+    - wait_template: "{{ is_state('script.controllo_carichi_start_5', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_start_6
+    - wait_template: "{{ is_state('script.controllo_carichi_start_6', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_start_7
+    - wait_template: "{{ is_state('script.controllo_carichi_start_7', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_start_8
+    - wait_template: "{{ is_state('script.controllo_carichi_start_8', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_start_9
+    - wait_template: "{{ is_state('script.controllo_carichi_start_9', 'off') }}"
+    - service: script.turn_on
+      data: {}
+      entity_id: script.controllo_carichi_start_10
+    - wait_template: "{{ is_state('script.controllo_carichi_start_10', 'off') }}"
+    mode: single
+
+#################################################################
+###################### STOP CARICHI #############################
+#################################################################
+
+# Avvia il distacco del carico.
+# Verifica che il carico si aconfigurato come seonsore di potenza e come interruttore.
+# Controlla se la potenza massima è superata, se il carico è acceso (potenza impegnata > 10W).
+# Salva la potenza attualmente utilizzata nel relativo valore "phantom".
+# Spegne l'interruttore a monte del carico ed invia la notifica. Attende TOT secondi prima di procedere col carico successivo.
+
+  controllo_carichi_stop_1:
+    alias: PowerControl - Stop Carico 1
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_1_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_1_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.carico_1_potenza')) |int > 10 }}"
+    - service: input_number.set_value
+      data_template:
+        value: "{{ states(states('input_text.carico_1_potenza')) }}"
+        entity_id: input_number.potenza_1_phantom
+    - service_template: switch.turn_off
+      data_template:
+        entity_id: "{{ states('input_text.carico_1_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza superato
+        message: "{{ state_attr(states('input_text.carico_1_switch'),'friendly_name') }} disattivato."
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay: 
+        seconds: "{{ states.input_number.attesa_stop.state }}"
+    mode: single
+
+  controllo_carichi_stop_2:
+    alias: PowerControl - Stop Carico 2
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_2_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_2_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.carico_2_potenza')) |int > 10 }}"
+    - service: input_number.set_value
+      data_template:
+        value: "{{ states(states('input_text.carico_2_potenza')) }}"
+        entity_id: input_number.potenza_2_phantom
+    - service_template: switch.turn_off
+      data_template:
+        entity_id: "{{ states('input_text.carico_2_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza superato
+        message: "{{ state_attr(states('input_text.carico_2_switch'),'friendly_name') }} disattivato."
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        seconds: "{{ states.input_number.attesa_stop.state }}"
+    mode: single
+
+  controllo_carichi_stop_3:
+    alias: PowerControl - Stop Carico 3
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_3_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_3_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.carico_3_potenza')) |int > 10 }}"
+    - service: input_number.set_value
+      data_template:
+        value: "{{ states(states('input_text.carico_3_potenza')) }}"
+        entity_id: input_number.potenza_3_phantom
+    - service_template: switch.turn_off
+      data_template:
+        entity_id: "{{ states('input_text.carico_3_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza superato
+        message: "{{ state_attr(states('input_text.carico_3_switch'),'friendly_name') }} disattivato."
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        seconds: "{{ states.input_number.attesa_stop.state }}"
+    mode: single
+
+  controllo_carichi_stop_4:
+    alias: PowerControl - Stop Carico 4
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_4_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_4_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.carico_4_potenza')) |int > 10 }}"
+    - service: input_number.set_value
+      data_template:
+        value: "{{ states(states('input_text.carico_4_potenza')) }}"
+        entity_id: input_number.potenza_4_phantom
+    - service_template: switch.turn_off
+      data_template:
+        entity_id: "{{ states('input_text.carico_4_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza superato
+        message: "{{ state_attr(states('input_text.carico_4_switch'),'friendly_name') }} disattivato."
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        seconds: "{{ states.input_number.attesa_stop.state }}"
+    mode: single
+
+  controllo_carichi_stop_5:
+    alias: PowerControl - Stop Carico 5
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_5_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_5_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.carico_5_potenza')) |int > 10 }}"
+    - service: input_number.set_value
+      data_template:
+        value: "{{ states(states('input_text.carico_5_potenza')) }}"
+        entity_id: input_number.potenza_5_phantom
+    - service_template: switch.turn_off
+      data_template:
+        entity_id: "{{ states('input_text.carico_5_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza superato
+        message: "{{ state_attr(states('input_text.carico_5_switch'),'friendly_name') }} disattivato."
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        seconds: "{{ states.input_number.attesa_stop.state }}"
+    mode: single
+
+  controllo_carichi_stop_6:
+    alias: PowerControl - Stop Carico 6
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_6_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_6_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.carico_6_potenza')) |int > 10 }}"
+    - service: input_number.set_value
+      data_template:
+        value: "{{ states(states('input_text.carico_6_potenza')) }}"
+        entity_id: input_number.potenza_6_phantom
+    - service_template: switch.turn_off
+      data_template:
+        entity_id: "{{ states('input_text.carico_6_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza superato
+        message: "{{ state_attr(states('input_text.carico_6_switch'),'friendly_name') }} disattivato."
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        seconds: "{{ states.input_number.attesa_stop.state }}"
+    mode: single
+
+  controllo_carichi_stop_7:
+    alias: PowerControl - Stop Carico 7
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_7_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_7_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.carico_7_potenza')) |int > 10 }}"
+    - service: input_number.set_value
+      data_template:
+        value: "{{ states(states('input_text.carico_7_potenza')) }}"
+        entity_id: input_number.potenza_7_phantom
+    - service_template: switch.turn_off
+      data_template:
+        entity_id: "{{ states('input_text.carico_7_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza superato
+        message: "{{ state_attr(states('input_text.carico_7_switch'),'friendly_name') }} disattivato."
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        seconds: "{{ states.input_number.attesa_stop.state }}"
+    mode: single
+
+  controllo_carichi_stop_8:
+    alias: PowerControl - Stop Carico 8
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_8_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_8_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.carico_8_potenza')) |int > 10 }}"
+    - service: input_number.set_value
+      data_template:
+        value: "{{ states(states('input_text.carico_8_potenza')) }}"
+        entity_id: input_number.potenza_8_phantom
+    - service_template: switch.turn_off
+      data_template:
+        entity_id: "{{ states('input_text.carico_8_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza superato
+        message: "{{ state_attr(states('input_text.carico_8_switch'),'friendly_name') }} disattivato."
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        seconds: "{{ states.input_number.attesa_stop.state }}"
+    mode: single
+
+  controllo_carichi_stop_9:
+    alias: PowerControl - Stop Carico 9
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_9_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_9_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.carico_9_potenza')) |int > 10 }}"
+    - service: input_number.set_value
+      data_template:
+        value: "{{ states(states('input_text.carico_9_potenza')) }}"
+        entity_id: input_number.potenza_9_phantom
+    - service_template: switch.turn_off
+      data_template:
+        entity_id: "{{ states('input_text.carico_9_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza superato
+        message: "{{ state_attr(states('input_text.carico_9_switch'),'friendly_name') }} disattivato."
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        seconds: "{{ states.input_number.attesa_stop.state }}"
+    mode: single
+
+  controllo_carichi_stop_10:
+    alias: PowerControl - Stop Carico 10
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_10_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_10_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.carico_10_potenza')) |int > 10 }}"
+    - service: input_number.set_value
+      data_template:
+        value: "{{ states(states('input_text.carico_10_potenza')) }}"
+        entity_id: input_number.potenza_10_phantom
+    - service_template: switch.turn_off
+      data_template:
+        entity_id: "{{ states('input_text.carico_10_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza superato
+        message: "{{ state_attr(states('input_text.carico_10_switch'),'friendly_name') }} disattivato."
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        seconds: "{{ states.input_number.attesa_stop.state }}"
+    mode: single
+
+#################################################################
+###################### START CARICHI ############################
+#################################################################
+
+# Script per la riattivazione dei carichi.
+# Verifica che il carico si aconfigurato come seonsore di potenza e come interruttore.
+# Controlla che il carico sia stato disattivato (potenza in attesa)
+# Controlla che il limite di potenza venga rispettato.
+# Controlla anche se riattivando il carico (ipotizzando un consumo pari a quello che aveva all'atto della disattivazione) non supera il valore massimo.
+# Quest'ultimo controllo serve ad evitare che si riattacchi un carico che poi si ristacchi dopo pochi secondi perché ha causato un nuovo sforamento del limite.
+# Imposta il relativo valore "phantom" a zero, riattiva l'interruttore ed invia una notifica di riattivazione.
+# Infine attende TOT minuti  prima di passare al carico successivo.
+
+  controllo_carichi_start_1:
+    alias: PowerControl - Start Carico 1
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_1_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_1_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states.input_number.potenza_1_phantom.state|int > 0 }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.input_number.potenza_1_phantom.state|int < states.sensor.potenza_massima.state|int }}"
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_1_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_1_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_1_switch'),'friendly_name') }} Riattivato"
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        minutes: "{{ states.input_number.attesa_start.state }}"
+    mode: single
+
+  controllo_carichi_start_2:
+    alias: PowerControl - Start Carico 2
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_2_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_2_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states.input_number.potenza_2_phantom.state|int > 0 }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.input_number.potenza_2_phantom.state|int < states.sensor.potenza_massima.state|int }}"
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_2_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_2_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_2_switch'),'friendly_name') }} Riattivato"
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        minutes: "{{ states.input_number.attesa_start.state }}"
+    mode: single
+
+  controllo_carichi_start_3:
+    alias: PowerControl - Start Carico 3
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_3_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_3_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states.input_number.potenza_3_phantom.state|int > 0 }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.input_number.potenza_3_phantom.state|int < states.sensor.potenza_massima.state|int }}"
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_3_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_3_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_3_switch'),'friendly_name') }} Riattivato"
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        minutes: "{{ states.input_number.attesa_start.state }}"
+    mode: single
+
+  controllo_carichi_start_4:
+    alias: PowerControl - Start Carico 4
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_4_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_4_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states.input_number.potenza_4_phantom.state|int > 0 }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.input_number.potenza_4_phantom.state|int < states.sensor.potenza_massima.state|int }}"
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_4_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_4_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_4_switch'),'friendly_name') }} Riattivato"
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        minutes: "{{ states.input_number.attesa_start.state }}"
+    mode: single
+
+  controllo_carichi_start_5:
+    alias: PowerControl - Start Carico 5
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_5_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_5_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states.input_number.potenza_5_phantom.state|int > 0 }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.input_number.potenza_5_phantom.state|int < states.sensor.potenza_massima.state|int }}"
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_5_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_5_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_5_switch'),'friendly_name') }} Riattivato"
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        minutes: "{{ states.input_number.attesa_start.state }}"
+    mode: single
+
+  controllo_carichi_start_6:
+    alias: PowerControl - Start Carico 6
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_6_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_6_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states.input_number.potenza_6_phantom.state|int > 0 }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.input_number.potenza_6_phantom.state|int < states.sensor.potenza_massima.state|int }}"
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_6_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_6_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_6_switch'),'friendly_name') }} Riattivato"
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        minutes: "{{ states.input_number.attesa_start.state }}"
+    mode: single
+
+  controllo_carichi_start_7:
+    alias: PowerControl - Start Carico 7
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_7_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_7_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states.input_number.potenza_7_phantom.state|int > 0 }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.input_number.potenza_7_phantom.state|int < states.sensor.potenza_massima.state|int }}"
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_7_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_7_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_7_switch'),'friendly_name') }} Riattivato"
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        minutes: "{{ states.input_number.attesa_start.state }}"
+    mode: single
+
+  controllo_carichi_start_8:
+    alias: PowerControl - Start Carico 8
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_8_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_8_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states.input_number.potenza_8_phantom.state|int > 0 }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.input_number.potenza_8_phantom.state|int < states.sensor.potenza_massima.state|int }}"
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_8_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_8_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_8_switch'),'friendly_name') }} Riattivato"
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        minutes: "{{ states.input_number.attesa_start.state }}"
+    mode: single
+
+  controllo_carichi_start_9:
+    alias: PowerControl - Start Carico 9
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_9_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_9_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states.input_number.potenza_9_phantom.state|int > 0 }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.input_number.potenza_9_phantom.state|int < states.sensor.potenza_massima.state|int }}"
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_9_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_9_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_9_switch'),'friendly_name') }} Riattivato"
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        minutes: "{{ states.input_number.attesa_start.state }}"
+    mode: single
+
+  controllo_carichi_start_10:
+    alias: PowerControl - Start Carico 10
+    sequence:
+    - condition: template
+      value_template: "{{ states('input_text.carico_10_potenza') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states('input_text.carico_10_switch') != 'Seleziona' }}"
+    - condition: template
+      value_template: "{{ states.input_number.potenza_10_phantom.state|int > 0 }}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int}}"
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.input_number.potenza_10_phantom.state|int < states.sensor.potenza_massima.state|int }}"
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_10_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_10_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_10_switch'),'friendly_name') }} Riattivato"
+        data:
+          push:
+            thread-id: "powercontrol"
+    - delay:
+        minutes: "{{ states.input_number.attesa_start.state }}"
+    mode: single
+
+  controllo_carichi_reset:
+    alias: PowerControl - Reset
+    sequence:
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_1_phantom
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_2_phantom
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_3_phantom
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_4_phantom
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_5_phantom
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_6_phantom
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_7_phantom
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_8_phantom
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_9_phantom
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_10_phantom
+    - service: notify.tutti
+      data:
+        title: Reset eseguito
+        message: "I carichi in attesa sono stati resettati. E' possibile procedere con la riattivazione manuale degli interruttori."
+        data:
+          push:
+            thread-id: "powercontrol"
+    mode: single
+
+  controllo_carichi_start_manuale_1:
+    alias: PowerControl - Start Carico Manuale 1
+    sequence:
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_1_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_1_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_1_switch'),'friendly_name') }} Riattivato manualmente"
+        data:
+          push:
+            thread-id: "powercontrol"
+    mode: single
+
+  controllo_carichi_start_manuale_2:
+    alias: PowerControl - Start Carico Manuale 2
+    sequence:
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_2_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_2_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_2_switch'),'friendly_name') }} Riattivato manualmente"
+        data:
+          push:
+            thread-id: "powercontrol"
+    mode: single
+
+  controllo_carichi_start_manuale_3:
+    alias: PowerControl - Start Carico Manuale 3
+    sequence:
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_3_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_3_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_3_switch'),'friendly_name') }} Riattivato manualmente"
+        data:
+          push:
+            thread-id: "powercontrol"
+    mode: single
+
+  controllo_carichi_start_manuale_4:
+    alias: PowerControl - Start Carico Manuale 4
+    sequence:
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_4_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_4_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_4_switch'),'friendly_name') }} Riattivato manualmente"
+        data:
+          push:
+            thread-id: "powercontrol"
+    mode: single
+
+  controllo_carichi_start_manuale_5:
+    alias: PowerControl - Start Carico Manuale 5
+    sequence:
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_5_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_5_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_5_switch'),'friendly_name') }} Riattivato manualmente"
+        data:
+          push:
+            thread-id: "powercontrol"
+    mode: single
+
+  controllo_carichi_start_manuale_6:
+    alias: PowerControl - Start Carico Manuale 6
+    sequence:
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_6_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_6_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_6_switch'),'friendly_name') }} Riattivato manualmente"
+        data:
+          push:
+            thread-id: "powercontrol"
+    mode: single
+
+  controllo_carichi_start_manuale_7:
+    alias: PowerControl - Start Carico Manuale 7
+    sequence:
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_7_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_7_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_7_switch'),'friendly_name') }} Riattivato manualmente"
+        data:
+          push:
+            thread-id: "powercontrol"
+    mode: single
+
+  controllo_carichi_start_manuale_8:
+    alias: PowerControl - Start Carico Manuale 8
+    sequence:
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_8_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_8_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_8_switch'),'friendly_name') }} Riattivato manualmente"
+        data:
+          push:
+            thread-id: "powercontrol"
+    mode: single
+
+  controllo_carichi_start_manuale_9:
+    alias: PowerControl - Start Carico Manuale 9
+    sequence:
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_9_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_9_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_9_switch'),'friendly_name') }} Riattivato manualmente"
+        data:
+          push:
+            thread-id: "powercontrol"
+    mode: single
+  controllo_carichi_start_manuale_10:
+    alias: PowerControl - Start Carico Manuale 10
+    sequence:
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: input_number.potenza_10_phantom
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ states('input_text.carico_10_switch') }}"
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(states('input_text.carico_10_switch'),'friendly_name') }} Riattivato manualmente"
+        data:
+          push:
+            thread-id: "powercontrol"
+    mode: single
