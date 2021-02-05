@@ -13,7 +13,6 @@
 # La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo di notifica (notify.tutti) che va impostato manualmente.
 # Il pacchetto è funzionante ma non ottimizzato.
 
-
 recorder:
   include:
     entities:
@@ -77,16 +76,14 @@ sensor:
     sensors:
       potenza_carichi_selezionato:
         unit_of_measurement: 'W'
-        value_template: >
-          {{ states(states('input_text.potenza_carichi')) |int }}
+        value_template: "{{ states(states('input_text.potenza_carichi')) |int }}"
 
 # Valore massimo che i carichi possono impegnare prima di cominciare il distacco
   - platform: template
     sensors:
       potenza_massima:
         unit_of_measurement: 'W'
-        value_template: >
-           {{ states('input_number.potenza_massima')|int }}
+        value_template: "{{ states('input_number.potenza_massima')|int }}"
 
 #################################################################
 ######################### INPUT_* ###############################
@@ -311,14 +308,24 @@ automation:
     - platform: template
       value_template: "{{ states(states('input_text.potenza_carichi')) |int > states.sensor.potenza_massima.state|int }}"
       for: 
-        seconds: "{{ states.input_number.tempo_stop.state }}"
+        seconds: "{{ states.input_number.tempo_stop.state|int }}"
     condition:
     - condition: state
       entity_id: input_boolean.attiva_power_control
       state: 'on'
     action:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Automazione Carichi Stop triggerata: Potenza carichi ({{ states(states('input_text.potenza_carichi'))|int }})>Potenza massima({{states.sensor.potenza_massima.state|int }})"
     - repeat:
         sequence:
+          - service: system_log.write
+            data_template:
+              level: debug
+              logger: homeassistant.components.pc
+              message: "Avviato script stop carichi: potenza carichi {{ states(states('input_text.potenza_carichi'))|int}}"
           - service: script.turn_on
             data: {}
             entity_id: script.stop_carichi
@@ -335,7 +342,7 @@ automation:
     - platform: template
       value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int }}"
       for:
-        minutes: "{{ states.input_number.tempo_start.state }}"
+        minutes: "{{ states.input_number.tempo_start.state|int }}"
     condition:
     - condition: state
       entity_id: input_boolean.attiva_power_control 
@@ -343,11 +350,21 @@ automation:
     - condition: template
       value_template: "{{ states.sensor.potenza_carichi_phantom.state|int > 0 }}"
     action:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Automazione start carichi triggerata: Potenza carichi ({{ states(states('input_text.potenza_carichi'))|int}}) < Potenza massima ({{states.sensor.potenza_massima.state|int }}) "
     - repeat:
         until:
         - condition: template
           value_template: '{{ states.sensor.potenza_carichi_phantom.state|int > 0 }}'
         sequence:
+        - service: system_log.write
+          data_template:
+            level: debug
+            logger: homeassistant.components.pc
+            message: "Avvio script start carichi: phantom ({{ states.sensor.potenza_carichi_phantom.state|int > 0 }})>0 "
         - service: script.turn_on
           data: {}
           entity_id: script.start_carichi
@@ -567,43 +584,143 @@ script:
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_stop_10
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script stop carico 10"
     - wait_template: "{{ is_state('script.controllo_carichi_stop_10', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script stop carico 10"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_stop_9
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script stop carico 9"
     - wait_template: "{{ is_state('script.controllo_carichi_stop_9', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script stop carico 9"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_stop_8
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script stop carico 8"
     - wait_template: "{{ is_state('script.controllo_carichi_stop_8', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script stop carico 8"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_stop_7
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script stop carico 7"
     - wait_template: "{{ is_state('script.controllo_carichi_stop_7', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script stop carico 7"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_stop_6
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script stop carico 6"
     - wait_template: "{{ is_state('script.controllo_carichi_stop_6', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script stop carico 6"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_stop_5
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script stop carico 5"
     - wait_template: "{{ is_state('script.controllo_carichi_stop_5', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script stop carico 5"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_stop_4
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script stop carico 4"
     - wait_template: "{{ is_state('script.controllo_carichi_stop_4', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script stop carico 4"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_stop_3
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script stop carico 3"
     - wait_template: "{{ is_state('script.controllo_carichi_stop_3', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script stop carico 3"    
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_stop_2
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script stop carico 2"
     - wait_template: "{{ is_state('script.controllo_carichi_stop_2', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script stop carico 2"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_stop_1
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script stop carico 1"
     - wait_template: "{{ is_state('script.controllo_carichi_stop_1', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script stop carico 1"
     mode: single
 
 # I carichi vengono riattivati secondo l'ordine numerico (da maggiore priorità a minore priorità)
@@ -614,43 +731,143 @@ script:
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_start_1
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script start carico 1"
     - wait_template: "{{ is_state('script.controllo_carichi_start_1', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script start carico 1"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_start_2
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script start carico 2"
     - wait_template: "{{ is_state('script.controllo_carichi_start_2', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script start carico 2"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_start_3
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script start carico 3"
     - wait_template: "{{ is_state('script.controllo_carichi_start_3', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script start carico 3"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_start_4
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script start carico 4"
     - wait_template: "{{ is_state('script.controllo_carichi_start_4', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script start carico 4"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_start_5
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script start carico 5"
     - wait_template: "{{ is_state('script.controllo_carichi_start_5', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script start carico 5"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_start_6
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script start carico 6"
     - wait_template: "{{ is_state('script.controllo_carichi_start_6', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script start carico 6"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_start_7
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script start carico 7"
     - wait_template: "{{ is_state('script.controllo_carichi_start_7', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script start carico 7"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_start_8
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script start carico 8"
     - wait_template: "{{ is_state('script.controllo_carichi_start_8', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script start carico 8"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_start_9
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script start carico 9"
     - wait_template: "{{ is_state('script.controllo_carichi_start_9', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script start carico 9"
     - service: script.turn_on
       data: {}
       entity_id: script.controllo_carichi_start_10
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avviato script start carico 10"
     - wait_template: "{{ is_state('script.controllo_carichi_start_10', 'off') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Terminato script start carico 10"
     mode: single
 
 #################################################################
@@ -668,19 +885,49 @@ script:
     sequence:
     - condition: template
       value_template: "{{ states('input_text.carico_1_potenza') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 1 - Condition 1 - Ok"
     - condition: template
       value_template: "{{ states('input_text.carico_1_switch') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 1 - Condition 2 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 1 - Condition 3 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.carico_1_potenza')) |int > 10 }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 1 - Condition 4 - Ok"
     - service: input_number.set_value
       data_template:
         value: "{{ states(states('input_text.carico_1_potenza')) }}"
         entity_id: input_number.potenza_1_phantom
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 1 - Spostata potenza da carico {{ states(states('input_text.carico_1_potenza')) }} a phantom {{states.input_number.potenza_1_phantom.state}} (dovrebbero essere uguali)."
     - service_template: switch.turn_off
       data_template:
         entity_id: "{{ states('input_text.carico_1_switch') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 1 - Spento carico"        
     - service: notify.tutti
       data:
         title: Limite potenza superato
@@ -688,28 +935,64 @@ script:
         data:
           push:
             thread-id: "powercontrol"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 1 - Inviata notifica. Attendo {{ states.input_number.attesa_stop.state }} secondi "
     - delay: 
         seconds: "{{ states.input_number.attesa_stop.state }}"
     mode: single
+
 
   controllo_carichi_stop_2:
     alias: PowerControl - Stop Carico 2
     sequence:
     - condition: template
       value_template: "{{ states('input_text.carico_2_potenza') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 2 - Condition 1 - Ok"
     - condition: template
       value_template: "{{ states('input_text.carico_2_switch') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 2 - Condition 2 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 2 - Condition 3 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.carico_2_potenza')) |int > 10 }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 2 - Condition 4 - Ok"
     - service: input_number.set_value
       data_template:
         value: "{{ states(states('input_text.carico_2_potenza')) }}"
         entity_id: input_number.potenza_2_phantom
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 2 - Spostata potenza da carico {{ states(states('input_text.carico_2_potenza')) }} a phantom {{states.input_number.potenza_2_phantom.state}} (dovrebbero essere uguali)."
     - service_template: switch.turn_off
       data_template:
         entity_id: "{{ states('input_text.carico_2_switch') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 2 - Spento carico"        
     - service: notify.tutti
       data:
         title: Limite potenza superato
@@ -717,28 +1000,64 @@ script:
         data:
           push:
             thread-id: "powercontrol"
-    - delay:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 2 - Inviata notifica. Attendo {{ states.input_number.attesa_stop.state }} secondi "
+    - delay: 
         seconds: "{{ states.input_number.attesa_stop.state }}"
     mode: single
+
 
   controllo_carichi_stop_3:
     alias: PowerControl - Stop Carico 3
     sequence:
     - condition: template
       value_template: "{{ states('input_text.carico_3_potenza') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 3 - Condition 1 - Ok"
     - condition: template
       value_template: "{{ states('input_text.carico_3_switch') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 3 - Condition 2 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 3 - Condition 3 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.carico_3_potenza')) |int > 10 }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 3 - Condition 4 - Ok"
     - service: input_number.set_value
       data_template:
         value: "{{ states(states('input_text.carico_3_potenza')) }}"
         entity_id: input_number.potenza_3_phantom
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 3 - Spostata potenza da carico {{ states(states('input_text.carico_3_potenza')) }} a phantom {{states.input_number.potenza_3_phantom.state}} (dovrebbero essere uguali)."
     - service_template: switch.turn_off
       data_template:
         entity_id: "{{ states('input_text.carico_3_switch') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 3 - Spento carico"        
     - service: notify.tutti
       data:
         title: Limite potenza superato
@@ -746,28 +1065,64 @@ script:
         data:
           push:
             thread-id: "powercontrol"
-    - delay:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 3 - Inviata notifica. Attendo {{ states.input_number.attesa_stop.state }} secondi "
+    - delay: 
         seconds: "{{ states.input_number.attesa_stop.state }}"
     mode: single
+
 
   controllo_carichi_stop_4:
     alias: PowerControl - Stop Carico 4
     sequence:
     - condition: template
       value_template: "{{ states('input_text.carico_4_potenza') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 4 - Condition 1 - Ok"
     - condition: template
       value_template: "{{ states('input_text.carico_4_switch') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 4 - Condition 2 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 4 - Condition 3 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.carico_4_potenza')) |int > 10 }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 4 - Condition 4 - Ok"
     - service: input_number.set_value
       data_template:
         value: "{{ states(states('input_text.carico_4_potenza')) }}"
         entity_id: input_number.potenza_4_phantom
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 4 - Spostata potenza da carico {{ states(states('input_text.carico_4_potenza')) }} a phantom {{states.input_number.potenza_4_phantom.state}} (dovrebbero essere uguali)."
     - service_template: switch.turn_off
       data_template:
         entity_id: "{{ states('input_text.carico_4_switch') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 4 - Spento carico"        
     - service: notify.tutti
       data:
         title: Limite potenza superato
@@ -775,28 +1130,64 @@ script:
         data:
           push:
             thread-id: "powercontrol"
-    - delay:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 4 - Inviata notifica. Attendo {{ states.input_number.attesa_stop.state }} secondi "
+    - delay: 
         seconds: "{{ states.input_number.attesa_stop.state }}"
     mode: single
+
 
   controllo_carichi_stop_5:
     alias: PowerControl - Stop Carico 5
     sequence:
     - condition: template
       value_template: "{{ states('input_text.carico_5_potenza') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 5 - Condition 1 - Ok"
     - condition: template
       value_template: "{{ states('input_text.carico_5_switch') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 5 - Condition 2 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 5 - Condition 3 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.carico_5_potenza')) |int > 10 }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 5 - Condition 4 - Ok"
     - service: input_number.set_value
       data_template:
         value: "{{ states(states('input_text.carico_5_potenza')) }}"
         entity_id: input_number.potenza_5_phantom
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 5 - Spostata potenza da carico {{ states(states('input_text.carico_5_potenza')) }} a phantom {{states.input_number.potenza_5_phantom.state}} (dovrebbero essere uguali)."
     - service_template: switch.turn_off
       data_template:
         entity_id: "{{ states('input_text.carico_5_switch') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 5 - Spento carico"        
     - service: notify.tutti
       data:
         title: Limite potenza superato
@@ -804,28 +1195,65 @@ script:
         data:
           push:
             thread-id: "powercontrol"
-    - delay:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 5 - Inviata notifica. Attendo {{ states.input_number.attesa_stop.state }} secondi "
+    - delay: 
         seconds: "{{ states.input_number.attesa_stop.state }}"
     mode: single
+
+
 
   controllo_carichi_stop_6:
     alias: PowerControl - Stop Carico 6
     sequence:
     - condition: template
       value_template: "{{ states('input_text.carico_6_potenza') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 6 - Condition 1 - Ok"
     - condition: template
       value_template: "{{ states('input_text.carico_6_switch') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 6 - Condition 2 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 6 - Condition 3 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.carico_6_potenza')) |int > 10 }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 6 - Condition 4 - Ok"
     - service: input_number.set_value
       data_template:
         value: "{{ states(states('input_text.carico_6_potenza')) }}"
         entity_id: input_number.potenza_6_phantom
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 6 - Spostata potenza da carico {{ states(states('input_text.carico_6_potenza')) }} a phantom {{states.input_number.potenza_6_phantom.state}} (dovrebbero essere uguali)."
     - service_template: switch.turn_off
       data_template:
         entity_id: "{{ states('input_text.carico_6_switch') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 6 - Spento carico"        
     - service: notify.tutti
       data:
         title: Limite potenza superato
@@ -833,28 +1261,64 @@ script:
         data:
           push:
             thread-id: "powercontrol"
-    - delay:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 6 - Inviata notifica. Attendo {{ states.input_number.attesa_stop.state }} secondi "
+    - delay: 
         seconds: "{{ states.input_number.attesa_stop.state }}"
     mode: single
+
 
   controllo_carichi_stop_7:
     alias: PowerControl - Stop Carico 7
     sequence:
     - condition: template
       value_template: "{{ states('input_text.carico_7_potenza') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 7 - Condition 1 - Ok"
     - condition: template
       value_template: "{{ states('input_text.carico_7_switch') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 7 - Condition 2 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 7 - Condition 3 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.carico_7_potenza')) |int > 10 }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 7 - Condition 4 - Ok"
     - service: input_number.set_value
       data_template:
         value: "{{ states(states('input_text.carico_7_potenza')) }}"
         entity_id: input_number.potenza_7_phantom
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 7 - Spostata potenza da carico {{ states(states('input_text.carico_7_potenza')) }} a phantom {{states.input_number.potenza_7_phantom.state}} (dovrebbero essere uguali)."
     - service_template: switch.turn_off
       data_template:
         entity_id: "{{ states('input_text.carico_7_switch') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 7 - Spento carico"        
     - service: notify.tutti
       data:
         title: Limite potenza superato
@@ -862,28 +1326,64 @@ script:
         data:
           push:
             thread-id: "powercontrol"
-    - delay:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 7 - Inviata notifica. Attendo {{ states.input_number.attesa_stop.state }} secondi "
+    - delay: 
         seconds: "{{ states.input_number.attesa_stop.state }}"
     mode: single
+
 
   controllo_carichi_stop_8:
     alias: PowerControl - Stop Carico 8
     sequence:
     - condition: template
       value_template: "{{ states('input_text.carico_8_potenza') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 8 - Condition 1 - Ok"
     - condition: template
       value_template: "{{ states('input_text.carico_8_switch') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 8 - Condition 2 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 8 - Condition 3 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.carico_8_potenza')) |int > 10 }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 8 - Condition 4 - Ok"
     - service: input_number.set_value
       data_template:
         value: "{{ states(states('input_text.carico_8_potenza')) }}"
         entity_id: input_number.potenza_8_phantom
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 8 - Spostata potenza da carico {{ states(states('input_text.carico_8_potenza')) }} a phantom {{states.input_number.potenza_8_phantom.state}} (dovrebbero essere uguali)."
     - service_template: switch.turn_off
       data_template:
         entity_id: "{{ states('input_text.carico_8_switch') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 8 - Spento carico"        
     - service: notify.tutti
       data:
         title: Limite potenza superato
@@ -891,28 +1391,64 @@ script:
         data:
           push:
             thread-id: "powercontrol"
-    - delay:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 8 - Inviata notifica. Attendo {{ states.input_number.attesa_stop.state }} secondi "
+    - delay: 
         seconds: "{{ states.input_number.attesa_stop.state }}"
     mode: single
+
 
   controllo_carichi_stop_9:
     alias: PowerControl - Stop Carico 9
     sequence:
     - condition: template
       value_template: "{{ states('input_text.carico_9_potenza') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 9 - Condition 1 - Ok"
     - condition: template
       value_template: "{{ states('input_text.carico_9_switch') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 9 - Condition 2 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 9 - Condition 3 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.carico_9_potenza')) |int > 10 }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 9 - Condition 4 - Ok"
     - service: input_number.set_value
       data_template:
         value: "{{ states(states('input_text.carico_9_potenza')) }}"
         entity_id: input_number.potenza_9_phantom
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 9 - Spostata potenza da carico {{ states(states('input_text.carico_9_potenza')) }} a phantom {{states.input_number.potenza_9_phantom.state}} (dovrebbero essere uguali)."
     - service_template: switch.turn_off
       data_template:
         entity_id: "{{ states('input_text.carico_9_switch') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 9 - Spento carico"        
     - service: notify.tutti
       data:
         title: Limite potenza superato
@@ -920,28 +1456,64 @@ script:
         data:
           push:
             thread-id: "powercontrol"
-    - delay:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 9 - Inviata notifica. Attendo {{ states.input_number.attesa_stop.state }} secondi "
+    - delay: 
         seconds: "{{ states.input_number.attesa_stop.state }}"
     mode: single
+
 
   controllo_carichi_stop_10:
     alias: PowerControl - Stop Carico 10
     sequence:
     - condition: template
       value_template: "{{ states('input_text.carico_10_potenza') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 10 - Condition 1 - Ok"
     - condition: template
       value_template: "{{ states('input_text.carico_10_switch') != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 10 - Condition 2 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 10 - Condition 3 - Ok"
     - condition: template
       value_template: "{{ states(states('input_text.carico_10_potenza')) |int > 10 }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 10 - Condition 4 - Ok"
     - service: input_number.set_value
       data_template:
         value: "{{ states(states('input_text.carico_10_potenza')) }}"
         entity_id: input_number.potenza_10_phantom
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 10 - Spostata potenza da carico {{ states(states('input_text.carico_10_potenza')) }} a phantom {{states.input_number.potenza_10_phantom.state}} (dovrebbero essere uguali)."
     - service_template: switch.turn_off
       data_template:
         entity_id: "{{ states('input_text.carico_10_switch') }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 10 - Spento carico"        
     - service: notify.tutti
       data:
         title: Limite potenza superato
@@ -949,7 +1521,12 @@ script:
         data:
           push:
             thread-id: "powercontrol"
-    - delay:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico 10 - Inviata notifica. Attendo {{ states.input_number.attesa_stop.state }} secondi "
+    - delay: 
         seconds: "{{ states.input_number.attesa_stop.state }}"
     mode: single
 
