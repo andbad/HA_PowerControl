@@ -30,3 +30,12 @@ Ma utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando
 ![Screeshot 1](https://user-images.githubusercontent.com/7837288/105701283-609ac700-5f0a-11eb-89f4-7247a5a82a36.png)
 
 ![Screenshot 2](https://user-images.githubusercontent.com/7837288/105701281-5f699a00-5f0a-11eb-804b-0b9013cb245f.png)
+
+# Debug
+E' possibile attivare la scrittura di messaggi di log abilitando il componente relativo nella sezione logger del file di configurazione configuration.yaml:
+```python
+logger:
+  default: error
+  logs:
+    homeassistant.components.pc: debug
+```
