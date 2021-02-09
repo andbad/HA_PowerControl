@@ -301,7 +301,7 @@ automation:
 #Automazione che si triggera nel momento in cui la la potenza utilizzata supera la potenza massima impostata.
 #Agisce dopo TOT secondi dal superamento del limite, avvia lo script di distacco ed invia notifica di intervento.
 #Ripete l'avvio dello script di distacco finché la potenza impegnata non rientra nel limite.
-  - id: '1601646713411'
+  - id: 'powercontrol_carichi_stop'
     alias: PowerControl - Carichi Stop
     description: ''
     trigger:
@@ -335,7 +335,7 @@ automation:
     mode: single
 
 # Se per TOT minuti il limite di potenza è rispettato, avvia lo script di riattivazione dei carichi fino a che la potenza "phantom" non è zero.
-  - id: '1603804036559'
+  - id: 'powercontrol_carichi_start'
     alias: PowerControl - Carichi Start
     description: ''
     trigger:
@@ -371,7 +371,7 @@ automation:
     mode: single
 
 # All'avvio di HA, aggiorna gli input_slider con la lista delle entità per i campi di configurazione.
-  - id: '1603804036666'
+  - id: 'powercontrol_configurazione_popola_entita'
     alias: PowerControl - Configurazione- Popola entità
     trigger:
       - platform: homeassistant
@@ -391,7 +391,8 @@ automation:
     mode: single
 
 # All'avvio di HA carica la configurazione di interrutti e sensori di potenza.
-  - alias: PowerControl - Configurazione - Carica
+  - id: 'powercontrol_configurazione_carica'
+    alias: PowerControl - Configurazione - Carica
     trigger:
       platform: homeassistant
       event: start
@@ -401,8 +402,6 @@ automation:
           level: debug
           logger: homeassistant.components.pc
           message: "Automazione Configurazione - Carica - Avvio automazione, attendo fine automazione popola_entita_per_configurazione_pc"
-#      - delay:
-#          seconds: 15
       - wait_template: "{{ state_attr('automation.popola_entita_per_configurazione_pc','current') == 0 }}"
       - service: system_log.write
         data_template:
@@ -502,7 +501,8 @@ automation:
           message: "Automazione Configurazione - Carica - Fine caricamento"
 
 # Quando viene modificato un parametro nella configurazione di PC tramite gli input_select, carica il valore nell'input_text relativo.
-  - alias: PowerControl - Configurazione - Salva
+  - id: 'powercontrol_configurazione_salva'
+    alias: PowerControl - Configurazione - Salva
     trigger:
       platform: state
       entity_id: input_select.potenza_carichi
@@ -512,8 +512,6 @@ automation:
           level: debug
           logger: homeassistant.components.pc
           message: "Automazione Configurazione - Salva - Avvio automazione, attendo fine automazione powercontrol_configurazione_carica"
-#      - delay:
-#          seconds: 20
       - wait_template: "{{ state_attr('automation.powercontrol_configurazione_carica','current') == 0 }}"
       - service: system_log.write
         data_template:
