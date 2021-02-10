@@ -505,7 +505,29 @@ automation:
     alias: PowerControl - Configurazione - Salva
     trigger:
       platform: state
-      entity_id: input_select.potenza_carichi
+      entity_id: 
+        - input_select.potenza_carichi
+        - input_select.carico_1_potenza
+        - input_select.carico_2_potenza
+        - input_select.carico_3_potenza
+        - input_select.carico_4_potenza
+        - input_select.carico_5_potenza
+        - input_select.carico_6_potenza
+        - input_select.carico_7_potenza
+        - input_select.carico_8_potenza
+        - input_select.carico_9_potenza
+        - input_select.carico_10_potenza
+        - input_text.carico_1_switch
+        - input_text.carico_2_switch
+        - input_text.carico_3_switch
+        - input_text.carico_4_switch
+        - input_text.carico_5_switch
+        - input_text.carico_6_switch
+        - input_text.carico_7_switch
+        - input_text.carico_8_switch
+        - input_text.carico_9_switch
+        - input_text.carico_10_switch
+      
     action:
       - service: system_log.write
         data_template:
@@ -513,6 +535,8 @@ automation:
           logger: homeassistant.components.pc
           message: "Automazione Configurazione - Salva - Avvio automazione, attendo fine automazione powercontrol_configurazione_carica"
       - wait_template: "{{ state_attr('automation.powercontrol_configurazione_carica','current') == 0 }}"
+      
+      
       - service: system_log.write
         data_template:
           level: debug
@@ -522,6 +546,8 @@ automation:
         data:
           entity_id: input_text.potenza_carichi
           value: "{{ states.input_select.potenza_carichi.state }}"
+
+
 
       - service: input_text.set_value
         data:
@@ -563,6 +589,8 @@ automation:
         data:
           entity_id: input_text.carico_10_potenza
           value: "{{ states.input_select.carico_10_potenza.state }}"
+
+
 
       - service: input_text.set_value
         data:
