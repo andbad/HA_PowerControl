@@ -340,7 +340,7 @@ automation:
     description: ''
     trigger:
     - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int }}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.sensor.potenza_carichi_phantom.state|int < states.sensor.potenza_massima.state|int and states.sensor.potenza_carichi_phantom.state|int > 0 }}"
       for:
         minutes: "{{ states.input_number.tempo_start.state|int }}"
     condition:
@@ -354,7 +354,7 @@ automation:
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Automazione start carichi triggerata: Potenza carichi ({{ states(states('input_text.potenza_carichi'))|int}}) < Potenza massima ({{states.sensor.potenza_massima.state|int }}) "
+        message: "Automazione start carichi triggerata: Potenza carichi+phantom ({{ states(states('input_text.potenza_carichi'))|int + states.sensor.potenza_carichi_phantom.state|int}}) < Potenza massima ({{states.sensor.potenza_massima.state|int }}) "
     - repeat:
         until:
         - condition: template
@@ -390,7 +390,7 @@ automation:
         message: "Automazione Configurazione- Popola entità - Script python terminato"
     mode: single
 
-# All'avvio di HA carica la configurazione di interrutti e sensori di potenza.
+# All'avvio di HA carica la configurazione di interruttori e sensori di potenza.
   - id: 'powercontrol_configurazione_carica'
     alias: PowerControl - Configurazione - Carica
     trigger:
@@ -535,9 +535,9 @@ automation:
           logger: homeassistant.components.pc
           message: "Automazione Configurazione - Salva - Avvio automazione, attendo fine automazione powercontrol_configurazione_carica"
       - wait_template: "{{ state_attr('automation.powercontrol_configurazione_carica','current') == 0 }}"
-      
-      
       - service: system_log.write
+      
+      
         data_template:
           level: debug
           logger: homeassistant.components.pc
@@ -546,7 +546,6 @@ automation:
         data:
           entity_id: input_text.potenza_carichi
           value: "{{ states.input_select.potenza_carichi.state }}"
-
 
 
       - service: input_text.set_value
