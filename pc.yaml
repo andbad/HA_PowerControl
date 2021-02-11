@@ -402,7 +402,7 @@ automation:
           level: debug
           logger: homeassistant.components.pc
           message: "Automazione Configurazione - Carica - Avvio automazione, attendo fine automazione popola_entita_per_configurazione_pc"
-      - wait_template: "{{ state_attr('automation.popola_entita_per_configurazione_pc','current') == 0 }}"
+      - wait_template: "{{ state_attr('automation.powercontrol_configurazione_popola_entita','current') == 0 }}"
       - service: system_log.write
         data_template:
           level: debug
