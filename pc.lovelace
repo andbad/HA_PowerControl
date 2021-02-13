@@ -28,8 +28,6 @@
               - entity: sensor.potenza_carichi_phantom
                 name: Potenza in attesa
                 icon: 'hass:power-plug-off'
-              - entity: script.controllo_carichi_reset
-                name: Resetta stato potenza in attesa
             state_color: true
             show_header_toggle: false
           - type: conditional
