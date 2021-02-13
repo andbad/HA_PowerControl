@@ -27,9 +27,9 @@ Naturalmente in questo modo non si può valutare il consumo complessivo, quindi 
 Ma utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando sulla tolleranze di 180 minuti fino al 33% (nell'es. 4kW) dovrebbe essere funzionale.
 
 # Screenshot
-![Screeshot 1](https://user-images.githubusercontent.com/7837288/105701283-609ac700-5f0a-11eb-89f4-7247a5a82a36.png)
+![image](https://user-images.githubusercontent.com/7837288/107847400-773a8c80-6deb-11eb-9c08-90e9998ffe08.png)
 
-![Screenshot 2](https://user-images.githubusercontent.com/7837288/105701281-5f699a00-5f0a-11eb-804b-0b9013cb245f.png)
+![image](https://user-images.githubusercontent.com/7837288/107847409-8f121080-6deb-11eb-928e-3115360aa561.png)
 
 # Debug
 E' possibile attivare la scrittura di messaggi di log abilitando il componente relativo nella sezione logger del file di configurazione configuration.yaml:
