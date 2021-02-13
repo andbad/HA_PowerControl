@@ -13,7 +13,7 @@ Il pacchetto è funzionante ma non ottimizzato.
 - Copiare il file "update_entities.py" nella directory "python_scripts"
 - Abilitare i packages: https://www.home-assistant.io/docs/configuration/packages/
 - Abilitare gli script python: https://www.home-assistant.io/integrations/python_script/
-- Aggiungere il contenuto del file "pc_lovelace.yaml" all'interfaccia Lovelace.
+- Aggiungere il contenuto del file "pc.lovelace" all'interfaccia Lovelace.
 - Creare un gruppo di notifica "notify.tutti" nel file "configuration.yaml" ed inserirvi i device che riceveranno le notifiche di intervento.
 
 # Configurazione
