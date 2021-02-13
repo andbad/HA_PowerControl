@@ -298,78 +298,6 @@ input_select:
 #################################################################
 
 automation:
-#Automazione che si triggera nel momento in cui la la potenza utilizzata supera la potenza massima impostata.
-#Agisce dopo TOT secondi dal superamento del limite, avvia lo script di distacco ed invia notifica di intervento.
-#Ripete l'avvio dello script di distacco finché la potenza impegnata non rientra nel limite.
-  - id: 'powercontrol_carichi_stop'
-    alias: PowerControl - Carichi Stop
-    description: ''
-    trigger:
-    - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi')) |int > states.sensor.potenza_massima.state|int }}"
-      for: 
-        seconds: "{{ states.input_number.tempo_stop.state|int }}"
-    condition:
-    - condition: state
-      entity_id: input_boolean.attiva_power_control
-      state: 'on'
-    action:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Automazione Carichi Stop triggerata: Potenza carichi ({{ states(states('input_text.potenza_carichi'))|int }})>Potenza massima({{states.sensor.potenza_massima.state|int }})"
-    - repeat:
-        sequence:
-          - service: system_log.write
-            data_template:
-              level: debug
-              logger: homeassistant.components.pc
-              message: "Avviato script stop carichi: potenza carichi {{ states(states('input_text.potenza_carichi'))|int}}"
-          - service: script.turn_on
-            data: {}
-            entity_id: script.stop_carichi_generale
-        until:
-          - condition: template
-            value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int }}"
-    mode: single
-
-# Se per TOT minuti il limite di potenza è rispettato, avvia lo script di riattivazione dei carichi fino a che la potenza "phantom" non è zero.
-  - id: 'powercontrol_carichi_start'
-    alias: PowerControl - Carichi Start
-    description: ''
-    trigger:
-    - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.sensor.potenza_carichi_phantom.state|int < states.sensor.potenza_massima.state|int and states.sensor.potenza_carichi_phantom.state|int > 0 }}"
-      for:
-        minutes: "{{ states.input_number.tempo_start.state|int }}"
-    condition:
-    - condition: state
-      entity_id: input_boolean.attiva_power_control 
-      state: 'on'
-    - condition: template
-      value_template: "{{ states.sensor.potenza_carichi_phantom.state|int > 0 }}"
-    action:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Automazione start carichi triggerata: Potenza carichi+phantom ({{ states(states('input_text.potenza_carichi'))|int + states.sensor.potenza_carichi_phantom.state|int}}) < Potenza massima ({{states.sensor.potenza_massima.state|int }}) "
-    - repeat:
-        until:
-        - condition: template
-          value_template: '{{ states.sensor.potenza_carichi_phantom.state|int > 0 }}'
-        sequence:
-        - service: system_log.write
-          data_template:
-            level: debug
-            logger: homeassistant.components.pc
-            message: "Avvio script start carichi: phantom ({{ states.sensor.potenza_carichi_phantom.state|int }})>0 "
-        - service: script.turn_on
-          data: {}
-          entity_id: script.start_carichi_generale
-    mode: single
-
 # All'avvio di HA, aggiorna gli input_slider con la lista delle entità per i campi di configurazione.
   - id: 'powercontrol_configurazione_popola_entita'
     alias: PowerControl - Configurazione- Popola entità
@@ -637,6 +565,131 @@ automation:
           logger: homeassistant.components.pc
           message: "Automazione Configurazione - Salva - Fine salvataggio"
 
+
+#Automazione che si triggera nel momento in cui la la potenza utilizzata supera la potenza massima impostata.
+#Agisce dopo TOT secondi dal superamento del limite, avvia lo script di distacco ed invia notifica di intervento.
+#Ripete l'avvio dello script di distacco finché la potenza impegnata non rientra nel limite.
+  - id: 'powercontrol_carichi_stop'
+    alias: PowerControl - Carichi Stop
+    description: ''
+    trigger:
+    - platform: template
+      value_template: "{{ states(states('input_text.potenza_carichi')) |int > states.sensor.potenza_massima.state|int }}"
+      for: 
+        seconds: "{{ states.input_number.tempo_stop.state|int }}"
+    condition:
+    - condition: state
+      entity_id: input_boolean.attiva_power_control
+      state: 'on'
+    action:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Automazione Carichi Stop triggerata: Potenza carichi ({{ states(states('input_text.potenza_carichi'))|int }})>Potenza massima({{states.sensor.potenza_massima.state|int }})"
+    - repeat:
+        sequence:
+          - service: system_log.write
+            data_template:
+              level: debug
+              logger: homeassistant.components.pc
+              message: "Avviato script stop carichi: potenza carichi {{ states(states('input_text.potenza_carichi'))|int}}"
+          - service: script.turn_on
+            data: {}
+            entity_id: script.stop_carichi_generale
+        until:
+          - condition: template
+            value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int }}"
+    mode: single
+
+# Se per TOT minuti il limite di potenza è rispettato, avvia lo script di riattivazione dei carichi fino a che la potenza "phantom" non è zero.
+  - id: 'powercontrol_carichi_start'
+    alias: PowerControl - Carichi Start
+    description: ''
+    trigger:
+    - platform: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.sensor.potenza_carichi_phantom.state|int < states.sensor.potenza_massima.state|int and states.sensor.potenza_carichi_phantom.state|int > 0 }}"
+      for:
+        minutes: "{{ states.input_number.tempo_start.state|int }}"
+    condition:
+    - condition: state
+      entity_id: input_boolean.attiva_power_control 
+      state: 'on'
+    - condition: template
+      value_template: "{{ states.sensor.potenza_carichi_phantom.state|int > 0 }}"
+    action:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Automazione start carichi triggerata: Potenza carichi+phantom ({{ states(states('input_text.potenza_carichi'))|int + states.sensor.potenza_carichi_phantom.state|int}}) < Potenza massima ({{states.sensor.potenza_massima.state|int }}) "
+    - repeat:
+        until:
+        - condition: template
+          value_template: '{{ states.sensor.potenza_carichi_phantom.state|int > 0 }}'
+        sequence:
+        - service: system_log.write
+          data_template:
+            level: debug
+            logger: homeassistant.components.pc
+            message: "Avvio script start carichi: phantom ({{ states.sensor.potenza_carichi_phantom.state|int }})>0 "
+        - service: script.turn_on
+          data: {}
+          entity_id: script.start_carichi_generale
+    mode: single
+
+  - id: 'powercontrol_watchdog_phantom'
+    alias: PowerControl - Controllo su riattivazione manuale
+    description: >-
+      Monitora gli switch dei carichi e, se uno di questi è attivo ma la sua potenza
+      phantom è diversa da 0, la porta a zero.
+    trigger:
+      - platform: template
+        value_template: >
+              {{
+              ( states(states('input_text.carico_1_switch')) == 'on' and states.input_number.potenza_1_phantom.state|int > 0 ) or
+              ( states(states('input_text.carico_2_switch')) == 'on' and states.input_number.potenza_2_phantom.state|int > 0 ) or
+              ( states(states('input_text.carico_3_switch')) == 'on' and states.input_number.potenza_3_phantom.state|int > 0 ) or
+              ( states(states('input_text.carico_4_switch')) == 'on' and states.input_number.potenza_4_phantom.state|int > 0 ) or
+              ( states(states('input_text.carico_5_switch')) == 'on' and states.input_number.potenza_5_phantom.state|int > 0 ) or
+              ( states(states('input_text.carico_6_switch')) == 'on' and states.input_number.potenza_6_phantom.state|int > 0 ) or
+              ( states(states('input_text.carico_7_switch')) == 'on' and states.input_number.potenza_7_phantom.state|int > 0 ) or
+              ( states(states('input_text.carico_8_switch')) == 'on' and states.input_number.potenza_8_phantom.state|int > 0 ) or
+              ( states(states('input_text.carico_9_switch')) == 'on' and states.input_number.potenza_9_phantom.state|int > 0 ) or
+              ( states(states('input_text.carico_10_switch')) == 'on' and states.input_number.potenza_10_phantom.state|int > 0 )
+              }}
+        for:
+          seconds: 5
+    condition: []
+    action:
+      - service: system_log.write
+        data_template:
+          level: debug
+          logger: homeassistant.components.pc
+          message: Automazione Check riattivazione manuale - Avvio
+      - service: input_number.set_value
+        data_template:
+          value: 0
+          entity_id: "{% if states(states('input_text.carico_1_switch')) == 'on' and states.input_number.potenza_1_phantom.state|int > 0 %}input_number.potenza_1_phantom
+          {% elif states(states('input_text.carico_2_switch')) == 'on' and states.input_number.potenza_2_phantom.state|int > 0 %}input_number.potenza_2_phantom
+          {% elif states(states('input_text.carico_3_switch')) == 'on' and states.input_number.potenza_3_phantom.state|int > 0 %}input_number.potenza_3_phantom
+          {% elif states(states('input_text.carico_4_switch')) == 'on' and states.input_number.potenza_4_phantom.state|int > 0 %}input_number.potenza_4_phantom
+          {% elif states(states('input_text.carico_5_switch')) == 'on' and states.input_number.potenza_5_phantom.state|int > 0 %}input_number.potenza_5_phantom
+          {% elif states(states('input_text.carico_6_switch')) == 'on' and states.input_number.potenza_6_phantom.state|int > 0 %}input_number.potenza_6_phantom
+          {% elif states(states('input_text.carico_7_switch')) == 'on' and states.input_number.potenza_7_phantom.state|int > 0 %}input_number.potenza_7_phantom
+          {% elif states(states('input_text.carico_8_switch')) == 'on' and states.input_number.potenza_8_phantom.state|int > 0 %}input_number.potenza_8_phantom
+          {% elif states(states('input_text.carico_9_switch')) == 'on' and states.input_number.potenza_9_phantom.state|int > 0 %}input_number.potenza_9_phantom
+          {% elif states(states('input_text.carico_10_switch')) == 'on' and states.input_number.potenza_10_phantom.state|int > 0 %}input_number.potenza_10_phantom
+          {% else %}none
+          {% endif %}"
+      - service: system_log.write
+        data_template:
+          level: debug
+          logger: homeassistant.components.pc
+          message: Automazione Check riattivazione manuale - Fine
+    mode: single
+    
+    
 #################################################################
 ######################### SCRIPT  ###############################
 #################################################################
@@ -942,7 +995,7 @@ script:
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 4 - Ok - {{ states(phantom) }}"
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 4 - Ok"
     - service: input_number.set_value
       data_template:
         value: "{{ states(potenza) }}"
@@ -1065,530 +1118,4 @@ script:
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Inviata notifica. Attendo {{ states.input_number.attesa_start.state }} minuti"
     - delay:
         minutes: "{{ states.input_number.attesa_start.state }}"
-    mode: single
-
-
-#################################################################
-###################### RESET CARICHI ############################
-#################################################################
-# Script per resettare il valore phantom di tutti i carichi, utile in caso si sia riacceso un carico senza passare dalle funzioni del pacchetto.
-# Invia una notifica generale al termine del reset.
-
-  controllo_carichi_reset:
-    alias: PowerControl - Reset
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Reset Carichi - Avvio"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_1_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Reset Carichi - Resettato carico 1"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_2_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Reset Carichi - Resettato carico 2"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_3_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Reset Carichi - Resettato carico 3"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_4_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Reset Carichi - Resettato carico 4"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_5_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Reset Carichi - Resettato carico 5"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_6_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Reset Carichi - Resettato carico 6"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_7_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Reset Carichi - Resettato carico 7"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_8_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Reset Carichi - Resettato carico 8"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_9_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Reset Carichi - Resettato carico 9"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_10_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Reset Carichi - Resettato carico 10"
-    - service: notify.tutti
-      data:
-        title: Reset eseguito
-        message: "I carichi in attesa sono stati resettati. E' possibile procedere con la riattivazione manuale degli interruttori."
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Reset Carichi - Inviata notifica"
-    mode: single
-
-
-#################################################################
-################## START MANUALE CARICHI ########################
-#################################################################
-# Conquesti script è possibile riattivare manualmente un carico.
-# Oltre a riattivare l'interruttore, imposta la potenza phantom a 0 ed invia una notifica. 
-# Sono associati ai relativi pulsanti sul frontend.
-
-  controllo_carichi_start_manuale_1:
-    alias: PowerControl - Start Carico Manuale 1
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 1 - Avvio"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_1_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 1 - Impostata potenza phantom a zero"
-    - service_template: switch.turn_on
-      data_template:
-        entity_id: "{{ states('input_text.carico_1_switch') }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 1 - Spento carico tramite switch"
-    - service: notify.tutti
-      data:
-        title: Limite potenza rientrato
-        message: "{{ state_attr(states('input_text.carico_1_switch'),'friendly_name') }} Riattivato manualmente"
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 1 - Inviata notifica"
-    mode: single
-
-
-  controllo_carichi_start_manuale_2:
-    alias: PowerControl - Start Carico Manuale 2
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 2 - Avvio"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_2_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 2 - Impostata potenza phantom a zero"
-    - service_template: switch.turn_on
-      data_template:
-        entity_id: "{{ states('input_text.carico_2_switch') }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 2 - Spento carico tramite switch"
-    - service: notify.tutti
-      data:
-        title: Limite potenza rientrato
-        message: "{{ state_attr(states('input_text.carico_2_switch'),'friendly_name') }} Riattivato manualmente"
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 2 - Inviata notifica"
-    mode: single
-
-
-  controllo_carichi_start_manuale_3:
-    alias: PowerControl - Start Carico Manuale 3
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 3 - Avvio"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_3_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 3 - Impostata potenza phantom a zero"
-    - service_template: switch.turn_on
-      data_template:
-        entity_id: "{{ states('input_text.carico_3_switch') }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 3 - Spento carico tramite switch"
-    - service: notify.tutti
-      data:
-        title: Limite potenza rientrato
-        message: "{{ state_attr(states('input_text.carico_3_switch'),'friendly_name') }} Riattivato manualmente"
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 3 - Inviata notifica"
-    mode: single
-
-
-  controllo_carichi_start_manuale_4:
-    alias: PowerControl - Start Carico Manuale 4
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 4 - Avvio"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_4_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 4 - Impostata potenza phantom a zero"
-    - service_template: switch.turn_on
-      data_template:
-        entity_id: "{{ states('input_text.carico_4_switch') }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 4 - Spento carico tramite switch"
-    - service: notify.tutti
-      data:
-        title: Limite potenza rientrato
-        message: "{{ state_attr(states('input_text.carico_4_switch'),'friendly_name') }} Riattivato manualmente"
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 4 - Inviata notifica"
-    mode: single
-
-
-  controllo_carichi_start_manuale_5:
-    alias: PowerControl - Start Carico Manuale 5
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 5 - Avvio"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_5_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 5 - Impostata potenza phantom a zero"
-    - service_template: switch.turn_on
-      data_template:
-        entity_id: "{{ states('input_text.carico_5_switch') }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 5 - Spento carico tramite switch"
-    - service: notify.tutti
-      data:
-        title: Limite potenza rientrato
-        message: "{{ state_attr(states('input_text.carico_5_switch'),'friendly_name') }} Riattivato manualmente"
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 5 - Inviata notifica"
-    mode: single
-
-
-  controllo_carichi_start_manuale_6:
-    alias: PowerControl - Start Carico Manuale 6
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 6 - Avvio"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_6_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 6 - Impostata potenza phantom a zero"
-    - service_template: switch.turn_on
-      data_template:
-        entity_id: "{{ states('input_text.carico_6_switch') }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 6 - Spento carico tramite switch"
-    - service: notify.tutti
-      data:
-        title: Limite potenza rientrato
-        message: "{{ state_attr(states('input_text.carico_6_switch'),'friendly_name') }} Riattivato manualmente"
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 6 - Inviata notifica"
-    mode: single
-
-
-  controllo_carichi_start_manuale_7:
-    alias: PowerControl - Start Carico Manuale 7
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 7 - Avvio"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_7_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 7 - Impostata potenza phantom a zero"
-    - service_template: switch.turn_on
-      data_template:
-        entity_id: "{{ states('input_text.carico_7_switch') }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 7 - Spento carico tramite switch"
-    - service: notify.tutti
-      data:
-        title: Limite potenza rientrato
-        message: "{{ state_attr(states('input_text.carico_7_switch'),'friendly_name') }} Riattivato manualmente"
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 7 - Inviata notifica"
-    mode: single
-
-
-  controllo_carichi_start_manuale_8:
-    alias: PowerControl - Start Carico Manuale 8
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 8 - Avvio"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_8_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 8 - Impostata potenza phantom a zero"
-    - service_template: switch.turn_on
-      data_template:
-        entity_id: "{{ states('input_text.carico_8_switch') }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 8 - Spento carico tramite switch"
-    - service: notify.tutti
-      data:
-        title: Limite potenza rientrato
-        message: "{{ state_attr(states('input_text.carico_9_switch'),'friendly_name') }} Riattivato manualmente"
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 9 - Inviata notifica"
-    mode: single
-
-
-  controllo_carichi_start_manuale_9:
-    alias: PowerControl - Start Carico Manuale 9
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 9 - Avvio"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_9_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 9 - Impostata potenza phantom a zero"
-    - service_template: switch.turn_on
-      data_template:
-        entity_id: "{{ states('input_text.carico_9_switch') }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 9 - Spento carico tramite switch"
-    - service: notify.tutti
-      data:
-        title: Limite potenza rientrato
-        message: "{{ state_attr(states('input_text.carico_9_switch'),'friendly_name') }} Riattivato manualmente"
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 9 - Inviata notifica"
-    mode: single
-
-
-  controllo_carichi_start_manuale_10:
-    alias: PowerControl - Start Carico Manuale 10
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 10 - Avvio"
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: input_number.potenza_10_phantom
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 10 - Impostata potenza phantom a zero"
-    - service_template: switch.turn_on
-      data_template:
-        entity_id: "{{ states('input_text.carico_10_switch') }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 10 - Spento carico tramite switch"
-    - service: notify.tutti
-      data:
-        title: Limite potenza rientrato
-        message: "{{ state_attr(states('input_text.carico_10_switch'),'friendly_name') }} Riattivato manualmente"
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico Manuale 10 - Inviata notifica"
     mode: single
