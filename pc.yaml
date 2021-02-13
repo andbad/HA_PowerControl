@@ -300,7 +300,7 @@ input_select:
 automation:
 # All'avvio di HA, aggiorna gli input_slider con la lista delle entità per i campi di configurazione.
   - id: 'powercontrol_configurazione_popola_entita'
-    alias: PowerControl - Configurazione- Popola entità
+    alias: PowerControl - Configurazione - Popola entità
     trigger:
       - platform: homeassistant
         event: start
@@ -711,8 +711,6 @@ script:
         potenza: "{{states('input_text.carico_10_potenza')}}"
         switch: "{{states('input_text.carico_10_switch')}}"
         phantom: "input_number.potenza_10_phantom"
-    - wait_template: "{{ is_state('script.stop_carichi_singolo', 'off') }}"
-    
     - service: system_log.write
       data_template:
         level: debug
@@ -723,8 +721,6 @@ script:
         potenza: "{{states('input_text.carico_9_potenza')}}"
         switch: "{{states('input_text.carico_9_switch')}}"
         phantom: "input_number.potenza_9_phantom"
-    - wait_template: "{{ is_state('script.stop_carichi_singolo', 'off') }}"
-    
     - service: system_log.write
       data_template:
         level: debug
@@ -735,8 +731,6 @@ script:
         potenza: "{{states('input_text.carico_8_potenza')}}"
         switch: "{{states('input_text.carico_8_switch')}}"
         phantom: "input_number.potenza_8_phantom"
-    - wait_template: "{{ is_state('script.stop_carichi_singolo', 'off') }}"
-    
     - service: system_log.write
       data_template:
         level: debug
@@ -747,8 +741,6 @@ script:
         potenza: "{{states('input_text.carico_7_potenza')}}"
         switch: "{{states('input_text.carico_7_switch')}}"
         phantom: "input_number.potenza_7_phantom"
-    - wait_template: "{{ is_state('script.stop_carichi_singolo', 'off') }}"
-    
     - service: system_log.write
       data_template:
         level: debug
@@ -759,8 +751,6 @@ script:
         potenza: "{{states('input_text.carico_6_potenza')}}"
         switch: "{{states('input_text.carico_6_switch')}}"
         phantom: "input_number.potenza_6_phantom"
-    - wait_template: "{{ is_state('script.stop_carichi_singolo', 'off') }}"
-    
     - service: system_log.write
       data_template:
         level: debug
@@ -771,8 +761,6 @@ script:
         potenza: "{{states('input_text.carico_5_potenza')}}"
         switch: "{{states('input_text.carico_5_switch')}}"
         phantom: "input_number.potenza_5_phantom"
-    - wait_template: "{{ is_state('script.stop_carichi_singolo', 'off') }}"
-    
     - service: system_log.write
       data_template:
         level: debug
@@ -783,8 +771,6 @@ script:
         potenza: "{{states('input_text.carico_4_potenza')}}"
         switch: "{{states('input_text.carico_4_switch')}}"
         phantom: "input_number.potenza_4_phantom"
-    - wait_template: "{{ is_state('script.stop_carichi_singolo', 'off') }}"
-    
     - service: system_log.write
       data_template:
         level: debug
@@ -795,8 +781,6 @@ script:
         potenza: "{{states('input_text.carico_3_potenza')}}"
         switch: "{{states('input_text.carico_3_switch')}}"
         phantom: "input_number.potenza_3_phantom"
-    - wait_template: "{{ is_state('script.stop_carichi_singolo', 'off') }}"
-    
     - service: system_log.write
       data_template:
         level: debug
@@ -807,8 +791,6 @@ script:
         potenza: "{{states('input_text.carico_2_potenza')}}"
         switch: "{{states('input_text.carico_2_switch')}}"
         phantom: "input_number.potenza_2_phantom"
-    - wait_template: "{{ is_state('script.stop_carichi_singolo', 'off') }}"
-    
     - service: system_log.write
       data_template:
         level: debug
@@ -819,8 +801,6 @@ script:
         potenza: "{{states('input_text.carico_1_potenza')}}"
         switch: "{{states('input_text.carico_1_switch')}}"
         phantom: "input_number.potenza_1_phantom"
-    - wait_template: "{{ is_state('script.stop_carichi_singolo', 'off') }}"
-
     mode: single
 
 # I carichi vengono riattivati secondo l'ordine numerico (da maggiore priorità a minore priorità)
@@ -838,8 +818,6 @@ script:
         potenza: "{{states('input_text.carico_1_potenza')}}"
         switch: "{{states('input_text.carico_1_switch')}}"
         phantom: "input_number.potenza_1_phantom"
-    - wait_template: "{{ is_state('script.start_carichi_singolo', 'off') }}"
-
     - service: system_log.write
       data_template:
         level: debug
@@ -850,8 +828,6 @@ script:
         potenza: "{{states('input_text.carico_2_potenza')}}"
         switch: "{{states('input_text.carico_2_switch')}}"
         phantom: "input_number.potenza_2_phantom"
-    - wait_template: "{{ is_state('script.start_carichi_singolo', 'off') }}"
-
     - service: system_log.write
       data_template:
         level: debug
@@ -862,8 +838,6 @@ script:
         potenza: "{{states('input_text.carico_3_potenza')}}"
         switch: "{{states('input_text.carico_3_switch')}}"
         phantom: "input_number.potenza_3_phantom"
-    - wait_template: "{{ is_state('script.start_carichi_singolo', 'off') }}"
-
     - service: system_log.write
       data_template:
         level: debug
@@ -874,8 +848,6 @@ script:
         potenza: "{{states('input_text.carico_4_potenza')}}"
         switch: "{{states('input_text.carico_4_switch')}}"
         phantom: "input_number.potenza_4_phantom"
-    - wait_template: "{{ is_state('script.start_carichi_singolo', 'off') }}"
-
     - service: system_log.write
       data_template:
         level: debug
@@ -886,8 +858,6 @@ script:
         potenza: "{{states('input_text.carico_5_potenza')}}"
         switch: "{{states('input_text.carico_5_switch')}}"
         phantom: "input_number.potenza_5_phantom"
-    - wait_template: "{{ is_state('script.start_carichi_singolo', 'off') }}"
-
     - service: system_log.write
       data_template:
         level: debug
@@ -898,8 +868,6 @@ script:
         potenza: "{{states('input_text.carico_6_potenza')}}"
         switch: "{{states('input_text.carico_6_switch')}}"
         phantom: "input_number.potenza_6_phantom"
-    - wait_template: "{{ is_state('script.start_carichi_singolo', 'off') }}"
-
     - service: system_log.write
       data_template:
         level: debug
@@ -910,8 +878,6 @@ script:
         potenza: "{{states('input_text.carico_7_potenza')}}"
         switch: "{{states('input_text.carico_7_switch')}}"
         phantom: "input_number.potenza_7_phantom"
-    - wait_template: "{{ is_state('script.start_carichi_singolo', 'off') }}"
-
     - service: system_log.write
       data_template:
         level: debug
@@ -922,8 +888,6 @@ script:
         potenza: "{{states('input_text.carico_8_potenza')}}"
         switch: "{{states('input_text.carico_8_switch')}}"
         phantom: "input_number.potenza_8_phantom"
-    - wait_template: "{{ is_state('script.start_carichi_singolo', 'off') }}"
-
     - service: system_log.write
       data_template:
         level: debug
@@ -934,8 +898,6 @@ script:
         potenza: "{{states('input_text.carico_9_potenza')}}"
         switch: "{{states('input_text.carico_9_switch')}}"
         phantom: "input_number.potenza_9_phantom"
-    - wait_template: "{{ is_state('script.start_carichi_singolo', 'off') }}"
-
     - service: system_log.write
       data_template:
         level: debug
@@ -946,8 +908,6 @@ script:
         potenza: "{{states('input_text.carico_10_potenza')}}"
         switch: "{{states('input_text.carico_10_switch')}}"
         phantom: "input_number.potenza_10_phantom"
-    - wait_template: "{{ is_state('script.start_carichi_singolo', 'off') }}"
-
     mode: single
 
 #################################################################
@@ -1027,7 +987,7 @@ script:
         message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Inviata notifica. Attendo {{ states.input_number.attesa_stop.state }} secondi "
     - delay: 
         seconds: "{{ states.input_number.attesa_stop.state }}"
-    mode: single
+    mode: queued
 
 
 
@@ -1118,4 +1078,4 @@ script:
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Inviata notifica. Attendo {{ states.input_number.attesa_start.state }} minuti"
     - delay:
         minutes: "{{ states.input_number.attesa_start.state }}"
-    mode: single
+    mode: queued
