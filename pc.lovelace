@@ -1,0 +1,229 @@
+  - title: PC
+    path: pc
+    icon: 'hass:car-cruise-control'
+    badges: []
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: history-graph
+            entities:
+              - entity: sensor.potenza_massima
+                name: Massima
+              - entity: sensor.potenza_carichi_selezionato
+                name: In uso
+              - entity: sensor.potenza_carichi_phantom
+                name: In attesa
+            refresh_interval: 0
+            title: Grafico Potenza
+            hours_to_show: 2
+          - type: entities
+            entities:
+              - entity: input_boolean.attiva_power_control
+                icon: 'hass:car-cruise-control'
+              - entity: input_boolean.impostazioni_power_control
+                icon: 'hass:car-cruise-control'
+              - entity: sensor.potenza_carichi_selezionato
+                name: Potenza in uso
+                icon: 'hass:power-plug'
+              - entity: sensor.potenza_carichi_phantom
+                name: Potenza in attesa
+                icon: 'hass:power-plug-off'
+            state_color: true
+            show_header_toggle: false
+          - type: conditional
+            conditions:
+              - entity: input_boolean.impostazioni_power_control
+                state: 'on'
+            card:
+              type: markdown
+              content: >
+                Questa è la configurazione attualmente utilizzata, modificabile
+                tramite i menu a discesa seguenti.
+
+
+                **Sensore rilevamento potenza**:
+                {{states.input_text.potenza_carichi.state}}
+
+
+                **Carico 1**: 
+
+                **Potenza**: {{states.input_text.carico_1_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_1_switch.state}} 
+
+                **Carico 2**: 
+
+                **Potenza**: {{states.input_text.carico_2_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_2_switch.state}} 
+
+                **Carico 3**: 
+
+                **Potenza**: {{states.input_text.carico_3_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_3_switch.state}} 
+
+                **Carico 4**: 
+
+                **Potenza**: {{states.input_text.carico_4_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_4_switch.state}} 
+
+                **Carico 5**: 
+
+                **Potenza**: {{states.input_text.carico_5_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_5_switch.state}} 
+
+                **Carico 6**: 
+
+                **Potenza**: {{states.input_text.carico_6_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_6_switch.state}} 
+
+                **Carico 7**: 
+
+                **Potenza**: {{states.input_text.carico_7_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_7_switch.state}} 
+
+                **Carico 8**: 
+
+                **Potenza**: {{states.input_text.carico_8_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_8_switch.state}} 
+
+                **Carico 9**: 
+
+                **Potenza**: {{states.input_text.carico_9_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_9_switch.state}} 
+
+                **Carico 10**: 
+
+                **Potenza**: {{states.input_text.carico_10_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_10_switch.state}} 
+              title: Configurazione Salvata
+      - type: conditional
+        conditions:
+          - entity: input_boolean.impostazioni_power_control
+            state: 'on'
+        card:
+          type: vertical-stack
+          cards:
+            - type: markdown
+              content: >
+                **Sensore potenza carichi**
+
+                Selezionare il sensore del consumo istantaneo globale. Se non
+                disponibile, è possibile selezionare il sensore
+                "sensor.potenza_carichi_virtuale" che è la somma della potenza
+                utilizzata dai carichi inseriti nei campi sottostanti.
+
+
+                **Potenza Massima**
+
+                Indicare il valore di potenza utilizzata oltre il quale verranno
+                iniziati a scollegare i carichi, ovvero la soglia di intervento
+                del sistema.
+
+
+                **Tempo distacco**
+
+                Dopo tot SECONDI di superamento della potenza massima, inizia il
+                distacco. (suggerito 30)
+
+
+                **Tempo riattivazione**
+
+                Dopo tot MINUTI che la potenza utilizzata è rientrata nei
+                limiti, inizia a riattivare i carichi. (suggerito 3)
+
+
+                **Secondi tra gli Stop**
+
+                Attende tot SECONDI tra un distacco e l'altro. (suggerito 10)
+
+
+                **Minuti tra gli Start**
+
+                Attende tot MINUTI tra una riattivazione e l'altra per dare il
+                tempo al carico di riprendere il suo normale assorbimento.
+                (suggerito 5)
+              title: Configurazione
+            - type: entities
+              entities:
+                - entity: input_select.potenza_carichi
+                  icon: 'hass:chart-line'
+                - entity: input_number.potenza_massima
+                  name: Potenza Massima
+                  icon: 'hass:chart-bell-curve'
+                - entity: input_number.tempo_stop
+                  name: Tempo distacco
+                - entity: input_number.tempo_start
+                  name: Tempo riattivazione
+                - entity: input_number.attesa_stop
+                  name: Secondi tra gli stop
+                - entity: input_number.attesa_start
+                  name: Minuti tra gli start
+              state_color: true
+              show_header_toggle: false
+      - type: conditional
+        conditions:
+          - entity: input_boolean.impostazioni_power_control
+            state: 'on'
+        card:
+          type: vertical-stack
+          cards:
+            - type: markdown
+              content: >
+                **Sensore Carichi**
+
+                Selezionare i sensori di potenza (W) dei carichi da monitorare e
+                scollegare in caso di eccessiva richiesta. I carichi saranno
+                scollegati dal meno prioritario (carico 10) a quello a maggiore
+                priorità.
+            - type: entities
+              entities:
+                - entity: input_select.carico_1_potenza
+                - entity: input_select.carico_2_potenza
+                - entity: input_select.carico_3_potenza
+                - entity: input_select.carico_4_potenza
+                - entity: input_select.carico_5_potenza
+                - entity: input_select.carico_6_potenza
+                - entity: input_select.carico_7_potenza
+                - entity: input_select.carico_8_potenza
+                - entity: input_select.carico_9_potenza
+                - entity: input_select.carico_10_potenza
+              title: Sensori potenza carichi
+      - type: conditional
+        conditions:
+          - entity: input_boolean.impostazioni_power_control
+            state: 'on'
+        card:
+          type: vertical-stack
+          cards:
+            - type: markdown
+              content: >-
+                **Interruttori Carichi**
+
+                Selezionare gli switch relativi ai carichi monitorati nel
+                corrispettivo sensore. I carichi verrrano scollegati in ordine
+                di priorità, a partire dal Carico 10 fino al Carico 1. Dopo che
+                la richiesta di potenza rientra nei limiti, verranno
+                progressivamente ricollegati a partire dal Carico 1 fino al
+                Carico 10.
+            - type: entities
+              entities:
+                - entity: input_select.carico_1_switch
+                - entity: input_select.carico_2_switch
+                - entity: input_select.carico_3_switch
+                - entity: input_select.carico_4_switch
+                - entity: input_select.carico_5_switch
+                - entity: input_select.carico_6_switch
+                - entity: input_select.carico_7_switch
+                - entity: input_select.carico_8_switch
+                - entity: input_select.carico_9_switch
+                - entity: input_select.carico_10_switch
+              title: Interruttori Carichi
