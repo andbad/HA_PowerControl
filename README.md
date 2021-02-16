@@ -14,6 +14,10 @@ La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo 
 - Abilitare gli script python: https://www.home-assistant.io/integrations/python_script/
 - Aggiungere il contenuto del file "pc.lovelace" all'interfaccia Lovelace.
 - Creare un gruppo di notifica "notify.tutti" nel file "configuration.yaml" ed inserirvi i device che riceveranno le notifiche di intervento.
+- Configurare il logger per includere i seguenti sensori:
+  - sensor.potenza_carichi_selezionato
+  - sensor.potenza_carichi_phantom
+  - sensor.potenza_massima
 
 # Configurazione
 Impostare i parametri di configurazione dell'interfaccia grafica Lovelace.
