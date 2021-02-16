@@ -13,12 +13,19 @@
 # La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo di notifica (notify.tutti) che va impostato manualmente.
 # Il pacchetto è funzionante ma non ottimizzato.
 
-recorder:
-  include:
-    entities:
-      - sensor.potenza_carichi_selezionato
-      - sensor.potenza_carichi_phantom
-      - sensor.potenza_massima
+#################################################################
+########################## LOGGER ###############################
+#################################################################
+
+# Per far funzionare il grafico dello storico del pacchetto è necessario aggiungere alla propria configurazione del logger i seguenti sensori.
+# La configurazione seguente è solo un esempio, può variare in base alla configurazione preesistente.
+
+#recorder:
+#  include:
+#    entities:
+#      - sensor.potenza_carichi_selezionato
+#      - sensor.potenza_carichi_phantom
+#      - sensor.potenza_massima
 
 #################################################################
 ########################## SENSORI ##############################
