@@ -1,31 +1,31 @@
 #################################################################
 #################PACKAGE CONTROLLO CARICHI#######################
 #################################################################
+# Credits: andbad                                               #
+# GitHub: https://github.com/andbad/HA_PowerControl             #
+#################################################################
 
 
-# Il package seguente, unito allo script python "update_entities.py" mira ad evitare il distacco del contatore a causa della troppa potenza assorbita dai vari elettrodomestici (carichi).
-# Requisito hardware fondamentale è la presenza di switch sui carichi da controllare e di un sensore che misura la potenza dei singoli carichi. 
+# Il package seguente, unito allo script python "update_entities.py" mira ad evitare il distacco del contatore a causa
+# della troppa potenza assorbita dai vari elettrodomestici (carichi).
+# Requisito hardware fondamentale è la presenza di switch sui carichi da controllare e di un sensore che misura la potenza
+# dei singoli carichi. 
 # Personalmente ho utilizzato dispositivi Shelly 1PM e Shelly Plug S, perfetti per lo scopo.
 # E' consigliato, ma non tassativo, l'utilizzo di un sensore che monitori il consumo complessivo dell'impianto (es. Shelly EM).
-# La logica prevede che in caso l'utilizzo complessivo superi il valore limite impostato, il pacchetto inizi il distacco dei carichi a minore priorità fino a quelli a maggiore priorità,
-# fino a che l'utilizzo complessivo della potenza rientri nel limite prefissato.
-# Lo script tiene memoria dell'assorbimento del carico prima del distacco e lo ricollega solo quando la disponibilità di potenza è sufficiente a non causare un nuovo distacco.
-# La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo di notifica (notify.tutti) che va impostato manualmente.
-# Il pacchetto è funzionante ma non ottimizzato.
+# La logica prevede che in caso l'utilizzo complessivo superi il valore limite impostato, il pacchetto inizi il distacco
+# dei carichi a minore priorità fino a quelli a maggiore priorità, fino a che l'utilizzo complessivo della potenza rientri
+# nel limite prefissato.
+# Lo script tiene memoria dell'assorbimento del carico prima del distacco e lo ricollega solo quando la disponibilità
+# di potenza è sufficiente a non causare un nuovo distacco.
+# La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo di notifica (notify.tutti) che va impostato
+# manualmente.
 
-#################################################################
-########################## LOGGER ###############################
-#################################################################
-
-# Per far funzionare il grafico dello storico del pacchetto è necessario aggiungere alla propria configurazione del logger i seguenti sensori.
-# La configurazione seguente è solo un esempio, può variare in base alla configurazione preesistente.
-
-#recorder:
-#  include:
-#    entities:
-#      - sensor.potenza_carichi_selezionato
-#      - sensor.potenza_carichi_phantom
-#      - sensor.potenza_massima
+recorder:
+  include:
+    entities:
+      - sensor.potenza_carichi_selezionato
+      - sensor.potenza_carichi_phantom
+      - sensor.potenza_massima
 
 #################################################################
 ########################## SENSORI ##############################
@@ -42,10 +42,13 @@ sensor:
 #      unit_of_measurement : "Watt"
 #      icon: mdi:speedometer
 
-# In alternativa è possibile utilizzare i sensori di potenza dei maggiori carichi utilizzati e mantenere un certo margine di tolleranza.
+# In alternativa è possibile utilizzare i sensori di potenza dei maggiori carichi utilizzati e mantenere un certo margine 
+# di tolleranza.
 # Questo comporta di monitorare tutti i maggiori carichi (forno, fornelli, phon, condizionatori, ecc...).
-# Naturalmente in questo modo non si può valutare il consumo complessivo, quindi si potrebbe superare il valore limite senza che intervenga il controllo carichi.
-# Ma utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando sulla tolleranze di 180 minuti fino al 80% (nell'es. 3,6kW) dovrebbe essere funzionale.
+# Naturalmente in questo modo non si può valutare il consumo complessivo, quindi si potrebbe superare il valore limite 
+# senza che intervenga il controllo carichi.
+# Utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando sulla tolleranze di 180 minuti fino al 80% 
+# (nell'es. 3,6kW) è ugualmente funzionale.
   - platform: template
     sensors:
       potenza_carichi_virtuale:
@@ -62,7 +65,8 @@ sensor:
              states(states('input_text.carico_9_potenza'))|int +
              states(states('input_text.carico_10_potenza'))|int }}
 
-# Somma di tutte le potenza "phantom", ovvero i carichi che erano in funzione con un dato assorbimento ma sono stati disattivati.
+# Somma di tutte le potenza "phantom", ovvero i carichi che erano in funzione con un dato assorbimento ma sono stati 
+# disattivati.
   - platform: template
     sensors:
       potenza_carichi_phantom:
@@ -79,6 +83,7 @@ sensor:
              states('input_number.potenza_9_phantom')|int + 
              states('input_number.potenza_10_phantom')|int}}
 
+# Mostra lo stato del sensore selezionato, utile per il grafico.
   - platform: template
     sensors:
       potenza_carichi_selezionato:
@@ -96,6 +101,7 @@ sensor:
 ######################### INPUT_* ###############################
 #################################################################
 input_text:
+# In questi campi viene salvato il nome delle entità selezionate dal front-end.
   carico_1_potenza:
   carico_2_potenza:
   carico_3_potenza:
@@ -132,7 +138,7 @@ input_boolean:
 
 input_number:
 
-# Uso interno. Mantengono memoria della potenza utilizzata al momento del distacco, per valutare la riattivazione.
+# Mantengono memoria della potenza utilizzata al momento del distacco, per valutare la riattivazione.
    potenza_1_phantom:
      initial: 0
      min: 0
@@ -207,8 +213,8 @@ input_number:
      step: 1  
 
 
-# Drop-down per la configurazione di PC. L'elenco di interruttori e sensori viene aggiornato all'avvio di HA.
 input_select:
+# Drop-down per la configurazione di PC. L'elenco di interruttori e sensori viene aggiornato all'avvio di HA.
 
 # Selezione dele sensore di  potenza utilizzata. Se non configurato, viene utilizzato il sensore virtuale 
   potenza_carichi:
@@ -303,8 +309,8 @@ input_select:
 #################################################################
 ####################### AUTOMAZIONI #############################
 #################################################################
-
 automation:
+
 # All'avvio di HA, aggiorna gli input_slider con la lista delle entità per i campi di configurazione.
   - id: 'powercontrol_configurazione_popola_entita'
     alias: PowerControl - Configurazione - Popola entità
@@ -325,7 +331,8 @@ automation:
         message: "Automazione Configurazione - Popola entità - Script python terminato"
     mode: single
 
-# All'avvio di HA carica la configurazione di interruttori e sensori di potenza.
+# All'avvio di HA attende che l'automazione "Popola entità" termini, poi carica la configurazione di interruttori
+# e sensori di potenza.
   - id: 'powercontrol_configurazione_carica'
     alias: PowerControl - Configurazione - Carica
     trigger:
@@ -435,7 +442,8 @@ automation:
           logger: homeassistant.components.pc
           message: "Automazione Configurazione - Carica - Fine caricamento"
 
-# Quando viene modificato un parametro nella configurazione di PC tramite gli input_select, carica il valore nell'input_text relativo.
+# Quando viene modificato un parametro nella configurazione di PC tramite gli input_select, 
+# attende che l'automazione "Carica" termini, poi carica il valore nell'input_text relativo.
   - id: 'powercontrol_configurazione_salva'
     alias: PowerControl - Configurazione - Salva
     trigger:
@@ -472,7 +480,6 @@ automation:
       - wait_template: "{{ state_attr('automation.powercontrol_configurazione_carica','current') == 0 }}"
       - service: system_log.write
       
-      
         data_template:
           level: debug
           logger: homeassistant.components.pc
@@ -481,7 +488,6 @@ automation:
         data:
           entity_id: input_text.potenza_carichi
           value: "{{ states.input_select.potenza_carichi.state }}"
-
 
       - service: input_text.set_value
         data:
@@ -523,8 +529,6 @@ automation:
         data:
           entity_id: input_text.carico_10_potenza
           value: "{{ states.input_select.carico_10_potenza.state }}"
-
-
 
       - service: input_text.set_value
         data:
@@ -573,9 +577,9 @@ automation:
           message: "Automazione Configurazione - Salva - Fine salvataggio"
 
 
-#Automazione che si triggera nel momento in cui la la potenza utilizzata supera la potenza massima impostata.
-#Agisce dopo TOT secondi dal superamento del limite, avvia lo script di distacco ed invia notifica di intervento.
-#Ripete l'avvio dello script di distacco finché la potenza impegnata non rientra nel limite.
+# Automazione che si triggera nel momento in cui la la potenza utilizzata supera la potenza massima impostata.
+# Agisce dopo TOT secondi dal superamento del limite, avvia lo script di distacco ed invia notifica di intervento.
+# Ripete l'avvio dello script di distacco finché la potenza impegnata non rientra nel limite.
   - id: 'powercontrol_carichi_stop'
     alias: PowerControl - Carichi Stop
     description: ''
@@ -645,6 +649,8 @@ automation:
           entity_id: script.start_carichi_generale
     mode: single
 
+# Controlla se un carico viene riacceso manualmente, cioè se il relativo interruttore viene attivato dall'utente,
+# e resetta la relativa potenza Phantom.
   - id: 'powercontrol_watchdog_phantom'
     alias: PowerControl - Controllo su riattivazione manuale
     description: >-
@@ -1006,8 +1012,10 @@ script:
 # Verifica che il carico si aconfigurato come seonsore di potenza e come interruttore.
 # Controlla che il carico sia stato disattivato (potenza in attesa)
 # Controlla che il limite di potenza venga rispettato.
-# Controlla anche se riattivando il carico (ipotizzando un consumo pari a quello che aveva all'atto della disattivazione) non supera il valore massimo.
-# Quest'ultimo controllo serve ad evitare che si riattacchi un carico che poi si ristacchi dopo pochi secondi perché ha causato un nuovo sforamento del limite.
+# Controlla anche se riattivando il carico (ipotizzando un consumo pari a quello che aveva all'atto della disattivazione) 
+# non supera il valore massimo.
+# Quest'ultimo controllo serve ad evitare che si riattacchi un carico che poi si ristacchi dopo pochi secondi perché ha 
+# causato un nuovo sforamento del limite.
 # Imposta il relativo valore "phantom" a zero, riattiva l'interruttore ed invia una notifica di riattivazione.
 # Infine attende TOT minuti  prima di passare al carico successivo.
 
