@@ -403,7 +403,7 @@ automation:
       - service: input_select.select_option
         data:
           entity_id: input_select.carico_2_switch  
-          option: "{{ states.input_text.carico_3_switch.state }}"
+          option: "{{ states.input_text.carico_2_switch.state }}"
       - service: input_select.select_option
         data:
           entity_id: input_select.carico_3_switch  
