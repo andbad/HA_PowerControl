@@ -29,6 +29,10 @@ Questo comporta di monitorare tutti i maggiori carichi (forno, fornelli, phon, c
 Naturalmente in questo modo non si può valutare il consumo complessivo, quindi si potrebbe superare il valore limite senza che intervenga il controllo carichi.
 Ma utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando sulla tolleranze di 180 minuti fino al 33% (nell'es. 4kW) dovrebbe essere funzionale.
 
+# Soglie di distacco
+Esistono due soglie, determinate da due valori percentuali che vengono applicati al valore massimo. La legislazione prevede che il contatore non stacchi immediatamente al valore massimo previsto dal contratto, ma vi sono delle soglie di tolleranze. Il contatore elettronico di ENEL Distribuzione prevede che sia possibile assorbire fino al 10% in più del valore contrattuale :
+- distacco immediato: solitamente da impostare
+
 # Screenshot
 ![image](https://user-images.githubusercontent.com/7837288/107847400-773a8c80-6deb-11eb-9c08-90e9998ffe08.png)
 
