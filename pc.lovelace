@@ -124,18 +124,43 @@
 
                 **Potenza Massima**
 
-                Indicare il valore di potenza utilizzata oltre il quale verranno
-                iniziati a scollegare i carichi, ovvero la soglia di intervento
-                del sistema.
+                Indicare il valore di potenza disponibile sul proprio contatore.
+                La minima potenza contrattuale (e valore più comune salvo
+                specifica richiesta di variazione al proprio Distributore) è
+                3000W (3kW).
 
 
-                **Tempo distacco**
+                **% Stop Immediato**
 
-                Dopo tot SECONDI di superamento della potenza massima, inizia il
-                distacco. (suggerito 30)
+                Se la potenza assorbita supera il valore massimo maggiorato di
+                questa percentuale per il numero di secondi indicati da "Secondi
+                distacco immediato", inizia la procedura di distacco dei
+                carichi. (consigliato 30)
 
 
-                **Tempo riattivazione**
+                **Secondi distacco immediato**
+
+                Dopo tot SECONDI di superamento della potenza massima maggiorata
+                della percentuale di stop immediato, inizia il distacco.
+                (suggerito 10)
+
+
+                **% Stop Ritardato**
+
+                Se la potenza assorbita supera il valore massimo maggiorato di
+                questa percentuale per il numero di minuti indicati da "Minuti
+                distacco ritardato", inizia la procedura di distacco dei
+                carichi. (consigliato 10)
+
+
+                **Minuti distacco ritardato**
+
+                Dopo tot MINUTI di superamento della potenza massima maggiorata
+                della percentuale di stop ritardato, inizia il distacco.
+                (suggerito 170)
+
+
+                **Minuti riattivazione**
 
                 Dopo tot MINUTI che la potenza utilizzata è rientrata nei
                 limiti, inizia a riattivare i carichi. (suggerito 3)
@@ -159,14 +184,27 @@
                 - entity: input_number.potenza_massima
                   name: Potenza Massima
                   icon: 'hass:chart-bell-curve'
-                - entity: input_number.tempo_stop
-                  name: Tempo distacco
+                - entity: input_number.potenza_massima_sforamento_immediato
+                  name: '% Stop immediato'
+                  icon: 'hass:percent-outline'
+                - entity: input_number.tempo_stop_immediato
+                  name: Secondi distacco immediato
+                  icon: 'hass:camera-timer'
+                - entity: input_number.potenza_massima_sforamento_ritardato
+                  name: '% Stop ritardato'
+                  icon: 'hass:percent-outline'
+                - entity: input_number.tempo_stop_ritardato
+                  name: Minuti distacco ritardato
+                  icon: 'hass:camera-timer'
                 - entity: input_number.tempo_start
-                  name: Tempo riattivazione
+                  name: Minuti riattivazione
+                  icon: 'hass:camera-timer'
                 - entity: input_number.attesa_stop
                   name: Secondi tra gli stop
+                  icon: 'hass:camera-timer'
                 - entity: input_number.attesa_start
                   name: Minuti tra gli start
+                  icon: 'hass:camera-timer'
               state_color: true
               show_header_toggle: false
       - type: conditional
@@ -177,13 +215,11 @@
           type: vertical-stack
           cards:
             - type: markdown
-              content: >
+              content: >-
                 **Sensore Carichi**
 
                 Selezionare i sensori di potenza (W) dei carichi da monitorare e
-                scollegare in caso di eccessiva richiesta. I carichi saranno
-                scollegati dal meno prioritario (carico 10) a quello a maggiore
-                priorità.
+                scollegare in caso di eccessiva richiesta.
             - type: entities
               entities:
                 - entity: input_select.carico_1_potenza
@@ -210,9 +246,9 @@
 
                 Selezionare gli switch relativi ai carichi monitorati nel
                 corrispettivo sensore. I carichi verrrano scollegati in ordine
-                di priorità, a partire dal Carico 10 fino al Carico 1. Dopo che
-                la richiesta di potenza rientra nei limiti, verranno
-                progressivamente ricollegati a partire dal Carico 1 fino al
+                di priorità inversa, **a partire dal Carico 10** fino al Carico
+                1. Dopo che la richiesta di potenza rientra nei limiti, verranno
+                progressivamente ricollegati **a partire dal Carico 1** fino al
                 Carico 10.
             - type: entities
               entities:

@@ -139,83 +139,110 @@ input_boolean:
 input_number:
 
 # Mantengono memoria della potenza utilizzata al momento del distacco, per valutare la riattivazione.
-   potenza_1_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_2_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_3_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_4_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_5_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_6_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_7_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_8_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_9_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_10_phantom:
-     initial: 0
-     min: 0
-     max: 10000
+  potenza_1_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_2_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_3_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_4_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_5_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_6_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_7_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_8_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_9_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_10_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  
+  #Slider per la configurazione della potenza massima utilizzabile
+  potenza_massima:
+    min: 0
+    max: 9000
+    step: 500
+  
+  #Slider per la configurazione della percentuale di sforamento potenza massima per il distacco immediato (default 33%)
+  potenza_massima_sforamento_immediato:
+    min: 0
+    max: 50
+    step: 1
+    
+  #Slider per la configurazione della percentuale di sforamento potenza massima per il distacco ritardato (default 10%)
+  potenza_massima_sforamento_ritardato:
+    min: 0
+    max: 50
+    step: 1
+    
+  #Slider per la configurazione dei tempi di intervento
+  #Dopo tot SECONDI di superamento della potenza massima, inizia il distacco
+  # tempo_stop:
+  #   min: 0
+  #   max: 60
+  #   step: 1
+  
+  #Attende tot SECONDI tra un distacco e l'altro.
+  tempo_stop_immediato:
+    min: 0
+    max: 60
+    step: 1  
+  
+  #Attende tot MINUTI tra un distacco e l'altro.
+  tempo_stop_ritardato:
+    min: 0
+    max: 180
+    step: 10  
+  
+  #Dopo tot MINUTI che la potenza utilizzata è rientrata nei limiti, inizia a riattivare i carichi
+  tempo_start:
+    min: 0
+    max: 60
+    step: 1  
+  
+  #Attende tot SECONDI tra un distacco e l'altro.
+  attesa_stop:
+    min: 0
+    max: 60
+    step: 1  
 
-#Slider per la configurazione della potenza massima utilizzabile
-   potenza_massima:
-     min: 0
-     max: 7200
-     step: 100
-
-
-#Slider per la configurazione dei tempi di intervento
-#Dopo tot SECONDI di superamento della potenza massima, inizia il distacco
-   tempo_stop:
-     min: 0
-     max: 60
-     step: 1
-
-#Dopo tot MINUTI che la potenza utilizzata è rientrata nei limiti, inizia a riattivare i carichi
-   tempo_start:
-     min: 0
-     max: 60
-     step: 1  
-
-#Attende tot SECONDI tra un distacco e l'altro.
-   attesa_stop:
-     min: 0
-     max: 60
-     step: 1  
-
-#Attende tot MINUTI tra una riattivazione e l'altra per dare il tempo al carico di riprendere il suo normale assorbimento
-   attesa_start:
-     min: 0
-     max: 60
-     step: 1  
+  #Attende tot MINUTI tra una riattivazione e l'altra per dare il tempo al carico di riprendere il suo normale assorbimento
+  attesa_start:
+    min: 0
+    max: 60
+    step: 1  
 
 
 input_select:
 # Drop-down per la configurazione di PC. L'elenco di interruttori e sensori viene aggiornato all'avvio di HA.
-
+  lista_carichi:
+    name: Lista potenza carichi
+    options:
+      - Seleziona
+      
 # Selezione dele sensore di  potenza utilizzata. Se non configurato, viene utilizzato il sensore virtuale 
   potenza_carichi:
     name: Sensore potenza carichi
@@ -333,6 +360,112 @@ automation:
 
 # All'avvio di HA attende che l'automazione "Popola entità" termini, poi carica la configurazione di interruttori
 # e sensori di potenza.
+  # - id: 'powercontrol_configurazione_popola_entita'
+  #   alias: PowerControl - Configurazione - Popola entità
+  #   initial_state: 'on'
+  #   trigger:
+  #   - platform: state
+  #     entity_id:
+  #       - input_select.carico_1_potenza
+  #       - input_select.carico_2_potenza
+  #       - input_select.carico_3_potenza
+  #       - input_select.carico_4_potenza
+  #       - input_select.carico_5_potenza
+  #       - input_select.carico_6_potenza
+  #       - input_select.carico_7_potenza
+  #       - input_select.carico_8_potenza
+  #       - input_select.carico_9_potenza
+  #       - input_select.carico_10_potenza
+  #   - platform: homeassistant
+  #     event: start
+  #   action:
+  #     - service: system_log.write
+  #       data_template:
+  #         level: debug
+  #         logger: homeassistant.components.pc
+  #         message: "Automazione Configurazione - Popola entità - Inizio"
+  
+  #     - service: input_select.set_options
+  #       data_template:
+  #         entity_id: input_select.lista_carichi
+  #         options:  
+  #           - >-
+  #             {%- set domain = ['sensor']-%}
+  #             {%- for device in states if device.domain in domain -%}
+  #             {%- if device.name|lower == input_select.carico_1_potenza|lower -%}
+  #             {{ device.entity_id }}
+  #             {%- endif -%}
+  #             {%- endfor -%}
+  #           - >-
+  #             {%- set domain = ['sensor']-%}
+  #             {%- for device in states if device.domain in domain -%}
+  #             {%- if device.name|lower == input_select.carico_2_potenza|lower -%}
+  #             {{ device.entity_id }}
+  #             {%- endif -%}
+  #             {%- endfor -%}
+  #           - >-
+  #             {%- set domain = ['sensor']-%}
+  #             {%- for device in states if device.domain in domain -%}
+  #             {%- if device.name|lower == input_select.carico_3_potenza|lower -%}
+  #             {{ device.entity_id }}
+  #             {%- endif -%}
+  #             {%- endfor -%}
+  #           - >-
+  #             {%- set domain = ['sensor']-%}
+  #             {%- for device in states if device.domain in domain -%}
+  #             {%- if device.name|lower == input_select.carico_4_potenza|lower -%}
+  #             {{ device.entity_id }}
+  #             {%- endif -%}
+  #             {%- endfor -%}
+  #           - >-
+  #             {%- set domain = ['sensor']-%}
+  #             {%- for device in states if device.domain in domain -%}
+  #             {%- if device.name|lower == input_select.carico_5_potenza|lower -%}
+  #             {{ device.entity_id }}
+  #             {%- endif -%}
+  #             {%- endfor -%}
+  #           - >-
+  #             {%- set domain = ['sensor']-%}
+  #             {%- for device in states if device.domain in domain -%}
+  #             {%- if device.name|lower == input_select.carico_6_potenza|lower -%}
+  #             {{ device.entity_id }}
+  #             {%- endif -%}
+  #             {%- endfor -%}
+  #           - >-
+  #             {%- set domain = ['sensor']-%}
+  #             {%- for device in states if device.domain in domain -%}
+  #             {%- if device.name|lower == input_select.carico_7_potenza|lower -%}
+  #             {{ device.entity_id }}
+  #             {%- endif -%}
+  #             {%- endfor -%}
+  #           - >-
+  #             {%- set domain = ['sensor']-%}
+  #             {%- for device in states if device.domain in domain -%}
+  #             {%- if device.name|lower == input_select.carico_8_potenza|lower -%}
+  #             {{ device.entity_id }}
+  #             {%- endif -%}
+  #             {%- endfor -%}
+  #           - >-
+  #             {%- set domain = ['sensor']-%}
+  #             {%- for device in states if device.domain in domain -%}
+  #             {%- if device.name|lower == input_select.carico_9_potenza|lower -%}
+  #             {{ device.entity_id }}
+  #             {%- endif -%}
+  #             {%- endfor -%}
+  #           - >-
+  #             {%- set domain = ['sensor']-%}
+  #             {%- for device in states if device.domain in domain -%}
+  #             {%- if device.name|lower == input_select.carico_10_potenza|lower -%}
+  #             {{ device.entity_id }}
+  #             {%- endif -%}
+  #             {%- endfor -%}
+  #     - service: system_log.write
+  #       data_template:
+  #         level: debug
+  #         logger: homeassistant.components.pc
+  #         message: "Automazione Configurazione - Popola entità - Fine"
+
+
   - id: 'powercontrol_configurazione_carica'
     alias: PowerControl - Configurazione - Carica
     trigger:
@@ -585,9 +718,13 @@ automation:
     description: ''
     trigger:
     - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi')) |int > states.sensor.potenza_massima.state|int }}"
+      value_template: "{{ states(states('input_text.potenza_carichi')) |int > (states.sensor.potenza_massima.state|int+states.sensor.potenza_massima.state|int * states.input_number.potenza_massima_sforamento_immediato.state|int/100)|int }}"
       for: 
-        seconds: "{{ states.input_number.tempo_stop.state|int }}"
+        seconds: "{{ states.input_number.tempo_stop_immediato.state|int }}"
+    - platform: template
+      value_template: "{{ states(states('input_text.potenza_carichi')) |int > (states.sensor.potenza_massima.state|int+states.sensor.potenza_massima.state|int * states.input_number.potenza_massima_sforamento_ritardato.state|int/100)|int }}" 
+      for: 
+        minutes: "{{ states.input_number.tempo_stop_ritardato.state|int }}"
     condition:
     - condition: state
       entity_id: input_boolean.attiva_power_control
@@ -619,7 +756,7 @@ automation:
     description: ''
     trigger:
     - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.sensor.potenza_carichi_phantom.state|int < states.sensor.potenza_massima.state|int and states.sensor.potenza_carichi_phantom.state|int > 0 }}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.sensor.potenza_carichi_phantom.state|int < (states.sensor.potenza_massima.state|int * states.input_number.potenza_massima_sforamento_ritardato.state|int/100)|int and states.sensor.potenza_carichi_phantom.state|int > 0 }}"
       for:
         minutes: "{{ states.input_number.tempo_start.state|int }}"
     condition:
