@@ -1,8 +1,12 @@
 #################################################################
-#################PACKAGE CONTROLLO CARICHI#######################
+################# PACKAGE CONTROLLO CARICHI #####################
 #################################################################
-# Credits: andbad                                               #
+# Autore: andbad                                                #
 # GitHub: https://github.com/andbad/HA_PowerControl             #
+#################################################################
+########################### CREDITS #############################
+# Il pacchetto, seppur scritto da 0, ha tratto ispirazione da   #
+# https://hassiohelp.eu/2020/10/14/nuovo-controllo-carichi/     #
 #################################################################
 
 
