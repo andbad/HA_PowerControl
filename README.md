@@ -50,3 +50,6 @@ logger:
   logs:
     homeassistant.components.pc: debug
 ```
+
+# Credits
+Il pacchetto, seppur scritto da zero, è ispirato a questo: https://hassiohelp.eu/2020/10/14/nuovo-controllo-carichi/
