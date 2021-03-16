@@ -23,13 +23,13 @@
 # La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo di notifica (notify.tutti) che va impostato
 # manualmente.
 
-recorder:
-  include:
-    entities:
-      - sensor.potenza_carichi_selezionato
-      - sensor.potenza_carichi_phantom
-      - sensor.potenza_massima_immediato
-      - sensor.potenza_massima_ritardato
+# recorder:
+#   include:
+#     entities:
+#       - sensor.potenza_carichi_selezionato
+#       - sensor.potenza_carichi_phantom
+#       - sensor.potenza_massima_immediato
+#       - sensor.potenza_massima_ritardato
 
 #################################################################
 ########################## SENSORI ##############################
