@@ -52,4 +52,4 @@ logger:
 ```
 
 # Credits
-Il pacchetto, seppur scritto da zero, è ispirato a questo: https://hassiohelp.eu/2020/10/14/nuovo-controllo-carichi/
+Il pacchetto, seppur scritto da 0, ha tratto ispirazione da: https://hassiohelp.eu/2020/10/14/nuovo-controllo-carichi/ 
