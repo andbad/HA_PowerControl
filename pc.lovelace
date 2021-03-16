@@ -7,7 +7,7 @@
         cards:
           - type: history-graph
             entities:
-              - entity: sensor.potenza_massima
+              - entity: sensor.potenza_massima_ritardato
                 name: Massima
               - entity: sensor.potenza_carichi_selezionato
                 name: In uso
@@ -122,53 +122,41 @@
                 utilizzata dai carichi inseriti nei campi sottostanti.
 
 
-                **Potenza Massima**
+                **Potenza Massima Ritardato**
 
-                Indicare il valore di potenza disponibile sul proprio contatore.
-                La minima potenza contrattuale (e valore più comune salvo
-                specifica richiesta di variazione al proprio Distributore) è
-                3000W (3kW).
-
-
-                **% Stop Immediato**
-
-                Se la potenza assorbita supera il valore massimo maggiorato di
-                questa percentuale per il numero di secondi indicati da "Secondi
-                distacco immediato", inizia la procedura di distacco dei
-                carichi. (consigliato 30)
-
-
-                **Secondi distacco immediato**
-
-                Dopo tot SECONDI di superamento della potenza massima maggiorata
-                della percentuale di stop immediato, inizia il distacco.
-                (suggerito 10)
-
-
-                **% Stop Ritardato**
-
-                Se la potenza assorbita supera il valore massimo maggiorato di
-                questa percentuale per il numero di minuti indicati da "Minuti
-                distacco ritardato", inizia la procedura di distacco dei
-                carichi. (consigliato 10)
+                Se l'assorbimento totale supera questa soglia, il sistema
+                attende alcuni MINUTI (vedi opzione seguente) poi inizia a
+                staccare i carichi. (suggerito 3200)
 
 
                 **Minuti distacco ritardato**
 
-                Dopo tot MINUTI di superamento della potenza massima maggiorata
-                della percentuale di stop ritardato, inizia il distacco.
-                (suggerito 170)
+                Dopo tot MINUTI di superamento della potenza massima RITARDATO,
+                inizia il distacco. (suggerito 170)
+
+
+                **Potenza Massima Immediato**
+
+                Se l'assorbimento totale supera questa soglia, il sistema
+                attende alcuni SECONDI (vedi opzione seguente) poi inizia a
+                staccare i carichi. (suggerito 3900)
+
+
+                **Secondi distacco immediato**
+
+                Dopo tot SECONDI di superamento della potenza massima IMMEDIATO,
+                inizia il distacco. (suggerito 10)
 
 
                 **Minuti riattivazione**
 
                 Dopo tot MINUTI che la potenza utilizzata è rientrata nei
-                limiti, inizia a riattivare i carichi. (suggerito 3)
+                limiti, inizia a riattivare i carichi. (suggerito 5)
 
 
                 **Secondi tra gli Stop**
 
-                Attende tot SECONDI tra un distacco e l'altro. (suggerito 10)
+                Attende tot SECONDI tra un distacco e l'altro. (suggerito 20)
 
 
                 **Minuti tra gli Start**
@@ -181,20 +169,17 @@
               entities:
                 - entity: input_select.potenza_carichi
                   icon: 'hass:chart-line'
-                - entity: input_number.potenza_massima
-                  name: Potenza Massima
+                - entity: input_number.potenza_massima_ritardato
+                  name: Potenza Massima Ritardato
                   icon: 'hass:chart-bell-curve'
-                - entity: input_number.potenza_massima_sforamento_immediato
-                  name: '% Stop immediato'
-                  icon: 'hass:percent-outline'
-                - entity: input_number.tempo_stop_immediato
-                  name: Secondi distacco immediato
-                  icon: 'hass:camera-timer'
-                - entity: input_number.potenza_massima_sforamento_ritardato
-                  name: '% Stop ritardato'
-                  icon: 'hass:percent-outline'
                 - entity: input_number.tempo_stop_ritardato
                   name: Minuti distacco ritardato
+                  icon: 'hass:camera-timer'
+                - entity: input_number.potenza_massima_immediato
+                  name: Potenza Massima Immediato
+                  icon: 'hass:chart-bell-curve'
+                - entity: input_number.tempo_stop_immediato
+                  name: Secondi distacco immediato
                   icon: 'hass:camera-timer'
                 - entity: input_number.tempo_start
                   name: Minuti riattivazione
