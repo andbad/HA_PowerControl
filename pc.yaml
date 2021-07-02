@@ -1,8 +1,12 @@
 #################################################################
-#################PACKAGE CONTROLLO CARICHI#######################
+################# PACKAGE CONTROLLO CARICHI #####################
 #################################################################
-# Credits: andbad                                               #
+# Autore: andbad                                                #
 # GitHub: https://github.com/andbad/HA_PowerControl             #
+#################################################################
+########################### CREDITS #############################
+# Il pacchetto, seppur scritto da 0, ha tratto ispirazione da   #
+# https://hassiohelp.eu/2020/10/14/nuovo-controllo-carichi/     #
 #################################################################
 
 
@@ -14,18 +18,28 @@
 # E' consigliato, ma non tassativo, l'utilizzo di un sensore che monitori il consumo complessivo dell'impianto (es. Shelly EM).
 # La logica prevede che in caso l'utilizzo complessivo superi il valore limite impostato, il pacchetto inizi il distacco
 # dei carichi a minore priorità fino a quelli a maggiore priorità, fino a che l'utilizzo complessivo della potenza rientri
-# nel limite prefissato.
+# nel limite prefissato. 
+# Vi sono due limiti massimi: nel caso in cui si superi il valore massimo "ritardato", il sitema attenderà alcuni minuti
+# (regolabili da apposita opzione) prima di procedere con il distacco; nel caso in cui si superi il valore massimo immediato,
+# il distacco avviene invece dopo alcuni secondi (anche in questo caso regolati da relativo slider).
 # Lo script tiene memoria dell'assorbimento del carico prima del distacco e lo ricollega solo quando la disponibilità
 # di potenza è sufficiente a non causare un nuovo distacco.
 # La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo di notifica (notify.tutti) che va impostato
 # manualmente.
+
+#################################################################
+########################## RECORDER #############################
+#################################################################
+# I seguenti sensori devono essere abilitati nel recorder, al fine di visualizzare lo storico di intervento nel grafico
+# dell'interfaccia grafica. Decommentare le seguenti righe potrebbe influire sulla configurazione del recorder in altri file.
 
 recorder:
   include:
     entities:
       - sensor.potenza_carichi_selezionato
       - sensor.potenza_carichi_phantom
-      - sensor.potenza_massima
+      - sensor.potenza_massima_immediato
+      - sensor.potenza_massima_ritardato
 
 #################################################################
 ########################## SENSORI ##############################
@@ -93,10 +107,16 @@ sensor:
 # Valore massimo che i carichi possono impegnare prima di cominciare il distacco
   - platform: template
     sensors:
-      potenza_massima:
+      potenza_massima_immediato:
         unit_of_measurement: 'W'
-        value_template: "{{ states('input_number.potenza_massima')|int }}"
+        value_template: "{{ states('input_number.potenza_massima_immediato')|int }}"
 
+  - platform: template
+    sensors:
+      potenza_massima_ritardato:
+        unit_of_measurement: 'W'
+        value_template: "{{ states('input_number.potenza_massima_ritardato')|int }}"
+        
 #################################################################
 ######################### INPUT_* ###############################
 #################################################################
@@ -136,86 +156,113 @@ input_boolean:
     name: Mostra Impostazioni Power Control
     icon: mdi:car-cruise-control
 
+  # Tiene traccia del trigger che ha innescato l'automazione di stop: 
+  # se è "0"significa che si è superata la soglia del distacco ritardato
+  # se è "1" si è inveve superata la soglia di distacco immediato.
+  sensore_trigger:
+    name: sensore trigger
+    initial: off
+    
+  sensore_trigger_dumb:
+    name: sensore trigger dumb
+    initial: off  
+
+
 input_number:
 
 # Mantengono memoria della potenza utilizzata al momento del distacco, per valutare la riattivazione.
-   potenza_1_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_2_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_3_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_4_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_5_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_6_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_7_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_8_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_9_phantom:
-     initial: 0
-     min: 0
-     max: 10000
-   potenza_10_phantom:
-     initial: 0
-     min: 0
-     max: 10000
+  potenza_1_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_2_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_3_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_4_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_5_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_6_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_7_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_8_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_9_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  potenza_10_phantom:
+    initial: 0
+    min: 0
+    max: 10000
+  
+  # Slider per la configurazione della potenza massima utilizzabile, superata questa soglia il distacco è immediato
+  potenza_massima_immediato:
+    min: 0
+    max: 9000
+    step: 100
+  
+  # Slider per la configurazione della potenza massima utilizzabile, superata questa soglia vengono attesi alcuni minuti
+  # prima del distacco.
+  potenza_massima_ritardato:
+    min: 0
+    max: 9000
+    step: 100
 
-#Slider per la configurazione della potenza massima utilizzabile
-   potenza_massima:
-     min: 0
-     max: 7200
-     step: 100
+  #Attende tot SECONDI tra un distacco e l'altro.
+  tempo_stop_immediato:
+    min: 0
+    max: 60
+    step: 1  
+  
+  #Attende tot MINUTI tra un distacco e l'altro.
+  tempo_stop_ritardato:
+    min: 0
+    max: 180
+    step: 10  
+  
+  #Dopo tot MINUTI che la potenza utilizzata è rientrata nei limiti, inizia a riattivare i carichi
+  tempo_start:
+    min: 0
+    max: 60
+    step: 1  
+  
+  #Attende tot SECONDI tra un distacco e l'altro.
+  attesa_stop:
+    min: 0
+    max: 60
+    step: 1  
 
-
-#Slider per la configurazione dei tempi di intervento
-#Dopo tot SECONDI di superamento della potenza massima, inizia il distacco
-   tempo_stop:
-     min: 0
-     max: 60
-     step: 1
-
-#Dopo tot MINUTI che la potenza utilizzata è rientrata nei limiti, inizia a riattivare i carichi
-   tempo_start:
-     min: 0
-     max: 60
-     step: 1  
-
-#Attende tot SECONDI tra un distacco e l'altro.
-   attesa_stop:
-     min: 0
-     max: 60
-     step: 1  
-
-#Attende tot MINUTI tra una riattivazione e l'altra per dare il tempo al carico di riprendere il suo normale assorbimento
-   attesa_start:
-     min: 0
-     max: 60
-     step: 1  
+  #Attende tot MINUTI tra una riattivazione e l'altra per dare il tempo al carico di riprendere il suo normale assorbimento
+  attesa_start:
+    min: 0
+    max: 60
+    step: 1  
 
 
 input_select:
 # Drop-down per la configurazione di PC. L'elenco di interruttori e sensori viene aggiornato all'avvio di HA.
-
+  lista_carichi:
+    name: Lista potenza carichi
+    options:
+      - Seleziona
+      
 # Selezione dele sensore di  potenza utilizzata. Se non configurato, viene utilizzato il sensore virtuale 
   potenza_carichi:
     name: Sensore potenza carichi
@@ -585,9 +632,13 @@ automation:
     description: ''
     trigger:
     - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi')) |int > states.sensor.potenza_massima.state|int }}"
+      value_template: "{{ states(states('input_text.potenza_carichi')) |int > states.sensor.potenza_massima_immediato.state|int }}"
       for: 
-        seconds: "{{ states.input_number.tempo_stop.state|int }}"
+        seconds: "{{ states.input_number.tempo_stop_immediato.state|int }}"
+    - platform: template
+      value_template: "{{ states(states('input_text.potenza_carichi')) |int > states.sensor.potenza_massima_ritardato.state|int }}" 
+      for: 
+        minutes: "{{ states.input_number.tempo_stop_ritardato.state|int }}"
     condition:
     - condition: state
       entity_id: input_boolean.attiva_power_control
@@ -597,7 +648,21 @@ automation:
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Automazione Carichi Stop triggerata: Potenza carichi ({{ states(states('input_text.potenza_carichi'))|int }})>Potenza massima({{states.sensor.potenza_massima.state|int }})"
+        message: "Automazione Carichi Stop triggerata: Potenza carichi ({{ states(states('input_text.potenza_carichi'))|int }}))"
+    - service: input_boolean.turn_on
+      target: 
+        entity_id: >
+            {% if states(states('input_text.potenza_carichi')) |int > states.sensor.potenza_massima_immediato.state|int %}
+              input_boolean.sensore_trigger
+            {% else %}
+              input_boolean.sensore_trigger_dumb
+            {% endif %}
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Tipo di innesco ({{ states.input_boolean.sensore_trigger.state }}))"
+        
     - repeat:
         sequence:
           - service: system_log.write
@@ -610,7 +675,10 @@ automation:
             entity_id: script.stop_carichi_generale
         until:
           - condition: template
-            value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int }}"
+            value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima_ritardato.state|int }}"
+    - service: input_boolean.turn_off
+      target: 
+        entity_id: input_boolean.sensore_trigger
     mode: single
 
 # Se per TOT minuti il limite di potenza è rispettato, avvia lo script di riattivazione dei carichi fino a che la potenza "phantom" non è zero.
@@ -619,7 +687,7 @@ automation:
     description: ''
     trigger:
     - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.sensor.potenza_carichi_phantom.state|int < states.sensor.potenza_massima.state|int and states.sensor.potenza_carichi_phantom.state|int > 0 }}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states.sensor.potenza_carichi_phantom.state|int < states.sensor.potenza_massima_ritardato.state|int and states.sensor.potenza_carichi_phantom.state|int > 0 }}"
       for:
         minutes: "{{ states.input_number.tempo_start.state|int }}"
     condition:
@@ -633,7 +701,7 @@ automation:
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Automazione start carichi triggerata: Potenza carichi+phantom ({{ states(states('input_text.potenza_carichi'))|int + states.sensor.potenza_carichi_phantom.state|int}}) < Potenza massima ({{states.sensor.potenza_massima.state|int }}) "
+        message: "Automazione start carichi triggerata: Potenza carichi+phantom ({{ states(states('input_text.potenza_carichi'))|int + states.sensor.potenza_carichi_phantom.state|int}}) < Potenza massima ({{states.sensor.potenza_massima_ritardato.state|int }}) "
     - repeat:
         until:
         - condition: template
@@ -956,12 +1024,12 @@ script:
         logger: homeassistant.components.pc
         message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 2 - Ok"
     - condition: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima.state|int}}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states.sensor.potenza_massima_ritardato.state|int}}"
     - service: system_log.write
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 3 - Ok"
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 3 - Ok {{ states(states('input_text.potenza_carichi'))|int}} > {{states.sensor.potenza_massima_ritardato.state|int}}"
     - condition: template
       value_template: "{{ states(potenza) |int > 10 }}"
     - service: system_log.write
@@ -1049,14 +1117,14 @@ script:
         logger: homeassistant.components.pc
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 3 ok"
     - condition: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima.state|int}}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states.sensor.potenza_massima_ritardato.state|int}}"
     - service: system_log.write
       data_template:
         level: debug
         logger: homeassistant.components.pc
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 4 ok"
     - condition: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states(phantom)|int < states.sensor.potenza_massima.state|int }}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states(phantom)|int < states.sensor.potenza_massima_ritardato.state|int }}"
     - service: system_log.write
       data_template:
         level: debug
