@@ -1,13 +1,19 @@
   - title: PC
     path: pc
-    icon: 'hass:car-cruise-control'
+    icon: hass:car-cruise-control
+    visible:
+      - user: ceda43a363f749c6a3a37e8f17b0a732
+      - user: 65e63ca9e07c42d78df3c9b439466cc2
+      - user: 07caa89440ae4316b34983c6c1be7d59
+      - user: 73582ec97f774054afd57458a5f29188
+      - user: ffb67fb3750741e3b0cd57a420146d2e
     badges: []
     cards:
       - type: vertical-stack
         cards:
           - type: history-graph
             entities:
-              - entity: sensor.potenza_massima
+              - entity: sensor.potenza_massima_ritardato
                 name: Massima
               - entity: sensor.potenza_carichi_selezionato
                 name: In uso
@@ -19,15 +25,15 @@
           - type: entities
             entities:
               - entity: input_boolean.attiva_power_control
-                icon: 'hass:car-cruise-control'
+                icon: hass:car-cruise-control
               - entity: input_boolean.impostazioni_power_control
-                icon: 'hass:car-cruise-control'
+                icon: hass:car-cruise-control
               - entity: sensor.potenza_carichi_selezionato
                 name: Potenza in uso
-                icon: 'hass:power-plug'
+                icon: hass:power-plug
               - entity: sensor.potenza_carichi_phantom
                 name: Potenza in attesa
-                icon: 'hass:power-plug-off'
+                icon: hass:power-plug-off
             state_color: true
             show_header_toggle: false
           - type: conditional
@@ -122,28 +128,41 @@
                 utilizzata dai carichi inseriti nei campi sottostanti.
 
 
-                **Potenza Massima**
+                **Potenza Massima Ritardato**
 
-                Indicare il valore di potenza utilizzata oltre il quale verranno
-                iniziati a scollegare i carichi, ovvero la soglia di intervento
-                del sistema.
-
-
-                **Tempo distacco**
-
-                Dopo tot SECONDI di superamento della potenza massima, inizia il
-                distacco. (suggerito 30)
+                Se l'assorbimento totale supera questa soglia, il sistema
+                attende alcuni MINUTI (vedi opzione seguente) poi inizia a
+                staccare i carichi. (suggerito 3200)
 
 
-                **Tempo riattivazione**
+                **Minuti distacco ritardato**
+
+                Dopo tot MINUTI di superamento della potenza massima RITARDATO,
+                inizia il distacco. (suggerito 170)
+
+
+                **Potenza Massima Immediato**
+
+                Se l'assorbimento totale supera questa soglia, il sistema
+                attende alcuni SECONDI (vedi opzione seguente) poi inizia a
+                staccare i carichi. (suggerito 3900)
+
+
+                **Secondi distacco immediato**
+
+                Dopo tot SECONDI di superamento della potenza massima IMMEDIATO,
+                inizia il distacco. (suggerito 10)
+
+
+                **Minuti riattivazione**
 
                 Dopo tot MINUTI che la potenza utilizzata è rientrata nei
-                limiti, inizia a riattivare i carichi. (suggerito 3)
+                limiti, inizia a riattivare i carichi. (suggerito 5)
 
 
                 **Secondi tra gli Stop**
 
-                Attende tot SECONDI tra un distacco e l'altro. (suggerito 10)
+                Attende tot SECONDI tra un distacco e l'altro. (suggerito 20)
 
 
                 **Minuti tra gli Start**
@@ -155,18 +174,28 @@
             - type: entities
               entities:
                 - entity: input_select.potenza_carichi
-                  icon: 'hass:chart-line'
-                - entity: input_number.potenza_massima
-                  name: Potenza Massima
-                  icon: 'hass:chart-bell-curve'
-                - entity: input_number.tempo_stop
-                  name: Tempo distacco
+                  icon: hass:chart-line
+                - entity: input_number.potenza_massima_ritardato
+                  name: Potenza Massima Ritardato
+                  icon: hass:chart-bell-curve
+                - entity: input_number.tempo_stop_ritardato
+                  name: Minuti distacco ritardato
+                  icon: hass:camera-timer
+                - entity: input_number.potenza_massima_immediato
+                  name: Potenza Massima Immediato
+                  icon: hass:chart-bell-curve
+                - entity: input_number.tempo_stop_immediato
+                  name: Secondi distacco immediato
+                  icon: hass:camera-timer
                 - entity: input_number.tempo_start
-                  name: Tempo riattivazione
+                  name: Minuti riattivazione
+                  icon: hass:camera-timer
                 - entity: input_number.attesa_stop
                   name: Secondi tra gli stop
+                  icon: hass:camera-timer
                 - entity: input_number.attesa_start
                   name: Minuti tra gli start
+                  icon: hass:camera-timer
               state_color: true
               show_header_toggle: false
       - type: conditional
@@ -177,13 +206,11 @@
           type: vertical-stack
           cards:
             - type: markdown
-              content: >
+              content: >-
                 **Sensore Carichi**
 
                 Selezionare i sensori di potenza (W) dei carichi da monitorare e
-                scollegare in caso di eccessiva richiesta. I carichi saranno
-                scollegati dal meno prioritario (carico 10) a quello a maggiore
-                priorità.
+                scollegare in caso di eccessiva richiesta.
             - type: entities
               entities:
                 - entity: input_select.carico_1_potenza
@@ -210,9 +237,9 @@
 
                 Selezionare gli switch relativi ai carichi monitorati nel
                 corrispettivo sensore. I carichi verrrano scollegati in ordine
-                di priorità, a partire dal Carico 10 fino al Carico 1. Dopo che
-                la richiesta di potenza rientra nei limiti, verranno
-                progressivamente ricollegati a partire dal Carico 1 fino al
+                di priorità inversa, **a partire dal Carico 10** fino al Carico
+                1. Dopo che la richiesta di potenza rientra nei limiti, verranno
+                progressivamente ricollegati **a partire dal Carico 1** fino al
                 Carico 10.
             - type: entities
               entities:
