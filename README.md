@@ -16,7 +16,7 @@ La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo 
 - Creare un gruppo di notifica "notify.tutti" nel file "configuration.yaml" ed inserirvi i device che riceveranno le notifiche di intervento.
 - Configurare il logger per includere i seguenti sensori:
   - sensor.potenza_carichi_selezionato
-  - sensor.potenza_carichi_phantom
+  - sensor.potenza_carichi_sospesa
   - sensor.potenza_massima
 
 # Configurazione
