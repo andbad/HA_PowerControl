@@ -17,7 +17,7 @@
                 name: Massima
               - entity: sensor.potenza_carichi_selezionato
                 name: In uso
-              - entity: sensor.potenza_carichi_phantom
+              - entity: sensor.potenza_carichi_sospesa
                 name: In attesa
             refresh_interval: 0
             title: Grafico Potenza
@@ -31,7 +31,7 @@
               - entity: sensor.potenza_carichi_selezionato
                 name: Potenza in uso
                 icon: hass:power-plug
-              - entity: sensor.potenza_carichi_phantom
+              - entity: sensor.potenza_carichi_sospesa
                 name: Potenza in attesa
                 icon: hass:power-plug-off
             state_color: true
@@ -110,6 +110,66 @@
                 **Potenza**: {{states.input_text.carico_10_potenza.state}}
 
                 **Interruttore**: {{states.input_text.carico_10_switch.state}} 
+
+                **Carico 11**: 
+
+                **Potenza**: {{states.input_text.carico_11_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_11_switch.state}} 
+
+                **Carico 12**: 
+
+                **Potenza**: {{states.input_text.carico_12_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_12_switch.state}} 
+
+                **Carico 13**: 
+
+                **Potenza**: {{states.input_text.carico_13_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_13_switch.state}} 
+
+                **Carico 14**: 
+
+                **Potenza**: {{states.input_text.carico_14_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_14_switch.state}} 
+
+                **Carico 15**: 
+
+                **Potenza**: {{states.input_text.carico_15_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_15_switch.state}} 
+
+                **Carico 16**: 
+
+                **Potenza**: {{states.input_text.carico_16_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_16_switch.state}} 
+
+                **Carico 17**: 
+
+                **Potenza**: {{states.input_text.carico_17_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_17_switch.state}} 
+
+                **Carico 18**: 
+
+                **Potenza**: {{states.input_text.carico_18_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_18_switch.state}} 
+
+                **Carico 19**: 
+
+                **Potenza**: {{states.input_text.carico_19_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_19_switch.state}} 
+
+                **Carico 20**: 
+
+                **Potenza**: {{states.input_text.carico_20_potenza.state}}
+
+                **Interruttore**: {{states.input_text.carico_20_switch.state}} 
               title: Configurazione Salvata
       - type: conditional
         conditions:
@@ -223,6 +283,16 @@
                 - entity: input_select.carico_8_potenza
                 - entity: input_select.carico_9_potenza
                 - entity: input_select.carico_10_potenza
+                - entity: input_select.carico_11_potenza
+                - entity: input_select.carico_12_potenza
+                - entity: input_select.carico_13_potenza
+                - entity: input_select.carico_14_potenza
+                - entity: input_select.carico_15_potenza
+                - entity: input_select.carico_16_potenza
+                - entity: input_select.carico_17_potenza
+                - entity: input_select.carico_18_potenza
+                - entity: input_select.carico_19_potenza
+                - entity: input_select.carico_20_potenza
               title: Sensori potenza carichi
       - type: conditional
         conditions:
@@ -237,10 +307,11 @@
 
                 Selezionare gli switch relativi ai carichi monitorati nel
                 corrispettivo sensore. I carichi verrrano scollegati in ordine
-                di priorità inversa, **a partire dal Carico 10** fino al Carico
-                1. Dopo che la richiesta di potenza rientra nei limiti, verranno
-                progressivamente ricollegati **a partire dal Carico 1** fino al
-                Carico 10.
+                di priorità inversa, **a partire dal Carico 20** fino al Carico
+                1, solo se la potenza che sono in uso. Dopo che la richiesta di
+                potenza rientra nei limiti, i carichi scollegati in precedenza,
+                verranno progressivamente ricollegati **a partire dal Carico 1**
+                fino al Carico 30.
             - type: entities
               entities:
                 - entity: input_select.carico_1_switch
@@ -253,4 +324,14 @@
                 - entity: input_select.carico_8_switch
                 - entity: input_select.carico_9_switch
                 - entity: input_select.carico_10_switch
+                - entity: input_select.carico_11_switch
+                - entity: input_select.carico_12_switch
+                - entity: input_select.carico_13_switch
+                - entity: input_select.carico_14_switch
+                - entity: input_select.carico_15_switch
+                - entity: input_select.carico_16_switch
+                - entity: input_select.carico_17_switch
+                - entity: input_select.carico_18_switch
+                - entity: input_select.carico_19_switch
+                - entity: input_select.carico_20_switch
               title: Interruttori Carichi
