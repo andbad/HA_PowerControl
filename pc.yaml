@@ -35,13 +35,13 @@
 # I seguenti sensori devono essere abilitati nel recorder, al fine di visualizzare lo storico di intervento nel grafico
 # dell'interfaccia grafica. Decommentare le seguenti righe potrebbe influire sulla configurazione del recorder in altri file.
 
-#recorder:
-#  include:
-#    entities:
-#      - sensor.potenza_carichi_selezionato
-#      - sensor.potenza_carichi_sospesa
-#      - sensor.potenza_massima_immediato
-#      - sensor.potenza_massima_ritardato
+# recorder:
+#   include:
+#     entities:
+#       - sensor.potenza_carichi_selezionato
+#       - sensor.potenza_carichi_sospesa
+#       - sensor.potenza_massima_immediato
+#       - sensor.potenza_massima_ritardato
 
 #################################################################
 ########################## SENSORI ##############################
@@ -1592,12 +1592,12 @@ script:
   stop_carichi_singolo:
     alias: PowerControl - Stop Carico Singolo
     sequence:
-    # Controlla se il sensore potenza del carico è impostato
     - service: system_log.write
       data_template:
         level: debug
         logger: homeassistant.components.pc
         message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Avvio"
+    # Controlla se il sensore potenza del carico è impostato    
     - condition: template
       value_template: "{{ potenza != 'Seleziona' }}"
     - service: system_log.write
@@ -1605,6 +1605,16 @@ script:
         level: debug
         logger: homeassistant.components.pc
         message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 1 - Ok"
+        
+    # Controlla se il sensore potenza del carico è disponibile    
+    - condition: template
+      value_template: "{{ states(potenza) != 'unavailable' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 1.5 - Ok"    
+        
     # Controlla se l'interruttore del carico è impostato
     - condition: template
       value_template: "{{ switch != 'Seleziona' }}"
@@ -1613,6 +1623,16 @@ script:
         level: debug
         logger: homeassistant.components.pc
         message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 2 - Ok"
+
+    # Controlla se l'interruttore del carico è disponibile
+    - condition: template
+      value_template: "{{ states(switch) != 'unavailable' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.5 - Ok"    
+
     # Controlla se la potenza in uso è maggiore dei limiti impostati
     - condition: template
       value_template: >
@@ -1703,6 +1723,16 @@ script:
         level: debug
         logger: homeassistant.components.pc
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 1 ok"
+    
+    # Controlla se il sensore potenza del carico è disponibile    
+    - condition: template
+      value_template: "{{ states(potenza) != 'unavailable' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 1.5 - Ok"    
+        
     # Controllo se l'interruttore del carico è stato configurato
     - condition: template
       value_template: "{{ switch != 'Seleziona' }}"
@@ -1711,6 +1741,16 @@ script:
         level: debug
         logger: homeassistant.components.pc
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 2 ok"
+        
+    # Controlla se l'interruttore del carico è disponibile
+    - condition: template
+      value_template: "{{ states(switch) != 'unavailable' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.5 - Ok"    
+
     # Verifica se la potenza sospesa del carico è maggiore di 0 (in questo caso il carico è stato spento dal contollo carichi)
     - condition: template
       value_template: "{{ states(sospesa)|int > 0 }}"
