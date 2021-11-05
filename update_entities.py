@@ -1,3 +1,31 @@
+#group_entities = hass.states.get('group.all_lights').attributes['entity_id']
+#all_lights = []
+#for e in group_entities:
+#    all_lights.append(e)
+#service_data = {'entity_id': 'input_select.timer_generico7',
+#                'options': all_lights}
+#hass.services.call('input_select', 'set_options', service_data)
+
+
+#group_entities = hass.states.get('group.all_lights').attributes['entity_id']
+#all_lights = []
+#for e in group_entities:
+#    all_lights.append(hass.states.get(e).attributes['friendly_name'])
+#service_data = {'entity_id': 'input_select.timer_generico7',
+#                'options': all_lights}
+#hass.services.call('input_select', 'set_options', service_data)
+
+
+#entities = hass.states.entity_ids()
+#service_data = {'entity_id': 'input_select.entities', 'options': sorted(entities)}
+#hass.services.call('input_select', 'set_options', service_data)
+
+
+
+
+
+
+
 entities = hass.states.entity_ids('switch')
 all_switches = ["Seleziona"]
 for e in entities:
