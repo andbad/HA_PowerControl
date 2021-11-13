@@ -10,11 +10,11 @@ La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo 
 # Installazione
 - Copiare il file "pc.yaml" nella directory "packages"
 - Copiare il file "update_entities.py" nella directory "python_scripts"
-- Abilitare i packages: https://www.home-assistant.io/docs/configuration/packages/
-- Abilitare gli script python: https://www.home-assistant.io/integrations/python_script/
+- [Abilitare i packages](https://www.home-assistant.io/docs/configuration/packages/)
+- [Abilitare gli script python](https://www.home-assistant.io/integrations/python_script/)
 - Aggiungere il contenuto del file "pc.lovelace" all'interfaccia Lovelace.
 - Creare un gruppo di notifica "notify.tutti" nel file "configuration.yaml" ed inserirvi i device che riceveranno le notifiche di intervento.
-- Configurare il recoder per includere i seguenti sensori:
+- [Configurare il recoder](https://www.home-assistant.io/integrations/recorder/) per includere i seguenti sensori:
   - sensor.potenza_carichi_selezionato
   - sensor.potenza_carichi_sospesa
   - sensor.potenza_massima
@@ -35,7 +35,7 @@ Ma utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando
 ![image](https://user-images.githubusercontent.com/7837288/107847409-8f121080-6deb-11eb-928e-3115360aa561.png)
 
 # Debug
-E' possibile attivare la scrittura di messaggi di log abilitando il componente relativo nella sezione logger del file di configurazione configuration.yaml:
+E' possibile attivare la scrittura di messaggi di log abilitando il componente relativo nella [sezione logger](https://www.home-assistant.io/docs/configuration/packages/) del file di configurazione configuration.yaml:
 ```python
 logger:
   default: error
