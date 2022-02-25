@@ -204,7 +204,12 @@ input_boolean:
   sensore_trigger:
     name: sensore trigger
     initial: off
+    
+  # Se messo su on, attiva il nuovo script che filtra solo le entità che iniziano con "sensor.potenza" e "switch.interruttore"
+  selezione_script_python:
+    name: Selezione script Pyton
 
+    
 input_number:
 
 # Mantengono memoria della potenza utilizzata al momento del distacco, per valutare la riattivazione.
@@ -340,7 +345,7 @@ input_select:
     options:
       - Seleziona
       
-# Selezione dele sensore di  potenza utilizzata. Se non configurato, viene utilizzato il sensore virtuale 
+# Selezione del sensore di  potenza utilizzata. Se non configurato, viene utilizzato il sensore virtuale 
   potenza_carichi:
     name: Sensore potenza carichi
     options:
@@ -521,13 +526,29 @@ automation:
     trigger:
       - platform: homeassistant
         event: start
+      - platform: state
+        entity_id: input_boolean.selezione_script_python
     action:
     - service: system_log.write
       data_template:
         level: debug
         logger: homeassistant.components.pc
         message: "Automazione Configurazione - Popola entità - Avvio script python"
-    - service: python_script.update_entities
+        
+    - choose:
+      - conditions:
+          - condition: state
+            entity_id: input_boolean.selezione_script_python
+            state: 'off'
+        sequence:
+          - service: python_script.update_entities
+      - conditions:
+          - condition: state
+            entity_id: input_boolean.selezione_script_python
+            state: 'on'
+        sequence:
+          - service: python_script.update_entities_new
+    
     - service: system_log.write
       data_template:
         level: debug
@@ -557,7 +578,8 @@ automation:
       - service: input_select.select_option
         data:
           entity_id: input_select.potenza_carichi
-          option: "{{ states('input_text.potenza_carichi') }}"              
+          option: "{{ states('input_text.potenza_carichi') }}"
+              
       - service: input_select.select_option
         data:
           entity_id: input_select.carico_1_potenza
