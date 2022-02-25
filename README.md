@@ -8,8 +8,9 @@ Lo script tiene memoria dell'assorbimento del carico prima del distacco e lo ric
 La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo di notifica (notify.tutti) che va impostato manualmente.
 
 # Installazione
-- Copiare il file "pc.yaml" nella directory "packages"
-- Copiare il file "update_entities.py" nella directory "python_scripts"
+- Copiare il file "packages/pc.yaml" nella directory "packages"
+- Copiare il file "/python_scriptsupdate_entities.py" nella directory "python_scripts"
+- In alternativa, è possibile scaricare il file ZIP ed estrarre il contenuto della cartella "HA_PowerControl-main" nella cartella di Home Assistant.
 - [Abilitare i packages](https://www.home-assistant.io/docs/configuration/packages/)
 - [Abilitare gli script python](https://www.home-assistant.io/integrations/python_script/)
 - Aggiungere il contenuto del file "pc.lovelace" all'interfaccia Lovelace.
