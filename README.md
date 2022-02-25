@@ -9,7 +9,7 @@ La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo 
 
 # Installazione
 - Copiare il file "packages/pc.yaml" nella directory "packages"
-- Copiare il file "/python_scriptsupdate_entities.py" nella directory "python_scripts"
+- Copiare i file "/python_scriptsupdate_entities.py" e "/python_scriptsupdate_entities_new.py" nella directory "python_scripts"
 - In alternativa, è possibile scaricare il file ZIP ed estrarre il contenuto della cartella "HA_PowerControl-main" nella cartella di Home Assistant.
 - [Abilitare i packages](https://www.home-assistant.io/docs/configuration/packages/)
 - [Abilitare gli script python](https://www.home-assistant.io/integrations/python_script/)
