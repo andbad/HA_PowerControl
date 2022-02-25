@@ -1,6 +1,12 @@
   - title: PC
     path: pc
     icon: hass:car-cruise-control
+    visible:
+      - user: ceda43a363f749c6a3a37e8f17b0a732
+      - user: 65e63ca9e07c42d78df3c9b439466cc2
+      - user: 07caa89440ae4316b34983c6c1be7d59
+      - user: 73582ec97f774054afd57458a5f29188
+      - user: ffb67fb3750741e3b0cd57a420146d2e
     badges: []
     cards:
       - type: vertical-stack
@@ -42,128 +48,128 @@
 
 
                 **Sensore rilevamento potenza**:
-                {{states.input_text.potenza_carichi.state}}
+                {{states('input_text.potenza_carichi')}}
 
 
                 **Carico 1**: 
 
-                **Potenza**: {{states.input_text.carico_1_potenza.state}}
+                **Potenza**: {{states('input_text.carico_1_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_1_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_1_switch')}} 
 
                 **Carico 2**: 
 
-                **Potenza**: {{states.input_text.carico_2_potenza.state}}
+                **Potenza**: {{states('input_text.carico_2_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_2_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_2_switch')}} 
 
                 **Carico 3**: 
 
-                **Potenza**: {{states.input_text.carico_3_potenza.state}}
+                **Potenza**: {{states('input_text.carico_3_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_3_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_3_switch')}} 
 
                 **Carico 4**: 
 
-                **Potenza**: {{states.input_text.carico_4_potenza.state}}
+                **Potenza**: {{states('input_text.carico_4_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_4_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_4_switch')}} 
 
                 **Carico 5**: 
 
-                **Potenza**: {{states.input_text.carico_5_potenza.state}}
+                **Potenza**: {{states('input_text.carico_5_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_5_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_5_switch')}} 
 
                 **Carico 6**: 
 
-                **Potenza**: {{states.input_text.carico_6_potenza.state}}
+                **Potenza**: {{states('input_text.carico_6_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_6_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_6_switch')}} 
 
                 **Carico 7**: 
 
-                **Potenza**: {{states.input_text.carico_7_potenza.state}}
+                **Potenza**: {{states('input_text.carico_7_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_7_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_7_switch')}} 
 
                 **Carico 8**: 
 
-                **Potenza**: {{states.input_text.carico_8_potenza.state}}
+                **Potenza**: {{states('input_text.carico_8_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_8_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_8_switch')}} 
 
                 **Carico 9**: 
 
-                **Potenza**: {{states.input_text.carico_9_potenza.state}}
+                **Potenza**: {{states('input_text.carico_9_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_9_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_9_switch')}} 
 
                 **Carico 10**: 
 
-                **Potenza**: {{states.input_text.carico_10_potenza.state}}
+                **Potenza**: {{states('input_text.carico_10_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_10_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_10_switch')}} 
 
                 **Carico 11**: 
 
-                **Potenza**: {{states.input_text.carico_11_potenza.state}}
+                **Potenza**: {{states('input_text.carico_11_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_11_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_11_switch')}} 
 
                 **Carico 12**: 
 
-                **Potenza**: {{states.input_text.carico_12_potenza.state}}
+                **Potenza**: {{states('input_text.carico_12_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_12_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_12_switch')}} 
 
                 **Carico 13**: 
 
-                **Potenza**: {{states.input_text.carico_13_potenza.state}}
+                **Potenza**: {{states('input_text.carico_13_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_13_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_13_switch')}} 
 
                 **Carico 14**: 
 
-                **Potenza**: {{states.input_text.carico_14_potenza.state}}
+                **Potenza**: {{states('input_text.carico_14_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_14_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_14_switch')}} 
 
                 **Carico 15**: 
 
-                **Potenza**: {{states.input_text.carico_15_potenza.state}}
+                **Potenza**: {{states('input_text.carico_15_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_15_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_15_switch')}} 
 
                 **Carico 16**: 
 
-                **Potenza**: {{states.input_text.carico_16_potenza.state}}
+                **Potenza**: {{states('input_text.carico_16_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_16_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_16_switch')}} 
 
                 **Carico 17**: 
 
-                **Potenza**: {{states.input_text.carico_17_potenza.state}}
+                **Potenza**: {{states('input_text.carico_17_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_17_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_17_switch')}} 
 
                 **Carico 18**: 
 
-                **Potenza**: {{states.input_text.carico_18_potenza.state}}
+                **Potenza**: {{states('input_text.carico_18_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_18_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_18_switch')}} 
 
                 **Carico 19**: 
 
-                **Potenza**: {{states.input_text.carico_19_potenza.state}}
+                **Potenza**: {{states('input_text.carico_19_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_19_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_19_switch')}} 
 
                 **Carico 20**: 
 
-                **Potenza**: {{states.input_text.carico_20_potenza.state}}
+                **Potenza**: {{states('input_text.carico_20_potenza')}}
 
-                **Interruttore**: {{states.input_text.carico_20_switch.state}} 
+                **Interruttore**: {{states('input_text.carico_20_switch')}} 
               title: Configurazione Salvata
       - type: conditional
         conditions:
@@ -224,6 +230,13 @@
                 Attende tot MINUTI tra una riattivazione e l'altra per dare il
                 tempo al carico di riprendere il suo normale assorbimento.
                 (suggerito 5)
+
+
+                **Nuova modalità selezione**
+
+                Attivando questa opzione, le entità dei carichi verranno
+                filtrate e saranno visibili solo quelle che iniziano con
+                "sensor.potenza" e "swtich.interruttore".
               title: Configurazione
             - type: entities
               entities:
@@ -250,6 +263,8 @@
                 - entity: input_number.attesa_start
                   name: Minuti tra gli start
                   icon: hass:camera-timer
+                - entity: input_boolean.selezione_script_python
+                  name: Nuova modalità selezione opzioni
               state_color: true
               show_header_toggle: false
       - type: conditional
