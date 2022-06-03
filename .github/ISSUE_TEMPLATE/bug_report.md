@@ -30,7 +30,7 @@ Se applicabile alla tua problematica, posta uno screeshot.
  - Versione package
 
 **Log:**
-I log sono importanti per la diagnosi di un problema. Attivali: https://github.com/andbad/HA_PowerControl#debug
+I log sono importanti per la diagnosi di un problema. [Attivali!](https://github.com/andbad/HA_PowerControl#debug)
 
 **Informazioni aggiuntive**
 Altre informazioni che potrebbero sembrarti utili.
