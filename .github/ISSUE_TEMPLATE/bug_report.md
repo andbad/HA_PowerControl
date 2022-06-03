@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-Descrivi il problema**
+**Descrivi il problema**
 Descrizione sommaria dl problema.
 
 **Passi per riprodurre il problema**
