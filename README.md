@@ -6,6 +6,7 @@ E' consigliato, ma non tassativo, l'utilizzo di un sensore che monitori il consu
 La logica prevede la configurazione di due soglie di potenza massima e due tempistiche di intervento (che rispecchiano la logica di funzionamento dei contatori di energia elettrica utilizzati in Italia):
 - se l'assorbimento complessivo supera il valore di "Potenza Massima Ritardato", il pacchetto attende il valore in minuti di "Minuti distacco ritardato", dopo i quali inizia a scollegare i carichi;
 - se l'assorbimento complessivo supera invece il valor di "Potenza massima immediato", attende un numero di secondi impostato in "Secondi distacco immediato" e poi inizia il distacco.
+
 Lo scollegamento dei carichi che stanno assorbendo energia parte da quelli a minore priorità (Carico 20) fino a quelli a maggiore priorità (Carico 1), fino a che l'utilizzo complessivo della potenza rientri nel limite prefissato. Se un carico non sta assorbendo, non viene distaccato.
 Lo script tiene memoria dell'assorbimento del carico prima del distacco e lo ricollega solo quando la disponibilità di potenza è sufficiente a non causare un nuovo distacco, in ordine di priorità inverso (da Carico 1 a Carico 20).
 La configurazione è interamente tramite interfaccia grafica, tranne il gruppo di notifica (notify.tutti) che va impostato manualmente.
