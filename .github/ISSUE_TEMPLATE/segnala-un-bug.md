@@ -1,5 +1,5 @@
 ---
-name: Segnala un problema
+name: Segnala un bug
 about: Crea una segnalazione per aiutarci ad aiutarti
 title: ''
 labels: bug
