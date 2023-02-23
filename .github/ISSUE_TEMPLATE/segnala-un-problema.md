@@ -1,8 +1,8 @@
 ---
-name: Bug report
+name: Segnala un problema
 about: Crea una segnalazione per aiutarci ad aiutarti
 title: ''
-labels: ''
+labels: bug, enhancement
 assignees: ''
 
 ---
