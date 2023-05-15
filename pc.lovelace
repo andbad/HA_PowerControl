@@ -1,8 +1,6 @@
   - title: PC
     path: pc
     icon: hass:car-cruise-control
-    visible:
-      - user: ceda43a363f749c6a3a37e8f17b0a732
     badges: []
     cards:
       - type: vertical-stack
