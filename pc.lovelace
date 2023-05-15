@@ -3,10 +3,6 @@
     icon: hass:car-cruise-control
     visible:
       - user: ceda43a363f749c6a3a37e8f17b0a732
-      - user: 65e63ca9e07c42d78df3c9b439466cc2
-      - user: 07caa89440ae4316b34983c6c1be7d59
-      - user: 73582ec97f774054afd57458a5f29188
-      - user: ffb67fb3750741e3b0cd57a420146d2e
     badges: []
     cards:
       - type: vertical-stack
@@ -34,6 +30,9 @@
               - entity: sensor.potenza_carichi_sospesa
                 name: Potenza in attesa
                 icon: hass:power-plug-off
+              - entity: script.powercontrol_configurazione_salva
+                name: Salva Configurazione
+                icon: mdi:floppy
             state_color: true
             show_header_toggle: false
           - type: conditional
