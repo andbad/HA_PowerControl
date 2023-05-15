@@ -3,7 +3,7 @@
 #################################################################
 # Autore: andbad                                                #
 # GitHub: https://github.com/andbad/HA_PowerControl             #
-# Versione: 3.3                                                 #
+# Versione: 3.4                                                 #
 #################################################################
 ########################### CREDITS #############################
 # Un ringraziamento alla community di InDomus per l'aiuto       #
@@ -98,25 +98,25 @@ sensor:
       potenza_carichi_sospesa:
         unit_of_measurement: 'W'
         value_template: >
-          {{ states('input_number.potenza_1_sospesa')|int(default=0) + 
-             states('input_number.potenza_2_sospesa')|int(default=0) + 
-             states('input_number.potenza_3_sospesa')|int(default=0) + 
-             states('input_number.potenza_4_sospesa')|int(default=0) + 
-             states('input_number.potenza_5_sospesa')|int(default=0) + 
-             states('input_number.potenza_6_sospesa')|int(default=0) + 
-             states('input_number.potenza_7_sospesa')|int(default=0) + 
-             states('input_number.potenza_8_sospesa')|int(default=0) + 
-             states('input_number.potenza_9_sospesa')|int(default=0) + 
+          {{ states('input_number.potenza_1_sospesa')|int(default=0) +
+             states('input_number.potenza_2_sospesa')|int(default=0) +
+             states('input_number.potenza_3_sospesa')|int(default=0) +
+             states('input_number.potenza_4_sospesa')|int(default=0) +
+             states('input_number.potenza_5_sospesa')|int(default=0) +
+             states('input_number.potenza_6_sospesa')|int(default=0) +
+             states('input_number.potenza_7_sospesa')|int(default=0) +
+             states('input_number.potenza_8_sospesa')|int(default=0) +
+             states('input_number.potenza_9_sospesa')|int(default=0) +
              states('input_number.potenza_10_sospesa')|int(default=0) +
-             states('input_number.potenza_11_sospesa')|int(default=0) + 
-             states('input_number.potenza_12_sospesa')|int(default=0) + 
-             states('input_number.potenza_13_sospesa')|int(default=0) + 
-             states('input_number.potenza_14_sospesa')|int(default=0) + 
-             states('input_number.potenza_15_sospesa')|int(default=0) + 
-             states('input_number.potenza_16_sospesa')|int(default=0) + 
-             states('input_number.potenza_17_sospesa')|int(default=0) + 
-             states('input_number.potenza_18_sospesa')|int(default=0) + 
-             states('input_number.potenza_19_sospesa')|int(default=0) + 
+             states('input_number.potenza_11_sospesa')|int(default=0) +
+             states('input_number.potenza_12_sospesa')|int(default=0) +
+             states('input_number.potenza_13_sospesa')|int(default=0) +
+             states('input_number.potenza_14_sospesa')|int(default=0) +
+             states('input_number.potenza_15_sospesa')|int(default=0) +
+             states('input_number.potenza_16_sospesa')|int(default=0) +
+             states('input_number.potenza_17_sospesa')|int(default=0) +
+             states('input_number.potenza_18_sospesa')|int(default=0) +
+             states('input_number.potenza_19_sospesa')|int(default=0) +
              states('input_number.potenza_20_sospesa')|int(default=0) }}
 
 # Mostra lo stato del sensore selezionato, utile per il grafico.
@@ -138,7 +138,7 @@ sensor:
       potenza_massima_ritardato:
         unit_of_measurement: 'W'
         value_template: "{{ states('input_number.potenza_massima_ritardato')|int(default=0) }}"
-        
+
 #################################################################
 ######################### INPUT_* ###############################
 #################################################################
@@ -168,30 +168,30 @@ input_text:
   carico_1_switch:
   carico_2_switch:
   carico_3_switch:
-  carico_4_switch: 
-  carico_5_switch: 
-  carico_6_switch: 
-  carico_7_switch: 
-  carico_8_switch: 
-  carico_9_switch: 
+  carico_4_switch:
+  carico_5_switch:
+  carico_6_switch:
+  carico_7_switch:
+  carico_8_switch:
+  carico_9_switch:
   carico_10_switch:
   carico_11_switch:
   carico_12_switch:
   carico_13_switch:
-  carico_14_switch: 
-  carico_15_switch: 
-  carico_16_switch: 
-  carico_17_switch: 
-  carico_18_switch: 
-  carico_19_switch: 
-  carico_20_switch: 
+  carico_14_switch:
+  carico_15_switch:
+  carico_16_switch:
+  carico_17_switch:
+  carico_18_switch:
+  carico_19_switch:
+  carico_20_switch:
 
   potenza_carichi:
 
 input_boolean:
 # Switch per l'interfaccia grafica 
   attiva_power_control:
-    name: Attiva Power Control 
+    name: Attiva Power Control
     icon: mdi:car-cruise-control
 
   impostazioni_power_control:
@@ -204,12 +204,12 @@ input_boolean:
   sensore_trigger:
     name: sensore trigger
     initial: off
-    
+
   # Se messo su on, attiva il nuovo script che filtra solo le entità che iniziano con "sensor.potenza" e "switch.interruttore"
   selezione_script_python:
     name: Selezione script Pyton
 
-    
+
 input_number:
 
 # Mantengono memoria della potenza utilizzata al momento del distacco, per valutare la riattivazione.
@@ -293,49 +293,49 @@ input_number:
     initial: 0
     min: 0
     max: 10000
-  
+
   # Slider per la configurazione della potenza massima utilizzabile, superata questa soglia il distacco è immediato
   potenza_massima_immediato:
     min: 0
-    max: 9000
+    max: 15000
     step: 100
-  
+
   # Slider per la configurazione della potenza massima utilizzabile, superata questa soglia vengono attesi alcuni minuti
   # prima del distacco.
   potenza_massima_ritardato:
     min: 0
-    max: 9000
+    max: 15000
     step: 100
 
   #Attende tot SECONDI tra un distacco e l'altro.
   tempo_stop_immediato:
     min: 0
     max: 60
-    step: 1  
-  
+    step: 1
+
   #Attende tot MINUTI tra un distacco e l'altro.
   tempo_stop_ritardato:
     min: 0
     max: 180
-    step: 10  
-  
+    step: 10
+
   #Dopo tot MINUTI che la potenza utilizzata è rientrata nei limiti, inizia a riattivare i carichi
   tempo_start:
     min: 0
     max: 60
-    step: 1  
-  
+    step: 1
+
   #Attende tot SECONDI tra un distacco e l'altro.
   attesa_stop:
     min: 0
     max: 60
-    step: 1  
+    step: 1
 
   #Attende tot MINUTI tra una riattivazione e l'altra per dare il tempo al carico di riprendere il suo normale assorbimento
   attesa_start:
     min: 0
     max: 60
-    step: 1  
+    step: 1
 
 
 input_select:
@@ -344,7 +344,7 @@ input_select:
     name: Lista potenza carichi
     options:
       - Seleziona
-      
+
 # Selezione del sensore di  potenza utilizzata. Se non configurato, viene utilizzato il sensore virtuale 
   potenza_carichi:
     name: Sensore potenza carichi
@@ -521,20 +521,903 @@ input_select:
 automation:
 
 # All'avvio di HA, aggiorna gli input_slider con la lista delle entità per i campi di configurazione.
-  - id: 'powercontrol_configurazione_popola_entita'
-    alias: PowerControl - Configurazione - Popola entità
+# All'avvio di HA attende che l'automazione "Popola entità" termini, poi carica la configurazione di interruttori
+# e sensori di potenza.
+  - id: 'powercontrol_configurazione_carica'
+    alias: PowerControl   - Configurazione - Carica
+    mode: single
     trigger:
       - platform: homeassistant
         event: start
-      - platform: state
-        entity_id: input_boolean.selezione_script_python
+        id: start
+      - platform: event
+        id: reload
+        event_type:
+          - automation_reloaded
+    action:
+      - service: system_log.write
+        data_template:
+          level: debug
+          logger: homeassistant.components.pc
+          message: "Automazione Configurazione - Carica - Lancio script configurazione"
+      - choose:
+        - conditions:
+            - condition: trigger
+              id: start
+          sequence:
+            - service: script.turn_on
+              data: {}
+              entity_id: script.powercontrol_configurazione_popola_entita
+            - wait_template: "{{ state_attr('script.powercontrol_configurazione_popola_entita','current') == 0 }}"
+        - conditions:
+            - condition: trigger
+              id: reload
+          sequence:
+            - delay:
+                minutes: 1
+            - service: script.turn_on
+              data: {}
+              entity_id: script.powercontrol_configurazione_popola_entita
+            - wait_template: "{{ state_attr('script.powercontrol_configurazione_popola_entita','current') == 0 }}"
+      - service: system_log.write
+        data_template:
+          level: debug
+          logger: homeassistant.components.pc
+          message: "Automazione Configurazione - Carica - Fine script configurazione"
+
+# Automazione che si triggera nel momento in cui la la potenza utilizzata supera la potenza massima impostata.
+# Agisce dopo TOT secondi dal superamento del limite, avvia lo script di distacco ed invia notifica di intervento.
+# Ripete l'avvio dello script di distacco finché la potenza impegnata non rientra nel limite.
+  - id: 'powercontrol_carichi_stop'
+    alias: PowerControl - Carichi Stop
+    mode: single
+    description: ''
+    trigger:
+    - platform: template
+      value_template: "{{ states(states('input_text.potenza_carichi')) |int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0) }}"
+      for:
+        seconds: "{{ states('input_number.tempo_stop_immediato')|int(default=0) }}"
+      id: immediato
+    - platform: template
+      value_template: "{{ states(states('input_text.potenza_carichi')) |int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0) }}"
+      for:
+        minutes: "{{ states('input_number.tempo_stop_ritardato')|int(default=0) }}"
+      id: ritardato
+    condition:
+    - condition: state
+      entity_id: input_boolean.attiva_power_control
+      state: 'on'
     action:
     - service: system_log.write
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Automazione Configurazione - Popola entità - Avvio script python"
-        
+        message: "Automazione Carichi Stop triggerata: Potenza carichi ({{ states(states('input_text.potenza_carichi'))|int(default=0) }}))"
+    - choose:
+      - conditions:
+          - condition: trigger
+            id: immediato
+        sequence:
+          - service: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.sensore_trigger
+          - service: system_log.write
+            data_template:
+              level: debug
+              logger: homeassistant.components.pc
+              message: "Automazione Carichi Stop triggerata: Tipo di innesco Immediato"
+      - conditions:
+          - condition: trigger
+            id: ritardato
+        sequence:
+          - service: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.sensore_trigger
+          - service: system_log.write
+            data_template:
+              level: debug
+              logger: homeassistant.components.pc
+              message: "Automazione Carichi Stop triggerata: Tipo di innesco Ritardato"
+
+    - repeat:
+        sequence:
+          - service: system_log.write
+            data_template:
+              level: debug
+              logger: homeassistant.components.pc
+              message: "Avviato script stop carichi: potenza carichi {{ states(states('input_text.potenza_carichi'))|int(default=0)}}"
+          - service: script.turn_on
+            data: {}
+            entity_id: script.stop_carichi_generale
+        until:
+          - condition: template
+            value_template: >
+              {{
+              ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0)) and states('input_boolean.sensore_trigger') == "off") or
+              ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0)) and states('input_boolean.sensore_trigger') == "on")
+              }}
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.sensore_trigger
+
+# Se per TOT minuti il limite di potenza è rispettato, avvia lo script di riattivazione dei carichi fino a che la potenza "sospesa" non è zero.
+  - id: 'powercontrol_carichi_start'
+    alias: PowerControl - Carichi Start
+    description: ''
+    mode: single
+    trigger:
+    - platform: template
+      value_template: "{{ ((states(states('input_text.potenza_carichi'))|int(default=0) + states('sensor.potenza_carichi_sospesa')|int(default=0)) < states('sensor.potenza_massima_ritardato')|int(default=0)) and (states('sensor.potenza_carichi_sospesa')|int(default=0) > 0) }}"
+      for:
+        minutes: "{{ states('input_number.tempo_start')|int(default=0) }}"
+    condition:
+    - condition: state
+      entity_id: input_boolean.attiva_power_control
+      state: 'on'
+    - condition: template
+      value_template: "{{ states('sensor.potenza_carichi_sospesa')|int(default=0) > 0 }}"
+    action:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Automazione start carichi triggerata: Potenza carichi+sospesa ({{ states(states('input_text.potenza_carichi'))|int(default=0) + states('sensor.potenza_carichi_sospesa')|int(default=0)}}) < Potenza massima ({{states('sensor.potenza_massima_ritardato')|int(default=0) }}) "
+    - repeat:
+        until:
+        - condition: template
+          value_template: "{{ states('sensor.potenza_carichi_sospesa')|int(default=0) > 0 }}"
+        sequence:
+        - service: system_log.write
+          data_template:
+            level: debug
+            logger: homeassistant.components.pc
+            message: "Avvio script start carichi: sospesa ({{ states('sensor.potenza_carichi_sospesa')|int(default=0) }})>0 "
+        - service: script.turn_on
+          data: {}
+          entity_id: script.start_carichi_generale
+
+# Controlla se un carico viene riacceso manualmente, cioè se il relativo interruttore viene attivato dall'utente,
+# e resetta la relativa potenza sospesa.
+  - id: 'powercontrol_watchdog_sospesa'
+    alias: PowerControl - Controllo su riattivazione manuale
+    mode: single
+
+    description: >-
+      Monitora gli switch dei carichi e, se uno di questi è attivo ma la sua potenza
+      sospesa è diversa da 0, la porta a zero.
+    trigger:
+      - platform: template
+        value_template: >
+              {{
+              ( states(states('input_text.carico_1_switch')) == 'on' and states('input_number.potenza_1_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_2_switch')) == 'on' and states('input_number.potenza_2_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_3_switch')) == 'on' and states('input_number.potenza_3_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_4_switch')) == 'on' and states('input_number.potenza_4_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_5_switch')) == 'on' and states('input_number.potenza_5_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_6_switch')) == 'on' and states('input_number.potenza_6_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_7_switch')) == 'on' and states('input_number.potenza_7_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_8_switch')) == 'on' and states('input_number.potenza_8_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_9_switch')) == 'on' and states('input_number.potenza_9_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_10_switch')) == 'on' and states('input_number.potenza_10_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_11_switch')) == 'on' and states('input_number.potenza_11_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_12_switch')) == 'on' and states('input_number.potenza_12_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_13_switch')) == 'on' and states('input_number.potenza_13_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_14_switch')) == 'on' and states('input_number.potenza_14_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_15_switch')) == 'on' and states('input_number.potenza_15_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_16_switch')) == 'on' and states('input_number.potenza_16_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_17_switch')) == 'on' and states('input_number.potenza_17_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_18_switch')) == 'on' and states('input_number.potenza_18_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_19_switch')) == 'on' and states('input_number.potenza_19_sospesa')|int(default=0) > 0 ) or
+              ( states(states('input_text.carico_20_switch')) == 'on' and states('input_number.potenza_20_sospesa')|int(default=0) > 0 )
+              }}
+        for:
+          seconds: 5
+    condition: []
+    action:
+      - service: system_log.write
+        data_template:
+          level: debug
+          logger: homeassistant.components.pc
+          message: Automazione Check riattivazione manuale - Avvio
+      - service: input_number.set_value
+        data_template:
+          value: 0
+          entity_id: "{% if states(states('input_text.carico_1_switch')) == 'on' and states('input_number.potenza_1_sospesa')|int(default=0) > 0 %}input_number.potenza_1_sospesa
+          {% elif states(states('input_text.carico_2_switch')) == 'on' and states('input_number.potenza_2_sospesa')|int(default=0) > 0 %}input_number.potenza_2_sospesa
+          {% elif states(states('input_text.carico_3_switch')) == 'on' and states('input_number.potenza_3_sospesa')|int(default=0) > 0 %}input_number.potenza_3_sospesa
+          {% elif states(states('input_text.carico_4_switch')) == 'on' and states('input_number.potenza_4_sospesa')|int(default=0) > 0 %}input_number.potenza_4_sospesa
+          {% elif states(states('input_text.carico_5_switch')) == 'on' and states('input_number.potenza_5_sospesa')|int(default=0) > 0 %}input_number.potenza_5_sospesa
+          {% elif states(states('input_text.carico_6_switch')) == 'on' and states('input_number.potenza_6_sospesa')|int(default=0) > 0 %}input_number.potenza_6_sospesa
+          {% elif states(states('input_text.carico_7_switch')) == 'on' and states('input_number.potenza_7_sospesa')|int(default=0) > 0 %}input_number.potenza_7_sospesa
+          {% elif states(states('input_text.carico_8_switch')) == 'on' and states('input_number.potenza_8_sospesa')|int(default=0) > 0 %}input_number.potenza_8_sospesa
+          {% elif states(states('input_text.carico_9_switch')) == 'on' and states('input_number.potenza_9_sospesa')|int(default=0) > 0 %}input_number.potenza_9_sospesa
+          {% elif states(states('input_text.carico_10_switch')) == 'on' and states('input_number.potenza_10_sospesa')|int(default=0) > 0 %}input_number.potenza_10_sospesa
+          {% elif states(states('input_text.carico_11_switch')) == 'on' and states('input_number.potenza_11_sospesa')|int(default=0) > 0 %}input_number.potenza_11_sospesa
+          {% elif states(states('input_text.carico_12_switch')) == 'on' and states('input_number.potenza_12_sospesa')|int(default=0) > 0 %}input_number.potenza_12_sospesa
+          {% elif states(states('input_text.carico_13_switch')) == 'on' and states('input_number.potenza_13_sospesa')|int(default=0) > 0 %}input_number.potenza_13_sospesa
+          {% elif states(states('input_text.carico_14_switch')) == 'on' and states('input_number.potenza_14_sospesa')|int(default=0) > 0 %}input_number.potenza_14_sospesa
+          {% elif states(states('input_text.carico_15_switch')) == 'on' and states('input_number.potenza_15_sospesa')|int(default=0) > 0 %}input_number.potenza_15_sospesa
+          {% elif states(states('input_text.carico_16_switch')) == 'on' and states('input_number.potenza_16_sospesa')|int(default=0) > 0 %}input_number.potenza_16_sospesa
+          {% elif states(states('input_text.carico_17_switch')) == 'on' and states('input_number.potenza_17_sospesa')|int(default=0) > 0 %}input_number.potenza_17_sospesa
+          {% elif states(states('input_text.carico_18_switch')) == 'on' and states('input_number.potenza_18_sospesa')|int(default=0) > 0 %}input_number.potenza_18_sospesa
+          {% elif states(states('input_text.carico_19_switch')) == 'on' and states('input_number.potenza_19_sospesa')|int(default=0) > 0 %}input_number.potenza_11_sospesa
+          {% elif states(states('input_text.carico_20_switch')) == 'on' and states('input_number.potenza_20_sospesa')|int(default=0) > 0 %}input_number.potenza_20_sospesa
+          {% else %}none
+          {% endif %}"
+      - service: system_log.write
+        data_template:
+          level: debug
+          logger: homeassistant.components.pc
+          message: Automazione Check riattivazione manuale - Fine
+
+
+#################################################################
+######################### SCRIPT  ###############################
+#################################################################
+
+script:
+
+# I carichi vengono disattivati secondo l'ordine numerico inverso (da minore priorità a maggiore).
+# Attende il completamente di uno script prima di passare al successivo.
+  stop_carichi_generale:
+    alias: PowerControl - Stop carichi generale
+    sequence:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 20"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_20_potenza')}}"
+        switch: "{{states('input_text.carico_20_switch')}}"
+        sospesa: "input_number.potenza_20_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 19"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_19_potenza')}}"
+        switch: "{{states('input_text.carico_19_switch')}}"
+        sospesa: "input_number.potenza_19_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 18"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_18_potenza')}}"
+        switch: "{{states('input_text.carico_18_switch')}}"
+        sospesa: "input_number.potenza_18_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 17"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_17_potenza')}}"
+        switch: "{{states('input_text.carico_17_switch')}}"
+        sospesa: "input_number.potenza_17_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 16"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_16_potenza')}}"
+        switch: "{{states('input_text.carico_16_switch')}}"
+        sospesa: "input_number.potenza_16_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 15"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_15_potenza')}}"
+        switch: "{{states('input_text.carico_15_switch')}}"
+        sospesa: "input_number.potenza_15_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 14"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_14_potenza')}}"
+        switch: "{{states('input_text.carico_14_switch')}}"
+        sospesa: "input_number.potenza_14_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 13"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_13_potenza')}}"
+        switch: "{{states('input_text.carico_13_switch')}}"
+        sospesa: "input_number.potenza_13_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 12"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_12_potenza')}}"
+        switch: "{{states('input_text.carico_12_switch')}}"
+        sospesa: "input_number.potenza_12_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 11"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_11_potenza')}}"
+        switch: "{{states('input_text.carico_11_switch')}}"
+        sospesa: "input_number.potenza_11_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 10"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_10_potenza')}}"
+        switch: "{{states('input_text.carico_10_switch')}}"
+        sospesa: "input_number.potenza_10_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 9"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_9_potenza')}}"
+        switch: "{{states('input_text.carico_9_switch')}}"
+        sospesa: "input_number.potenza_9_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 8"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_8_potenza')}}"
+        switch: "{{states('input_text.carico_8_switch')}}"
+        sospesa: "input_number.potenza_8_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 7"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_7_potenza')}}"
+        switch: "{{states('input_text.carico_7_switch')}}"
+        sospesa: "input_number.potenza_7_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 6"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_6_potenza')}}"
+        switch: "{{states('input_text.carico_6_switch')}}"
+        sospesa: "input_number.potenza_6_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 5"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_5_potenza')}}"
+        switch: "{{states('input_text.carico_5_switch')}}"
+        sospesa: "input_number.potenza_5_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 4"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_4_potenza')}}"
+        switch: "{{states('input_text.carico_4_switch')}}"
+        sospesa: "input_number.potenza_4_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 3"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_3_potenza')}}"
+        switch: "{{states('input_text.carico_3_switch')}}"
+        sospesa: "input_number.potenza_3_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 2"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_2_potenza')}}"
+        switch: "{{states('input_text.carico_2_switch')}}"
+        sospesa: "input_number.potenza_2_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script stop carico 1"
+    - service: script.stop_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_1_potenza')}}"
+        switch: "{{states('input_text.carico_1_switch')}}"
+        sospesa: "input_number.potenza_1_sospesa"
+    mode: single
+
+# I carichi vengono riattivati secondo l'ordine numerico (da maggiore priorità a minore priorità)
+# Attende il completamente di uno script prima di passare al successivo.
+  start_carichi_generale:
+    alias: PowerControl - Start carichi Generale
+    sequence:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 1"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_1_potenza')}}"
+        switch: "{{states('input_text.carico_1_switch')}}"
+        sospesa: "input_number.potenza_1_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 2"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_2_potenza')}}"
+        switch: "{{states('input_text.carico_2_switch')}}"
+        sospesa: "input_number.potenza_2_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 3"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_3_potenza')}}"
+        switch: "{{states('input_text.carico_3_switch')}}"
+        sospesa: "input_number.potenza_3_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 4"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_4_potenza')}}"
+        switch: "{{states('input_text.carico_4_switch')}}"
+        sospesa: "input_number.potenza_4_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 5"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_5_potenza')}}"
+        switch: "{{states('input_text.carico_5_switch')}}"
+        sospesa: "input_number.potenza_5_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 6"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_6_potenza')}}"
+        switch: "{{states('input_text.carico_6_switch')}}"
+        sospesa: "input_number.potenza_6_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 7"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_7_potenza')}}"
+        switch: "{{states('input_text.carico_7_switch')}}"
+        sospesa: "input_number.potenza_7_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 8"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_8_potenza')}}"
+        switch: "{{states('input_text.carico_8_switch')}}"
+        sospesa: "input_number.potenza_8_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 9"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_9_potenza')}}"
+        switch: "{{states('input_text.carico_9_switch')}}"
+        sospesa: "input_number.potenza_9_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 10"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_10_potenza')}}"
+        switch: "{{states('input_text.carico_10_switch')}}"
+        sospesa: "input_number.potenza_10_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 11"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_11_potenza')}}"
+        switch: "{{states('input_text.carico_11_switch')}}"
+        sospesa: "input_number.potenza_11_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 12"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_12_potenza')}}"
+        switch: "{{states('input_text.carico_12_switch')}}"
+        sospesa: "input_number.potenza_12_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 13"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_13_potenza')}}"
+        switch: "{{states('input_text.carico_13_switch')}}"
+        sospesa: "input_number.potenza_13_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 14"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_14_potenza')}}"
+        switch: "{{states('input_text.carico_14_switch')}}"
+        sospesa: "input_number.potenza_14_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 15"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_15_potenza')}}"
+        switch: "{{states('input_text.carico_15_switch')}}"
+        sospesa: "input_number.potenza_15_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 16"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_16_potenza')}}"
+        switch: "{{states('input_text.carico_16_switch')}}"
+        sospesa: "input_number.potenza_16_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 17"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_17_potenza')}}"
+        switch: "{{states('input_text.carico_17_switch')}}"
+        sospesa: "input_number.potenza_17_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 18"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_18_potenza')}}"
+        switch: "{{states('input_text.carico_18_switch')}}"
+        sospesa: "input_number.potenza_18_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 19"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_19_potenza')}}"
+        switch: "{{states('input_text.carico_19_switch')}}"
+        sospesa: "input_number.potenza_19_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Avvio script start carico 20"
+    - service: script.start_carichi_singolo
+      data_template:
+        potenza: "{{states('input_text.carico_20_potenza')}}"
+        switch: "{{states('input_text.carico_20_switch')}}"
+        sospesa: "input_number.potenza_20_sospesa"
+    mode: single
+
+#################################################################
+###################### STOP CARICHI #############################
+#################################################################
+
+# Avvia il distacco del carico.
+# Verifica che il carico si aconfigurato come seonsore di potenza e come interruttore.
+# Controlla se la potenza massima è superata, se il carico è acceso (potenza impegnata > 10W).
+# Salva la potenza attualmente utilizzata nel relativo valore "sospesa".
+# Spegne l'interruttore a monte del carico ed invia la notifica. Attende TOT secondi prima di procedere col carico successivo.
+
+  stop_carichi_singolo:
+    alias: PowerControl - Stop Carico Singolo
+    sequence:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Avvio"
+    # Controlla se il sensore potenza del carico è impostato    
+    - condition: template
+      value_template: "{{ potenza != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 1 - Ok"
+
+    # Controlla se il sensore potenza del carico è disponibile    
+    - condition: template
+      value_template: "{{ states(potenza) != 'unavailable' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 1.5 - Ok"
+
+    # Controlla se l'interruttore del carico è impostato
+    - condition: template
+      value_template: "{{ switch != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 2 - Ok"
+
+    # Controlla se l'interruttore del carico è disponibile
+    - condition: template
+      value_template: "{{ states(switch) != 'unavailable' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.5 - Ok"
+
+    # Controlla se la potenza in uso è maggiore dei limiti impostati
+    - condition: template
+      value_template: >
+        {{
+        ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0)) and states('input_boolean.sensore_trigger') == "off") or
+        ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0)) and states('input_boolean.sensore_trigger') == "on")
+        }}
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 3 - Ok {{ states(states('input_text.potenza_carichi'))|int(default=0)}}W}}"
+    # Controlla se il carico è attualmente in uso 
+    - condition: template
+      value_template: "{{ states(potenza) |int(default=0) > 10 }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 4 - Ok"
+    #Salvo potenza in uso dal carico sul relativo sensore sospesa
+    - service: input_number.set_value
+      data_template:
+        value: "{{ states(potenza) }}"
+        entity_id: "{{sospesa}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Spostata potenza da carico {{ states(potenza) }} a sospesa {{states(sospesa)|int(default=0)}} (dovrebbero essere uguali)."
+    # Spengo il carico
+    - service_template: switch.turn_off
+      data_template:
+        entity_id: "{{ switch }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Spento carico"
+    #Invio Notifica
+    - service: notify.tutti
+      data:
+        title: Limite potenza superato
+        message: "{{ state_attr(switch,'friendly_name') }} disattivato."
+        data:
+          push:
+            thread-id: "powercontrol"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Inviata notifica. Attendo {{ states('input_number.attesa_stop') }} secondi "
+    # Attendo prima di passare al prossimo carico da distaccare.
+    - delay:
+        seconds: "{{ states('input_number.attesa_stop') }}"
+    mode: queued
+
+
+
+#################################################################
+###################### START CARICHI ############################
+#################################################################
+
+# Script per la riattivazione dei carichi.
+# Verifica che il carico si aconfigurato come seonsore di potenza e come interruttore.
+# Controlla che il carico sia stato disattivato (potenza in attesa)
+# Controlla che il limite di potenza venga rispettato.
+# Controlla anche se riattivando il carico (ipotizzando un consumo pari a quello che aveva all'atto della disattivazione) 
+# non supera il valore massimo.
+# Quest'ultimo controllo serve ad evitare che si riattacchi un carico che poi si ristacchi dopo pochi secondi perché ha 
+# causato un nuovo sforamento del limite.
+# Imposta il relativo valore "sospesa" a zero, riattiva l'interruttore ed invia una notifica di riattivazione.
+# Infine attende TOT minuti  prima di passare al carico successivo.
+
+  start_carichi_singolo:
+    alias: PowerControl - Start Carico Singolo
+    sequence:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Avvio"
+    # Controllo se il sensore potenza del carico è stato configurato
+    - condition: template
+      value_template: "{{ potenza != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 1 ok"
+
+    # Controlla se il sensore potenza del carico è disponibile    
+    - condition: template
+      value_template: "{{ states(potenza) != 'unavailable' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 1.5 - Ok"
+
+    # Controllo se l'interruttore del carico è stato configurato
+    - condition: template
+      value_template: "{{ switch != 'Seleziona' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 2 ok"
+
+    # Controlla se l'interruttore del carico è disponibile
+    - condition: template
+      value_template: "{{ states(switch) != 'unavailable' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.5 - Ok"
+
+    # Verifica se la potenza sospesa del carico è maggiore di 0 (in questo caso il carico è stato spento dal contollo carichi)
+    - condition: template
+      value_template: "{{ states(sospesa)|int(default=0) > 0 }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 3 ok"
+    # Verifico che la potenza in uso sia inferiore alla potenza massima ritardato.
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) < states('sensor.potenza_massima_ritardato')|int(default=0)}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 4 ok"
+    #Controlla se, riattivnado il carico, non si superi nuovamente il limite di potenza.
+    - condition: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) + states(sospesa)|int(default=0) < states('sensor.potenza_massima_ritardato')|int(default=0) }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 5 ok"
+    # Imposta la potenza sospesa del carico a zero.
+    - service: input_number.set_value
+      data_template:
+        value: 0
+        entity_id: "{{sospesa}}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Resettata potenza sospesa"
+    #Accendo il carico
+    - service_template: switch.turn_on
+      data_template:
+        entity_id: "{{ switch }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Attivato interruttore"
+    # Invio notifica
+    - service: notify.tutti
+      data:
+        title: Limite potenza rientrato
+        message: "{{ state_attr(switch,'friendly_name') }} Riattivato"
+        data:
+          push:
+            thread-id: "powercontrol"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Inviata notifica. Attendo {{ states('input_number.attesa_start') }} minuti"
+    - delay:
+        minutes: "{{ states('input_number.attesa_start') }}"
+    mode: queued
+
+
+
+#################################################################
+###################### CONFIGURAZIONE ###########################
+#################################################################
+
+# All'avvio di HA, aggiorna gli input_slider con la lista delle entità per i campi di configurazione.
+  powercontrol_configurazione_popola_entita:
+    alias: PowerControl - Configurazione - Popola entità
+    sequence:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Configurazione - Popola entità - Avvio script python"
     - choose:
       - conditions:
           - condition: state
@@ -548,270 +1431,206 @@ automation:
             state: 'on'
         sequence:
           - service: python_script.update_entities_new
-    
     - service: system_log.write
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Automazione Configurazione - Popola entità - Script python terminato"
-    mode: single
+        message: "Script Configurazione - Popola entità - Script python terminato"
 
-# All'avvio di HA attende che l'automazione "Popola entità" termini, poi carica la configurazione di interruttori
-# e sensori di potenza.
-  - id: 'powercontrol_configurazione_carica'
-    alias: PowerControl - Configurazione - Carica
-    trigger:
-      platform: homeassistant
-      event: start
-    action:
-      - service: system_log.write
-        data_template:
-          level: debug
-          logger: homeassistant.components.pc
-          message: "Automazione Configurazione - Carica - Avvio automazione, attendo fine automazione popola_entita_per_configurazione_pc"
-      - wait_template: "{{ state_attr('automation.powercontrol_configurazione_popola_entita','current') == 0 }}"
-      - service: system_log.write
-        data_template:
-          level: debug
-          logger: homeassistant.components.pc
-          message: "Automazione Configurazione - Carica - Carico input_select dai relativi input_text"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.potenza_carichi
-          option: "{{ states('input_text.potenza_carichi') }}"
-              
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_1_potenza
-          option: "{{ states('input_text.carico_1_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_2_potenza  
-          option: "{{ states('input_text.carico_2_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_3_potenza  
-          option: "{{ states('input_text.carico_3_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_4_potenza  
-          option: "{{ states('input_text.carico_4_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_5_potenza  
-          option: "{{ states('input_text.carico_5_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_6_potenza  
-          option: "{{ states('input_text.carico_6_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_7_potenza  
-          option: "{{ states('input_text.carico_7_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_8_potenza  
-          option: "{{ states('input_text.carico_8_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_9_potenza  
-          option: "{{ states('input_text.carico_9_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_10_potenza  
-          option: "{{ states('input_text.carico_10_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_11_potenza
-          option: "{{ states('input_text.carico_11_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_12_potenza  
-          option: "{{ states('input_text.carico_12_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_13_potenza  
-          option: "{{ states('input_text.carico_13_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_14_potenza  
-          option: "{{ states('input_text.carico_14_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_15_potenza  
-          option: "{{ states('input_text.carico_15_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_16_potenza  
-          option: "{{ states('input_text.carico_16_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_17_potenza  
-          option: "{{ states('input_text.carico_17_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_18_potenza  
-          option: "{{ states('input_text.carico_18_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_19_potenza  
-          option: "{{ states('input_text.carico_19_potenza') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_20_potenza  
-          option: "{{ states('input_text.carico_20_potenza') }}"
-          
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Configurazione - Carica - Carico input_select dai relativi input_text"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.potenza_carichi
+        option: "{{ states('input_text.potenza_carichi') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_1_potenza
+        option: "{{ states('input_text.carico_1_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_2_potenza
+        option: "{{ states('input_text.carico_2_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_3_potenza
+        option: "{{ states('input_text.carico_3_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_4_potenza
+        option: "{{ states('input_text.carico_4_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_5_potenza
+        option: "{{ states('input_text.carico_5_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_6_potenza
+        option: "{{ states('input_text.carico_6_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_7_potenza
+        option: "{{ states('input_text.carico_7_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_8_potenza
+        option: "{{ states('input_text.carico_8_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_9_potenza
+        option: "{{ states('input_text.carico_9_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_10_potenza
+        option: "{{ states('input_text.carico_10_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_11_potenza
+        option: "{{ states('input_text.carico_11_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_12_potenza
+        option: "{{ states('input_text.carico_12_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_13_potenza
+        option: "{{ states('input_text.carico_13_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_14_potenza
+        option: "{{ states('input_text.carico_14_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_15_potenza
+        option: "{{ states('input_text.carico_15_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_16_potenza
+        option: "{{ states('input_text.carico_16_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_17_potenza
+        option: "{{ states('input_text.carico_17_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_18_potenza
+        option: "{{ states('input_text.carico_18_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_19_potenza
+        option: "{{ states('input_text.carico_19_potenza') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_20_potenza
+        option: "{{ states('input_text.carico_20_potenza') }}"
 
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_1_switch
-          option: "{{ states('input_text.carico_1_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_2_switch  
-          option: "{{ states('input_text.carico_2_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_3_switch  
-          option: "{{ states('input_text.carico_3_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_4_switch  
-          option: "{{ states('input_text.carico_4_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_5_switch  
-          option: "{{ states('input_text.carico_5_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_6_switch  
-          option: "{{ states('input_text.carico_6_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_7_switch  
-          option: "{{ states('input_text.carico_7_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_8_switch  
-          option: "{{ states('input_text.carico_8_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_9_switch  
-          option: "{{ states('input_text.carico_9_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_10_switch  
-          option: "{{ states('input_text.carico_10_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_11_switch
-          option: "{{ states('input_text.carico_11_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_12_switch  
-          option: "{{ states('input_text.carico_12_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_13_switch  
-          option: "{{ states('input_text.carico_13_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_14_switch  
-          option: "{{ states('input_text.carico_14_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_15_switch  
-          option: "{{ states('input_text.carico_15_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_16_switch  
-          option: "{{ states('input_text.carico_16_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_17_switch  
-          option: "{{ states('input_text.carico_17_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_18_switch  
-          option: "{{ states('input_text.carico_18_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_19_switch  
-          option: "{{ states('input_text.carico_19_switch') }}"
-      - service: input_select.select_option
-        data:
-          entity_id: input_select.carico_20_switch  
-          option: "{{ states('input_text.carico_20_switch') }}"
 
-      - service: system_log.write
-        data_template:
-          level: debug
-          logger: homeassistant.components.pc
-          message: "Automazione Configurazione - Carica - Fine caricamento"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_1_switch
+        option: "{{ states('input_text.carico_1_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_2_switch
+        option: "{{ states('input_text.carico_2_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_3_switch
+        option: "{{ states('input_text.carico_3_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_4_switch
+        option: "{{ states('input_text.carico_4_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_5_switch
+        option: "{{ states('input_text.carico_5_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_6_switch
+        option: "{{ states('input_text.carico_6_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_7_switch
+        option: "{{ states('input_text.carico_7_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_8_switch
+        option: "{{ states('input_text.carico_8_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_9_switch
+        option: "{{ states('input_text.carico_9_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_10_switch
+        option: "{{ states('input_text.carico_10_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_11_switch
+        option: "{{ states('input_text.carico_11_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_12_switch
+        option: "{{ states('input_text.carico_12_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_13_switch
+        option: "{{ states('input_text.carico_13_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_14_switch
+        option: "{{ states('input_text.carico_14_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_15_switch
+        option: "{{ states('input_text.carico_15_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_16_switch
+        option: "{{ states('input_text.carico_16_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_17_switch
+        option: "{{ states('input_text.carico_17_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_18_switch
+        option: "{{ states('input_text.carico_18_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_19_switch
+        option: "{{ states('input_text.carico_19_switch') }}"
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.carico_20_switch
+        option: "{{ states('input_text.carico_20_switch') }}"
 
-# Quando viene modificato un parametro nella configurazione di PC tramite gli input_select, 
-# attende che l'automazione "Carica" termini, poi carica il valore nell'input_text relativo.
-  - id: 'powercontrol_configurazione_salva'
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Configurazione - Carica - Fine caricamento"
+
+# Aggiorna gli input_slider con la lista delle entità per i campi di configurazione quando richiamato da pannello di configurazione
+  powercontrol_configurazione_salva:
     alias: PowerControl - Configurazione - Salva
-    trigger:
-      platform: state
-      entity_id: 
-        - input_select.potenza_carichi
-        - input_select.carico_1_potenza
-        - input_select.carico_2_potenza
-        - input_select.carico_3_potenza
-        - input_select.carico_4_potenza
-        - input_select.carico_5_potenza
-        - input_select.carico_6_potenza
-        - input_select.carico_7_potenza
-        - input_select.carico_8_potenza
-        - input_select.carico_9_potenza
-        - input_select.carico_10_potenza
-        - input_select.carico_11_potenza
-        - input_select.carico_12_potenza
-        - input_select.carico_13_potenza
-        - input_select.carico_14_potenza
-        - input_select.carico_15_potenza
-        - input_select.carico_16_potenza
-        - input_select.carico_17_potenza
-        - input_select.carico_18_potenza
-        - input_select.carico_19_potenza
-        - input_select.carico_20_potenza
-        
-        - input_select.carico_1_switch
-        - input_select.carico_2_switch
-        - input_select.carico_3_switch
-        - input_select.carico_4_switch
-        - input_select.carico_5_switch
-        - input_select.carico_6_switch
-        - input_select.carico_7_switch
-        - input_select.carico_8_switch
-        - input_select.carico_9_switch
-        - input_select.carico_10_switch
-        - input_select.carico_11_switch
-        - input_select.carico_12_switch
-        - input_select.carico_13_switch
-        - input_select.carico_14_switch
-        - input_select.carico_15_switch
-        - input_select.carico_16_switch
-        - input_select.carico_17_switch
-        - input_select.carico_18_switch
-        - input_select.carico_19_switch
-        - input_select.carico_20_switch
-      
-    action:
+    sequence:
       - service: system_log.write
         data_template:
           level: debug
           logger: homeassistant.components.pc
-          message: "Automazione Configurazione - Salva - Avvio automazione, attendo fine automazione powercontrol_configurazione_carica"
+          message: "Script Configurazione - Salva - Avvio automazione, attendo fine automazione powercontrol_configurazione_carica"
       - wait_template: "{{ state_attr('automation.powercontrol_configurazione_carica','current') == 0 }}"
       - service: system_log.write
-      
+
         data_template:
           level: debug
           logger: homeassistant.components.pc
-          message: "Automazione Configurazione - Salva - Salvo input_select in input_text"
+          message: "Script Configurazione - Salva - Salvo input_select in input_text"
       - service: input_text.set_value
         data:
           entity_id: input_text.potenza_carichi
@@ -983,842 +1802,4 @@ automation:
         data_template:
           level: debug
           logger: homeassistant.components.pc
-          message: "Automazione Configurazione - Salva - Fine salvataggio"
-
-
-# Automazione che si triggera nel momento in cui la la potenza utilizzata supera la potenza massima impostata.
-# Agisce dopo TOT secondi dal superamento del limite, avvia lo script di distacco ed invia notifica di intervento.
-# Ripete l'avvio dello script di distacco finché la potenza impegnata non rientra nel limite.
-  - id: 'powercontrol_carichi_stop'
-    alias: PowerControl - Carichi Stop
-    description: ''
-    trigger:
-    - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi')) |int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0) }}"
-      for: 
-        seconds: "{{ states('input_number.tempo_stop_immediato')|int(default=0) }}"
-      id: immediato
-    - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi')) |int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0) }}" 
-      for: 
-        minutes: "{{ states('input_number.tempo_stop_ritardato')|int(default=0) }}"
-      id: ritardato
-    condition:
-    - condition: state
-      entity_id: input_boolean.attiva_power_control
-      state: 'on'
-    action:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Automazione Carichi Stop triggerata: Potenza carichi ({{ states(states('input_text.potenza_carichi'))|int(default=0) }}))"
-    - choose:
-      - conditions:
-          - condition: trigger
-            id: immediato
-        sequence:
-          - service: input_boolean.turn_on
-            target: 
-              entity_id: input_boolean.sensore_trigger
-          - service: system_log.write
-            data_template:
-              level: debug
-              logger: homeassistant.components.pc
-              message: "Automazione Carichi Stop triggerata: Tipo di innesco Immediato"
-      - conditions:
-          - condition: trigger
-            id: ritardato
-        sequence:
-          - service: input_boolean.turn_off
-            target: 
-              entity_id: input_boolean.sensore_trigger
-          - service: system_log.write
-            data_template:
-              level: debug
-              logger: homeassistant.components.pc
-              message: "Automazione Carichi Stop triggerata: Tipo di innesco Ritardato"
-        
-    - repeat:
-        sequence:
-          - service: system_log.write
-            data_template:
-              level: debug
-              logger: homeassistant.components.pc
-              message: "Avviato script stop carichi: potenza carichi {{ states(states('input_text.potenza_carichi'))|int(default=0)}}"
-          - service: script.turn_on
-            data: {}
-            entity_id: script.stop_carichi_generale
-        until:
-          - condition: template
-            value_template: >
-              {{
-              ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0)) and states('input_boolean.sensore_trigger') == "off") or
-              ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0)) and states('input_boolean.sensore_trigger') == "on") 
-              }}
-    - service: input_boolean.turn_off
-      target: 
-        entity_id: input_boolean.sensore_trigger
-    mode: single
-
-# Se per TOT minuti il limite di potenza è rispettato, avvia lo script di riattivazione dei carichi fino a che la potenza "sospesa" non è zero.
-  - id: 'powercontrol_carichi_start'
-    alias: PowerControl - Carichi Start
-    description: ''
-    trigger:
-    - platform: template
-      value_template: "{{ ((states(states('input_text.potenza_carichi'))|int(default=0) + states('sensor.potenza_carichi_sospesa')|int(default=0)) < states('sensor.potenza_massima_ritardato')|int(default=0)) and (states('sensor.potenza_carichi_sospesa')|int(default=0) > 0) }}"
-      for:
-        minutes: "{{ states('input_number.tempo_start')|int(default=0) }}"
-    condition:
-    - condition: state
-      entity_id: input_boolean.attiva_power_control 
-      state: 'on'
-    - condition: template
-      value_template: "{{ states('sensor.potenza_carichi_sospesa')|int(default=0) > 0 }}"
-    action:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Automazione start carichi triggerata: Potenza carichi+sospesa ({{ states(states('input_text.potenza_carichi'))|int(default=0) + states('sensor.potenza_carichi_sospesa')|int(default=0)}}) < Potenza massima ({{states('sensor.potenza_massima_ritardato')|int(default=0) }}) "
-    - repeat:
-        until:
-        - condition: template
-          value_template: "{{ states('sensor.potenza_carichi_sospesa')|int(default=0) > 0 }}"
-        sequence:
-        - service: system_log.write
-          data_template:
-            level: debug
-            logger: homeassistant.components.pc
-            message: "Avvio script start carichi: sospesa ({{ states('sensor.potenza_carichi_sospesa')|int(default=0) }})>0 "
-        - service: script.turn_on
-          data: {}
-          entity_id: script.start_carichi_generale
-    mode: single
-
-# Controlla se un carico viene riacceso manualmente, cioè se il relativo interruttore viene attivato dall'utente,
-# e resetta la relativa potenza sospesa.
-  - id: 'powercontrol_watchdog_sospesa'
-    alias: PowerControl - Controllo su riattivazione manuale
-    description: >-
-      Monitora gli switch dei carichi e, se uno di questi è attivo ma la sua potenza
-      sospesa è diversa da 0, la porta a zero.
-    trigger:
-      - platform: template
-        value_template: >
-              {{
-              ( states(states('input_text.carico_1_switch')) == 'on' and states('input_number.potenza_1_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_2_switch')) == 'on' and states('input_number.potenza_2_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_3_switch')) == 'on' and states('input_number.potenza_3_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_4_switch')) == 'on' and states('input_number.potenza_4_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_5_switch')) == 'on' and states('input_number.potenza_5_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_6_switch')) == 'on' and states('input_number.potenza_6_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_7_switch')) == 'on' and states('input_number.potenza_7_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_8_switch')) == 'on' and states('input_number.potenza_8_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_9_switch')) == 'on' and states('input_number.potenza_9_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_10_switch')) == 'on' and states('input_number.potenza_10_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_11_switch')) == 'on' and states('input_number.potenza_11_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_12_switch')) == 'on' and states('input_number.potenza_12_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_13_switch')) == 'on' and states('input_number.potenza_13_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_14_switch')) == 'on' and states('input_number.potenza_14_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_15_switch')) == 'on' and states('input_number.potenza_15_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_16_switch')) == 'on' and states('input_number.potenza_16_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_17_switch')) == 'on' and states('input_number.potenza_17_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_18_switch')) == 'on' and states('input_number.potenza_18_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_19_switch')) == 'on' and states('input_number.potenza_19_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_20_switch')) == 'on' and states('input_number.potenza_20_sospesa')|int(default=0) > 0 )
-              }}
-        for:
-          seconds: 5
-    condition: []
-    action:
-      - service: system_log.write
-        data_template:
-          level: debug
-          logger: homeassistant.components.pc
-          message: Automazione Check riattivazione manuale - Avvio
-      - service: input_number.set_value
-        data_template:
-          value: 0
-          entity_id: "{% if states(states('input_text.carico_1_switch')) == 'on' and states('input_number.potenza_1_sospesa')|int(default=0) > 0 %}input_number.potenza_1_sospesa
-          {% elif states(states('input_text.carico_2_switch')) == 'on' and states('input_number.potenza_2_sospesa')|int(default=0) > 0 %}input_number.potenza_2_sospesa
-          {% elif states(states('input_text.carico_3_switch')) == 'on' and states('input_number.potenza_3_sospesa')|int(default=0) > 0 %}input_number.potenza_3_sospesa
-          {% elif states(states('input_text.carico_4_switch')) == 'on' and states('input_number.potenza_4_sospesa')|int(default=0) > 0 %}input_number.potenza_4_sospesa
-          {% elif states(states('input_text.carico_5_switch')) == 'on' and states('input_number.potenza_5_sospesa')|int(default=0) > 0 %}input_number.potenza_5_sospesa
-          {% elif states(states('input_text.carico_6_switch')) == 'on' and states('input_number.potenza_6_sospesa')|int(default=0) > 0 %}input_number.potenza_6_sospesa
-          {% elif states(states('input_text.carico_7_switch')) == 'on' and states('input_number.potenza_7_sospesa')|int(default=0) > 0 %}input_number.potenza_7_sospesa
-          {% elif states(states('input_text.carico_8_switch')) == 'on' and states('input_number.potenza_8_sospesa')|int(default=0) > 0 %}input_number.potenza_8_sospesa
-          {% elif states(states('input_text.carico_9_switch')) == 'on' and states('input_number.potenza_9_sospesa')|int(default=0) > 0 %}input_number.potenza_9_sospesa
-          {% elif states(states('input_text.carico_10_switch')) == 'on' and states('input_number.potenza_10_sospesa')|int(default=0) > 0 %}input_number.potenza_10_sospesa
-          {% elif states(states('input_text.carico_11_switch')) == 'on' and states('input_number.potenza_11_sospesa')|int(default=0) > 0 %}input_number.potenza_11_sospesa
-          {% elif states(states('input_text.carico_12_switch')) == 'on' and states('input_number.potenza_12_sospesa')|int(default=0) > 0 %}input_number.potenza_12_sospesa
-          {% elif states(states('input_text.carico_13_switch')) == 'on' and states('input_number.potenza_13_sospesa')|int(default=0) > 0 %}input_number.potenza_13_sospesa
-          {% elif states(states('input_text.carico_14_switch')) == 'on' and states('input_number.potenza_14_sospesa')|int(default=0) > 0 %}input_number.potenza_14_sospesa
-          {% elif states(states('input_text.carico_15_switch')) == 'on' and states('input_number.potenza_15_sospesa')|int(default=0) > 0 %}input_number.potenza_15_sospesa
-          {% elif states(states('input_text.carico_16_switch')) == 'on' and states('input_number.potenza_16_sospesa')|int(default=0) > 0 %}input_number.potenza_16_sospesa
-          {% elif states(states('input_text.carico_17_switch')) == 'on' and states('input_number.potenza_17_sospesa')|int(default=0) > 0 %}input_number.potenza_17_sospesa
-          {% elif states(states('input_text.carico_18_switch')) == 'on' and states('input_number.potenza_18_sospesa')|int(default=0) > 0 %}input_number.potenza_18_sospesa
-          {% elif states(states('input_text.carico_19_switch')) == 'on' and states('input_number.potenza_19_sospesa')|int(default=0) > 0 %}input_number.potenza_11_sospesa
-          {% elif states(states('input_text.carico_20_switch')) == 'on' and states('input_number.potenza_20_sospesa')|int(default=0) > 0 %}input_number.potenza_20_sospesa
-          {% else %}none
-          {% endif %}"
-      - service: system_log.write
-        data_template:
-          level: debug
-          logger: homeassistant.components.pc
-          message: Automazione Check riattivazione manuale - Fine
-    mode: single
-    
-    
-#################################################################
-######################### SCRIPT  ###############################
-#################################################################
-
-script:
-
-# I carichi vengono disattivati secondo l'ordine numerico inverso (da minore priorità a maggiore).
-# Attende il completamente di uno script prima di passare al successivo.
-  stop_carichi_generale:
-    alias: PowerControl - Stop carichi generale
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 20"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_20_potenza')}}"
-        switch: "{{states('input_text.carico_20_switch')}}"
-        sospesa: "input_number.potenza_20_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 19"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_19_potenza')}}"
-        switch: "{{states('input_text.carico_19_switch')}}"
-        sospesa: "input_number.potenza_19_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 18"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_18_potenza')}}"
-        switch: "{{states('input_text.carico_18_switch')}}"
-        sospesa: "input_number.potenza_18_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 17"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_17_potenza')}}"
-        switch: "{{states('input_text.carico_17_switch')}}"
-        sospesa: "input_number.potenza_17_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 16"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_16_potenza')}}"
-        switch: "{{states('input_text.carico_16_switch')}}"
-        sospesa: "input_number.potenza_16_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 15"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_15_potenza')}}"
-        switch: "{{states('input_text.carico_15_switch')}}"
-        sospesa: "input_number.potenza_15_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 14"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_14_potenza')}}"
-        switch: "{{states('input_text.carico_14_switch')}}"
-        sospesa: "input_number.potenza_14_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 13"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_13_potenza')}}"
-        switch: "{{states('input_text.carico_13_switch')}}"
-        sospesa: "input_number.potenza_13_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 12"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_12_potenza')}}"
-        switch: "{{states('input_text.carico_12_switch')}}"
-        sospesa: "input_number.potenza_12_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 11"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_11_potenza')}}"
-        switch: "{{states('input_text.carico_11_switch')}}"
-        sospesa: "input_number.potenza_11_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 10"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_10_potenza')}}"
-        switch: "{{states('input_text.carico_10_switch')}}"
-        sospesa: "input_number.potenza_10_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 9"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_9_potenza')}}"
-        switch: "{{states('input_text.carico_9_switch')}}"
-        sospesa: "input_number.potenza_9_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 8"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_8_potenza')}}"
-        switch: "{{states('input_text.carico_8_switch')}}"
-        sospesa: "input_number.potenza_8_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 7"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_7_potenza')}}"
-        switch: "{{states('input_text.carico_7_switch')}}"
-        sospesa: "input_number.potenza_7_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 6"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_6_potenza')}}"
-        switch: "{{states('input_text.carico_6_switch')}}"
-        sospesa: "input_number.potenza_6_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 5"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_5_potenza')}}"
-        switch: "{{states('input_text.carico_5_switch')}}"
-        sospesa: "input_number.potenza_5_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 4"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_4_potenza')}}"
-        switch: "{{states('input_text.carico_4_switch')}}"
-        sospesa: "input_number.potenza_4_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 3"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_3_potenza')}}"
-        switch: "{{states('input_text.carico_3_switch')}}"
-        sospesa: "input_number.potenza_3_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 2"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_2_potenza')}}"
-        switch: "{{states('input_text.carico_2_switch')}}"
-        sospesa: "input_number.potenza_2_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script stop carico 1"
-    - service: script.stop_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_1_potenza')}}"
-        switch: "{{states('input_text.carico_1_switch')}}"
-        sospesa: "input_number.potenza_1_sospesa"
-    mode: single
-
-# I carichi vengono riattivati secondo l'ordine numerico (da maggiore priorità a minore priorità)
-# Attende il completamente di uno script prima di passare al successivo.
-  start_carichi_generale:
-    alias: PowerControl - Start carichi Generale
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 1"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_1_potenza')}}"
-        switch: "{{states('input_text.carico_1_switch')}}"
-        sospesa: "input_number.potenza_1_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 2"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_2_potenza')}}"
-        switch: "{{states('input_text.carico_2_switch')}}"
-        sospesa: "input_number.potenza_2_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 3"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_3_potenza')}}"
-        switch: "{{states('input_text.carico_3_switch')}}"
-        sospesa: "input_number.potenza_3_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 4"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_4_potenza')}}"
-        switch: "{{states('input_text.carico_4_switch')}}"
-        sospesa: "input_number.potenza_4_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 5"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_5_potenza')}}"
-        switch: "{{states('input_text.carico_5_switch')}}"
-        sospesa: "input_number.potenza_5_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 6"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_6_potenza')}}"
-        switch: "{{states('input_text.carico_6_switch')}}"
-        sospesa: "input_number.potenza_6_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 7"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_7_potenza')}}"
-        switch: "{{states('input_text.carico_7_switch')}}"
-        sospesa: "input_number.potenza_7_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 8"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_8_potenza')}}"
-        switch: "{{states('input_text.carico_8_switch')}}"
-        sospesa: "input_number.potenza_8_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 9"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_9_potenza')}}"
-        switch: "{{states('input_text.carico_9_switch')}}"
-        sospesa: "input_number.potenza_9_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 10"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_10_potenza')}}"
-        switch: "{{states('input_text.carico_10_switch')}}"
-        sospesa: "input_number.potenza_10_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 11"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_11_potenza')}}"
-        switch: "{{states('input_text.carico_11_switch')}}"
-        sospesa: "input_number.potenza_11_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 12"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_12_potenza')}}"
-        switch: "{{states('input_text.carico_12_switch')}}"
-        sospesa: "input_number.potenza_12_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 13"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_13_potenza')}}"
-        switch: "{{states('input_text.carico_13_switch')}}"
-        sospesa: "input_number.potenza_13_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 14"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_14_potenza')}}"
-        switch: "{{states('input_text.carico_14_switch')}}"
-        sospesa: "input_number.potenza_14_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 15"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_15_potenza')}}"
-        switch: "{{states('input_text.carico_15_switch')}}"
-        sospesa: "input_number.potenza_15_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 16"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_16_potenza')}}"
-        switch: "{{states('input_text.carico_16_switch')}}"
-        sospesa: "input_number.potenza_16_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 17"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_17_potenza')}}"
-        switch: "{{states('input_text.carico_17_switch')}}"
-        sospesa: "input_number.potenza_17_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 18"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_18_potenza')}}"
-        switch: "{{states('input_text.carico_18_switch')}}"
-        sospesa: "input_number.potenza_18_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 19"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_19_potenza')}}"
-        switch: "{{states('input_text.carico_19_switch')}}"
-        sospesa: "input_number.potenza_19_sospesa"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Avvio script start carico 20"
-    - service: script.start_carichi_singolo
-      data_template: 
-        potenza: "{{states('input_text.carico_20_potenza')}}"
-        switch: "{{states('input_text.carico_20_switch')}}"
-        sospesa: "input_number.potenza_20_sospesa"
-    mode: single
-
-#################################################################
-###################### STOP CARICHI #############################
-#################################################################
-
-# Avvia il distacco del carico.
-# Verifica che il carico si aconfigurato come seonsore di potenza e come interruttore.
-# Controlla se la potenza massima è superata, se il carico è acceso (potenza impegnata > 10W).
-# Salva la potenza attualmente utilizzata nel relativo valore "sospesa".
-# Spegne l'interruttore a monte del carico ed invia la notifica. Attende TOT secondi prima di procedere col carico successivo.
-
-  stop_carichi_singolo:
-    alias: PowerControl - Stop Carico Singolo
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Avvio"
-    # Controlla se il sensore potenza del carico è impostato    
-    - condition: template
-      value_template: "{{ potenza != 'Seleziona' }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 1 - Ok"
-        
-    # Controlla se il sensore potenza del carico è disponibile    
-    - condition: template
-      value_template: "{{ states(potenza) != 'unavailable' }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 1.5 - Ok"    
-        
-    # Controlla se l'interruttore del carico è impostato
-    - condition: template
-      value_template: "{{ switch != 'Seleziona' }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 2 - Ok"
-
-    # Controlla se l'interruttore del carico è disponibile
-    - condition: template
-      value_template: "{{ states(switch) != 'unavailable' }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.5 - Ok"    
-
-    # Controlla se la potenza in uso è maggiore dei limiti impostati
-    - condition: template
-      value_template: >
-        {{
-        ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0)) and states('input_boolean.sensore_trigger') == "off") or
-        ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0)) and states('input_boolean.sensore_trigger') == "on") 
-        }}
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 3 - Ok {{ states(states('input_text.potenza_carichi'))|int(default=0)}}W}}"
-    # Controlla se il carico è attualmente in uso 
-    - condition: template
-      value_template: "{{ states(potenza) |int(default=0) > 10 }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 4 - Ok"
-    #Salvo potenza in uso dal carico sul relativo sensore sospesa
-    - service: input_number.set_value
-      data_template:
-        value: "{{ states(potenza) }}"
-        entity_id: "{{sospesa}}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Spostata potenza da carico {{ states(potenza) }} a sospesa {{states(sospesa)|int(default=0)}} (dovrebbero essere uguali)."
-    # Spengo il carico
-    - service_template: switch.turn_off
-      data_template:
-        entity_id: "{{ switch }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Spento carico"
-    #Invio Notifica
-    - service: notify.tutti
-      data:
-        title: Limite potenza superato
-        message: "{{ state_attr(switch,'friendly_name') }} disattivato."
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Inviata notifica. Attendo {{ states('input_number.attesa_stop') }} secondi "
-    # Attendo prima di passare al prossimo carico da distaccare.
-    - delay: 
-        seconds: "{{ states('input_number.attesa_stop') }}"
-    mode: queued
-
-
-
-#################################################################
-###################### START CARICHI ############################
-#################################################################
-
-# Script per la riattivazione dei carichi.
-# Verifica che il carico si aconfigurato come seonsore di potenza e come interruttore.
-# Controlla che il carico sia stato disattivato (potenza in attesa)
-# Controlla che il limite di potenza venga rispettato.
-# Controlla anche se riattivando il carico (ipotizzando un consumo pari a quello che aveva all'atto della disattivazione) 
-# non supera il valore massimo.
-# Quest'ultimo controllo serve ad evitare che si riattacchi un carico che poi si ristacchi dopo pochi secondi perché ha 
-# causato un nuovo sforamento del limite.
-# Imposta il relativo valore "sospesa" a zero, riattiva l'interruttore ed invia una notifica di riattivazione.
-# Infine attende TOT minuti  prima di passare al carico successivo.
-
-  start_carichi_singolo:
-    alias: PowerControl - Start Carico Singolo
-    sequence:
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Avvio"
-    # Controllo se il sensore potenza del carico è stato configurato
-    - condition: template
-      value_template: "{{ potenza != 'Seleziona' }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 1 ok"
-    
-    # Controlla se il sensore potenza del carico è disponibile    
-    - condition: template
-      value_template: "{{ states(potenza) != 'unavailable' }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 1.5 - Ok"    
-        
-    # Controllo se l'interruttore del carico è stato configurato
-    - condition: template
-      value_template: "{{ switch != 'Seleziona' }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 2 ok"
-        
-    # Controlla se l'interruttore del carico è disponibile
-    - condition: template
-      value_template: "{{ states(switch) != 'unavailable' }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.5 - Ok"    
-
-    # Verifica se la potenza sospesa del carico è maggiore di 0 (in questo caso il carico è stato spento dal contollo carichi)
-    - condition: template
-      value_template: "{{ states(sospesa)|int(default=0) > 0 }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 3 ok"
-    # Verifico che la potenza in uso sia inferiore alla potenza massima ritardato.
-    - condition: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) < states('sensor.potenza_massima_ritardato')|int(default=0)}}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 4 ok"
-    #Controlla se, riattivnado il carico, non si superi nuovamente il limite di potenza.
-    - condition: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) + states(sospesa)|int(default=0) < states('sensor.potenza_massima_ritardato')|int(default=0) }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 5 ok"
-    # Imposta la potenza sospesa del carico a zero.
-    - service: input_number.set_value
-      data_template:
-        value: 0
-        entity_id: "{{sospesa}}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Resettata potenza sospesa"
-    #Accendo il carico
-    - service_template: switch.turn_on
-      data_template:
-        entity_id: "{{ switch }}"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Attivato interruttore"
-    # Invio notifica
-    - service: notify.tutti
-      data:
-        title: Limite potenza rientrato
-        message: "{{ state_attr(switch,'friendly_name') }} Riattivato"
-        data:
-          push:
-            thread-id: "powercontrol"
-    - service: system_log.write
-      data_template:
-        level: debug
-        logger: homeassistant.components.pc
-        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Inviata notifica. Attendo {{ states('input_number.attesa_start') }} minuti"
-    - delay:
-        minutes: "{{ states('input_number.attesa_start') }}"
-    mode: queued
+          message: "Script Configurazione - Salva - Fine salvataggio"
