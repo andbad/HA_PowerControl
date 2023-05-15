@@ -179,6 +179,9 @@
           cards:
             - type: markdown
               content: >
+                **--> CLICCARE SU SALVA CONFIGURAZIONE DOPO AVER CONFIGURATO IL PACKAGE <--**
+                
+                
                 **Sensore potenza carichi**
 
                 Selezionare il sensore del consumo istantaneo globale. Se non
@@ -278,7 +281,7 @@
                 **Sensore Carichi**
 
                 Selezionare i sensori di potenza (W) dei carichi da monitorare e
-                scollegare in caso di eccessiva richiesta.
+                scollegare in caso di eccessiva richiesta. 
             - type: entities
               entities:
                 - entity: input_select.carico_1_potenza
