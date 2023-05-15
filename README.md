@@ -26,6 +26,7 @@ La configurazione è interamente tramite interfaccia grafica, tranne il gruppo d
 
 # Configurazione
 Impostare i parametri di configurazione dell'interfaccia grafica Lovelace.
+ATTENZIONE: cliccare su "Esegui" accanto a "Salva configurazione" per salvare i parametri impostati, altrimenti andranno persi al successivo riavvio.
 
 # Sensore potenza carichi
 La soluzione più efficace è utilizzare un sensore di potenza a monte dell'impianto, poco prima del contatore. In tal caso basta selezionare il sensore appropriato nella configurazione.
