@@ -7,34 +7,34 @@ assignees: ''
 
 ---
 
+**Informazioni sul sistema**
+ _- Versione Home Assistant_
+ _- Tipo installazione (core, VENV, container, ecc...)_
+ _- Versione package_
+ _- HAI ATTIVATO I LOG?_
+
 **Descrivi il problema**
-Descrizione sommaria dl problema. E ATTIVA I LOG!
+_Descrizione sommaria dl problema. **E ATTIVA I LOG**!_
 
 **Passi per riprodurre il problema**
 Indicazioni su come riprodurre le condizioni che hanno portato al bug:
-1. Vai qui '...'
-2. Clicca la '....'
-3. Scrolla giù '....'
-4. Riavvia di su '...'
-etc...
-PERÒ ATTIVA I LOG!
+_1. Vai qui '...'_
+_2. Clicca la '....'_
+_3. Scrolla giù '....'_
+_4. Riavvia di su '...'_
+_etc...__
+_**PERÒ ATTIVA I LOG!**_
 
 **Cosa ti aspettavi**
 Descrizione breve del comportamento che ti aspettavi
-DOPO AVER ATTIVATO I LOG!
+**DOPO AVER ATTIVATO I LOG!**
 
 **Screenshots**
-Se applicabile alla tua problematica, posta uno screeshot.
-E SE ANCORA NON L'HAI FATTO, ATTIVA I LOG!
-
-**Informazioni sul sistema**
- - Versione Home Assistant
- - Tipo installazione (core, VENV, container, ecc...)
- - Versione package
- - HAI ATTIVATO I LOG?
+_Se applicabile alla tua problematica, posta uno screeshot._
+**E SE ANCORA NON L'HAI FATTO, ATTIVA I LOG!**
 
 **Log:**
-I log sono importanti per la diagnosi di un problema. [Attivali!](https://github.com/andbad/HA_PowerControl#debug)
+_I log sono importanti per la diagnosi di un problema. [Attivali!](https://github.com/andbad/HA_PowerControl#debug) e postali qui._
 
 **Informazioni aggiuntive**
-Altre informazioni che potrebbero sembrarti utili.
+_Altre informazioni che potrebbero sembrarti utili._
