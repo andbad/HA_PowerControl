@@ -31,6 +31,11 @@ all_switches = ["Seleziona"]
 for e in entities:
     all_switches.append(e)
 
+entities = hass.states.entity_ids('light')
+for e in entities:
+    all_switches.append(e)
+
+
 service_data = {'entity_id': 'input_select.carico_1_switch', 'options': sorted(all_switches)}
 hass.services.call('input_select', 'set_options', service_data)
 service_data = {'entity_id': 'input_select.carico_2_switch', 'options': sorted(all_switches)}
