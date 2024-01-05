@@ -3,7 +3,7 @@
 #################################################################
 # Autore: andbad                                                #
 # GitHub: https://github.com/andbad/HA_PowerControl             #
-# Versione: 3.41                                                #
+# Versione: 3.42                                                #
 #################################################################
 ########################### CREDITS #############################
 # Un ringraziamento alla community di InDomus per l'aiuto       #
@@ -35,19 +35,17 @@
 # I seguenti sensori devono essere abilitati nel recorder, al fine di visualizzare lo storico di intervento nel grafico
 # dell'interfaccia grafica. Decommentare le seguenti righe potrebbe influire sulla configurazione del recorder in altri file.
 
-#recorder:
-#  include:
-#    entities:
-#      - sensor.potenza_carichi_selezionato
-#      - sensor.potenza_carichi_sospesa
-#      - sensor.potenza_massima_immediato
-#      - sensor.potenza_massima_ritardato
+recorder:
+  include:
+    entities:
+      - sensor.potenza_carichi_selezionato
+      - sensor.potenza_carichi_sospesa
+      - sensor.potenza_massima_immediato
+      - sensor.potenza_massima_ritardato
 
 #################################################################
 ########################## SENSORI ##############################
 #################################################################
-sensor:
-
 # La soluzione più efficace è utilizzare un sensore di potenza a monte dell'impianto, poco prima del contatore.
 # In tal caso basta selezionare il sensore appropriato nella configurazione.
 # Nell'esempio seguente è utilizzato uno ShellyEM, nel canale 1.
@@ -58,6 +56,7 @@ sensor:
 #      unit_of_measurement : "Watt"
 #      icon: mdi:speedometer
 
+template:
 # In alternativa è possibile utilizzare i sensori di potenza dei maggiori carichi utilizzati e mantenere un certo margine 
 # di tolleranza.
 # Questo comporta di monitorare tutti i maggiori carichi (forno, fornelli, phon, condizionatori, ecc...).
@@ -65,79 +64,70 @@ sensor:
 # senza che intervenga il controllo carichi.
 # Utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando sulla tolleranze di 180 minuti fino al 80% 
 # (nell'es. 3,6kW) è ugualmente funzionale.
-  - platform: template
-    sensors:
-      potenza_carichi_virtuale:
-        unit_of_measurement: 'W'
-        value_template: >
-          {{ states(states('input_text.carico_1_potenza'))|int(default=0) +
-             states(states('input_text.carico_2_potenza'))|int(default=0) +
-             states(states('input_text.carico_3_potenza'))|int(default=0) +
-             states(states('input_text.carico_4_potenza'))|int(default=0) +
-             states(states('input_text.carico_5_potenza'))|int(default=0) +
-             states(states('input_text.carico_6_potenza'))|int(default=0) +
-             states(states('input_text.carico_7_potenza'))|int(default=0) +
-             states(states('input_text.carico_8_potenza'))|int(default=0) +
-             states(states('input_text.carico_9_potenza'))|int(default=0) +
-             states(states('input_text.carico_10_potenza'))|int(default=0) +
-             states(states('input_text.carico_11_potenza'))|int(default=0) +
-             states(states('input_text.carico_12_potenza'))|int(default=0) +
-             states(states('input_text.carico_13_potenza'))|int(default=0) +
-             states(states('input_text.carico_14_potenza'))|int(default=0) +
-             states(states('input_text.carico_15_potenza'))|int(default=0) +
-             states(states('input_text.carico_16_potenza'))|int(default=0) +
-             states(states('input_text.carico_17_potenza'))|int(default=0) +
-             states(states('input_text.carico_18_potenza'))|int(default=0) +
-             states(states('input_text.carico_19_potenza'))|int(default=0) +
-             states(states('input_text.carico_20_potenza'))|int(default=0) }}
+  - sensor:
+    - name: potenza_carichi_virtuale
+      unit_of_measurement: 'W'
+      state: >
+        {{ states(states('input_text.carico_1_potenza'))|int(default=0) +
+           states(states('input_text.carico_2_potenza'))|int(default=0) +
+           states(states('input_text.carico_3_potenza'))|int(default=0) +
+           states(states('input_text.carico_4_potenza'))|int(default=0) +
+           states(states('input_text.carico_5_potenza'))|int(default=0) +
+           states(states('input_text.carico_6_potenza'))|int(default=0) +
+           states(states('input_text.carico_7_potenza'))|int(default=0) +
+           states(states('input_text.carico_8_potenza'))|int(default=0) +
+           states(states('input_text.carico_9_potenza'))|int(default=0) +
+           states(states('input_text.carico_10_potenza'))|int(default=0) +
+           states(states('input_text.carico_11_potenza'))|int(default=0) +
+           states(states('input_text.carico_12_potenza'))|int(default=0) +
+           states(states('input_text.carico_13_potenza'))|int(default=0) +
+           states(states('input_text.carico_14_potenza'))|int(default=0) +
+           states(states('input_text.carico_15_potenza'))|int(default=0) +
+           states(states('input_text.carico_16_potenza'))|int(default=0) +
+           states(states('input_text.carico_17_potenza'))|int(default=0) +
+           states(states('input_text.carico_18_potenza'))|int(default=0) +
+           states(states('input_text.carico_19_potenza'))|int(default=0) +
+           states(states('input_text.carico_20_potenza'))|int(default=0) }}
 
 # Somma di tutte le potenza "sospesa", ovvero i carichi che erano in funzione con un dato assorbimento ma sono stati 
 # disattivati.
-  - platform: template
-    sensors:
-      potenza_carichi_sospesa:
-        unit_of_measurement: 'W'
-        value_template: >
-          {{ states('input_number.potenza_1_sospesa')|int(default=0) +
-             states('input_number.potenza_2_sospesa')|int(default=0) +
-             states('input_number.potenza_3_sospesa')|int(default=0) +
-             states('input_number.potenza_4_sospesa')|int(default=0) +
-             states('input_number.potenza_5_sospesa')|int(default=0) +
-             states('input_number.potenza_6_sospesa')|int(default=0) +
-             states('input_number.potenza_7_sospesa')|int(default=0) +
-             states('input_number.potenza_8_sospesa')|int(default=0) +
-             states('input_number.potenza_9_sospesa')|int(default=0) +
-             states('input_number.potenza_10_sospesa')|int(default=0) +
-             states('input_number.potenza_11_sospesa')|int(default=0) +
-             states('input_number.potenza_12_sospesa')|int(default=0) +
-             states('input_number.potenza_13_sospesa')|int(default=0) +
-             states('input_number.potenza_14_sospesa')|int(default=0) +
-             states('input_number.potenza_15_sospesa')|int(default=0) +
-             states('input_number.potenza_16_sospesa')|int(default=0) +
-             states('input_number.potenza_17_sospesa')|int(default=0) +
-             states('input_number.potenza_18_sospesa')|int(default=0) +
-             states('input_number.potenza_19_sospesa')|int(default=0) +
-             states('input_number.potenza_20_sospesa')|int(default=0) }}
+    - name: potenza_carichi_sospesa
+      unit_of_measurement: 'W'
+      state: >
+        {{ states('input_number.potenza_1_sospesa')|int(default=0) +
+           states('input_number.potenza_2_sospesa')|int(default=0) +
+           states('input_number.potenza_3_sospesa')|int(default=0) +
+           states('input_number.potenza_4_sospesa')|int(default=0) +
+           states('input_number.potenza_5_sospesa')|int(default=0) +
+           states('input_number.potenza_6_sospesa')|int(default=0) +
+           states('input_number.potenza_7_sospesa')|int(default=0) +
+           states('input_number.potenza_8_sospesa')|int(default=0) +
+           states('input_number.potenza_9_sospesa')|int(default=0) +
+           states('input_number.potenza_10_sospesa')|int(default=0) +
+           states('input_number.potenza_11_sospesa')|int(default=0) +
+           states('input_number.potenza_12_sospesa')|int(default=0) +
+           states('input_number.potenza_13_sospesa')|int(default=0) +
+           states('input_number.potenza_14_sospesa')|int(default=0) +
+           states('input_number.potenza_15_sospesa')|int(default=0) +
+           states('input_number.potenza_16_sospesa')|int(default=0) +
+           states('input_number.potenza_17_sospesa')|int(default=0) +
+           states('input_number.potenza_18_sospesa')|int(default=0) +
+           states('input_number.potenza_19_sospesa')|int(default=0) +
+           states('input_number.potenza_20_sospesa')|int(default=0) }}
 
 # Mostra lo stato del sensore selezionato, utile per il grafico.
-  - platform: template
-    sensors:
-      potenza_carichi_selezionato:
-        unit_of_measurement: 'W'
-        value_template: "{{ states(states('input_text.potenza_carichi')) |int(default=0) }}"
+    - name: potenza_carichi_selezionato
+      unit_of_measurement: 'W'
+      state: "{{ states(states('input_text.potenza_carichi')) |int(default=0) }}"
 
 # Valore massimo che i carichi possono impegnare prima di cominciare il distacco
-  - platform: template
-    sensors:
-      potenza_massima_immediato:
-        unit_of_measurement: 'W'
-        value_template: "{{ states('input_number.potenza_massima_immediato')|int(default=0) }}"
+    - name: potenza_massima_immediato
+      unit_of_measurement: 'W'
+      state: "{{ states('input_number.potenza_massima_immediato')|int(default=0) }}"
 
-  - platform: template
-    sensors:
-      potenza_massima_ritardato:
-        unit_of_measurement: 'W'
-        value_template: "{{ states('input_number.potenza_massima_ritardato')|int(default=0) }}"
+    - name:  potenza_massima_ritardato
+      unit_of_measurement: 'W'
+      state: "{{ states('input_number.potenza_massima_ritardato')|int(default=0) }}"
 
 #################################################################
 ######################### INPUT_* ###############################
