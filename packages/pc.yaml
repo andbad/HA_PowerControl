@@ -35,13 +35,13 @@
 # I seguenti sensori devono essere abilitati nel recorder, al fine di visualizzare lo storico di intervento nel grafico
 # dell'interfaccia grafica. Decommentare le seguenti righe potrebbe influire sulla configurazione del recorder in altri file.
 
-recorder:
-  include:
-    entities:
-      - sensor.potenza_carichi_selezionato
-      - sensor.potenza_carichi_sospesa
-      - sensor.potenza_massima_immediato
-      - sensor.potenza_massima_ritardato
+#recorder:
+#  include:
+#    entities:
+#      - sensor.potenza_carichi_selezionato
+#      - sensor.potenza_carichi_sospesa
+#      - sensor.potenza_massima_immediato
+#      - sensor.potenza_massima_ritardato
 
 #################################################################
 ########################## SENSORI ##############################
