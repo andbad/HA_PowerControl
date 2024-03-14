@@ -3,7 +3,7 @@
 #################################################################
 # Autore: andbad                                                #
 # GitHub: https://github.com/andbad/HA_PowerControl             #
-# Versione: 3.42b                                               #
+# Versione: 3.50                                                #
 #################################################################
 ########################### CREDITS #############################
 # Un ringraziamento alla community di InDomus per l'aiuto       #
@@ -35,13 +35,13 @@
 # I seguenti sensori devono essere abilitati nel recorder, al fine di visualizzare lo storico di intervento nel grafico
 # dell'interfaccia grafica. Decommentare le seguenti righe potrebbe influire sulla configurazione del recorder in altri file.
 
-#recorder:
-#  include:
-#    entities:
-#      - sensor.potenza_carichi_selezionato
-#      - sensor.potenza_carichi_sospesa
-#      - sensor.potenza_massima_immediato
-#      - sensor.potenza_massima_ritardato
+# recorder:
+#   include:
+#     entities:
+#       - sensor.potenza_carichi_selezionato
+#       - sensor.potenza_carichi_sospesa
+#       - sensor.potenza_massima_immediato
+#       - sensor.potenza_massima_ritardato
 
 #################################################################
 ########################## SENSORI ##############################
@@ -67,6 +67,8 @@ template:
   - sensor:
     - name: potenza_carichi_virtuale
       unit_of_measurement: 'W'
+      device_class: power
+      state_class: measurement
       state: >
         {{ states(states('input_text.carico_1_potenza'))|int(default=0) +
            states(states('input_text.carico_2_potenza'))|int(default=0) +
@@ -93,6 +95,8 @@ template:
 # disattivati.
     - name: potenza_carichi_sospesa
       unit_of_measurement: 'W'
+      device_class: power
+      state_class: measurement
       state: >
         {{ states('input_number.potenza_1_sospesa')|int(default=0) +
            states('input_number.potenza_2_sospesa')|int(default=0) +
@@ -118,15 +122,21 @@ template:
 # Mostra lo stato del sensore selezionato, utile per il grafico.
     - name: potenza_carichi_selezionato
       unit_of_measurement: 'W'
+      device_class: power
+      state_class: measurement
       state: "{{ states(states('input_text.potenza_carichi')) |int(default=0) }}"
 
 # Valore massimo che i carichi possono impegnare prima di cominciare il distacco
     - name: potenza_massima_immediato
       unit_of_measurement: 'W'
+      device_class: power
+      state_class: measurement
       state: "{{ states('input_number.potenza_massima_immediato')|int(default=0) }}"
 
     - name:  potenza_massima_ritardato
       unit_of_measurement: 'W'
+      device_class: power
+      state_class: measurement
       state: "{{ states('input_number.potenza_massima_ritardato')|int(default=0) }}"
 
 #################################################################
@@ -709,6 +719,34 @@ automation:
           level: debug
           logger: homeassistant.components.pc
           message: Automazione Check riattivazione manuale - Avvio
+      - service: system_log.write
+        data_template:
+          level: debug
+          logger: homeassistant.components.pc
+          message: >
+            Automazione Check riattivazione manuale:
+            {% if states(states('input_text.carico_1_switch')) == 'on' and states('input_number.potenza_1_sospesa')|int(default=0) > 0 %}Carico 1: {{states('input_number.potenza_1_sospesa')}}W
+            {% elif states(states('input_text.carico_2_switch')) == 'on' and states('input_number.potenza_2_sospesa')|int(default=0) > 0 %}Carico 2: {{states('input_number.potenza_2_sospesa')}}W
+            {% elif states(states('input_text.carico_3_switch')) == 'on' and states('input_number.potenza_3_sospesa')|int(default=0) > 0 %}Carico 3: {{states('input_number.potenza_3_sospesa')}}W
+            {% elif states(states('input_text.carico_4_switch')) == 'on' and states('input_number.potenza_4_sospesa')|int(default=0) > 0 %}Carico 4: {{states('input_number.potenza_4_sospesa')}}W
+            {% elif states(states('input_text.carico_5_switch')) == 'on' and states('input_number.potenza_5_sospesa')|int(default=0) > 0 %}Carico 5: {{states('input_number.potenza_5_sospesa')}}W
+            {% elif states(states('input_text.carico_6_switch')) == 'on' and states('input_number.potenza_6_sospesa')|int(default=0) > 0 %}Carico 6: {{states('input_number.potenza_6_sospesa')}}W
+            {% elif states(states('input_text.carico_7_switch')) == 'on' and states('input_number.potenza_7_sospesa')|int(default=0) > 0 %}Carico 7: {{states('input_number.potenza_7_sospesa')}}W
+            {% elif states(states('input_text.carico_8_switch')) == 'on' and states('input_number.potenza_8_sospesa')|int(default=0) > 0 %}Carico 8: {{states('input_number.potenza_8_sospesa')}}W
+            {% elif states(states('input_text.carico_9_switch')) == 'on' and states('input_number.potenza_9_sospesa')|int(default=0) > 0 %}Carico 9: {{states('input_number.potenza_9_sospesa')}}W
+            {% elif states(states('input_text.carico_10_switch')) == 'on' and states('input_number.potenza_10_sospesa')|int(default=0) > 0 %}Carico 10: {{states('input_number.potenza_10_sospesa')}}W
+            {% elif states(states('input_text.carico_11_switch')) == 'on' and states('input_number.potenza_11_sospesa')|int(default=0) > 0 %}Carico 11: {{states('input_number.potenza_11_sospesa')}}W
+            {% elif states(states('input_text.carico_12_switch')) == 'on' and states('input_number.potenza_12_sospesa')|int(default=0) > 0 %}Carico 12: {{states('input_number.potenza_12_sospesa')}}W
+            {% elif states(states('input_text.carico_13_switch')) == 'on' and states('input_number.potenza_13_sospesa')|int(default=0) > 0 %}Carico 13: {{states('input_number.potenza_13_sospesa')}}W
+            {% elif states(states('input_text.carico_14_switch')) == 'on' and states('input_number.potenza_14_sospesa')|int(default=0) > 0 %}Carico 14: {{states('input_number.potenza_14_sospesa')}}W
+            {% elif states(states('input_text.carico_15_switch')) == 'on' and states('input_number.potenza_15_sospesa')|int(default=0) > 0 %}Carico 15: {{states('input_number.potenza_15_sospesa')}}W
+            {% elif states(states('input_text.carico_16_switch')) == 'on' and states('input_number.potenza_16_sospesa')|int(default=0) > 0 %}Carico 16: {{states('input_number.potenza_16_sospesa')}}W
+            {% elif states(states('input_text.carico_17_switch')) == 'on' and states('input_number.potenza_17_sospesa')|int(default=0) > 0 %}Carico 17: {{states('input_number.potenza_17_sospesa')}}W
+            {% elif states(states('input_text.carico_18_switch')) == 'on' and states('input_number.potenza_18_sospesa')|int(default=0) > 0 %}Carico 18: {{states('input_number.potenza_18_sospesa')}}W
+            {% elif states(states('input_text.carico_19_switch')) == 'on' and states('input_number.potenza_19_sospesa')|int(default=0) > 0 %}Carico 19: {{states('input_number.potenza_19_sospesa')}}W
+            {% elif states(states('input_text.carico_20_switch')) == 'on' and states('input_number.potenza_20_sospesa')|int(default=0) > 0 %}Carico 20: {{states('input_number.potenza_20_sospesa')}}W
+            {% else %}none
+            {% endif %}
       - service: input_number.set_value
         data_template:
           value: 0
@@ -739,6 +777,132 @@ automation:
           level: debug
           logger: homeassistant.components.pc
           message: Automazione Check riattivazione manuale - Fine
+
+# All'avvio o se PowerControl viene disattivato, resetta i carichi sospesi.
+  - id: 'powercontrol_reset_sospesa'
+    alias: PowerControl - Reset disattivazione
+    mode: single
+    trigger:
+      - platform: homeassistant
+        event: start
+        id: start
+      - platform: state
+        entity_id:
+          - input_boolean.attiva_power_control
+        to: "off"
+    action:
+      - service: system_log.write
+        data_template:
+          level: debug
+          logger: homeassistant.components.pc
+          message: "Automazione Reset sospesa - Avvio"
+
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_1_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_2_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_3_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_4_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_5_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_6_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_7_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_8_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_9_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_10_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_11_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_12_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_13_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_14_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_15_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_16_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_17_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_18_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_19_sospesa
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.potenza_20_sospesa
+
+      - service: system_log.write
+        data_template:
+          level: debug
+          logger: homeassistant.components.pc
+          message: "Automazione Reset sospesa - Fine"
 
 
 #################################################################
