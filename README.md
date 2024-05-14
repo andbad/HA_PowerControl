@@ -36,7 +36,7 @@ Naturalmente in questo modo non si può valutare il consumo complessivo, quindi 
 Ma utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando sulla tolleranze di 180 minuti fino al 33% (nell'es. 4kW) dovrebbe essere funzionale.
 
 # Screenshot
-![image](https://user-images.githubusercontent.com/7837288/107847400-773a8c80-6deb-11eb-9c08-90e9998ffe08.png)
+![pc_new](https://github.com/andbad/HA_PowerControl/assets/7837288/329312df-9b3c-4e11-8a57-0a11712186a2)
 ![1](https://user-images.githubusercontent.com/7837288/212674703-2ba39593-9dea-4e0d-8f14-76562bd82f96.png)
 
 # Debug
