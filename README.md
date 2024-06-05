@@ -19,7 +19,7 @@ La configurazione è interamente tramite interfaccia grafica, tranne il gruppo d
 - [Abilitare gli script python](https://www.home-assistant.io/integrations/python_script/)
 - Aggiungere il contenuto del file "pc.lovelace" all'interfaccia Lovelace.
 https://github.com/andbad/HA_PowerControl/assets/7837288/73233fa8-2143-4486-bd43-1dce41e59369
-- Creare un gruppo di notifica "notify.tutti" nel file "configuration.yaml" ed inserirvi i device che riceveranno le notifiche di intervento.
+- Creare un gruppo di notifica "group.tutti" nel file "configuration.yaml" ed inserirvi i device che riceveranno le notifiche di intervento.
 - [Configurare il recoder](https://www.home-assistant.io/integrations/recorder/) per includere i seguenti sensori:
   - sensor.potenza_carichi_selezionato
   - sensor.potenza_carichi_sospesa
