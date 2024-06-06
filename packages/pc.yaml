@@ -3,7 +3,7 @@
 #################################################################
 # Autore: andbad                                                #
 # GitHub: https://github.com/andbad/HA_PowerControl             #
-# Versione: 3.51                                                #
+# Versione: 3.51b                                               #
 #################################################################
 ########################### CREDITS #############################
 # Un ringraziamento alla community di InDomus per l'aiuto       #
@@ -35,13 +35,13 @@
 # I seguenti sensori devono essere abilitati nel recorder, al fine di visualizzare lo storico di intervento nel grafico
 # dell'interfaccia grafica. Decommentare le seguenti righe potrebbe influire sulla configurazione del recorder in altri file.
 
-#recorder:
-#  include:
-#    entities:
-#      - sensor.potenza_carichi_selezionato
-#      - sensor.potenza_carichi_sospesa
-#      - sensor.potenza_massima_immediato
-#      - sensor.potenza_massima_ritardato
+recorder:
+  include:
+    entities:
+      - sensor.potenza_carichi_selezionato
+      - sensor.potenza_carichi_sospesa
+      - sensor.potenza_massima_immediato
+      - sensor.potenza_massima_ritardato
 
 #################################################################
 ########################## SENSORI ##############################
@@ -1337,7 +1337,6 @@ script:
 
   stop_carichi_singolo:
     alias: PowerControl - Stop Carico Singolo
-    continue_on_error: true
     sequence:
     - service: system_log.write
       data_template:
@@ -1421,6 +1420,7 @@ script:
         message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Spento carico"
     #Invio Notifica
     - service: notify.tutti
+      continue_on_error: true
       data:
         title: Limite potenza superato
         message: "{{ state_attr(switch,'friendly_name') }} disattivato."
@@ -1456,7 +1456,6 @@ script:
 
   start_carichi_singolo:
     alias: PowerControl - Start Carico Singolo
-    continue_on_error: true
     sequence:
     - service: system_log.write
       data_template:
@@ -1544,6 +1543,7 @@ script:
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Attivato interruttore"
     # Invio notifica
     - service: notify.tutti
+      continue_on_error: true
       data:
         title: Limite potenza rientrato
         message: "{{ state_attr(switch,'friendly_name') }} Riattivato"
