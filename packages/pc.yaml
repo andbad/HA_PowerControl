@@ -669,7 +669,7 @@ automation:
           data_template:
             level: debug
             logger: homeassistant.components.pc
-            message: "Avvio script start carichi: sospesa ({{ states('sensor.potenza_carichi_sospesa')|int(default=0) }})>0 "
+            message: "Avvio script start carichi: sospesa ({{ states('sensor.potenza_carichi_sospesa') }})>0 "
         - service: script.start_carichi_generale
 
 # Controlla se un carico viene riacceso manualmente, cioè se il relativo interruttore viene attivato dall'utente,
