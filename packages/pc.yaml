@@ -626,9 +626,7 @@ automation:
               level: debug
               logger: homeassistant.components.pc
               message: "Avviato script stop carichi: potenza carichi {{ states(states('input_text.potenza_carichi'))|int(default=0)}}"
-          - service: script.turn_on
-            data: {}
-            entity_id: script.stop_carichi_generale
+          - service: script.stop_carichi_generale
         until:
           - condition: template
             value_template: >
@@ -672,9 +670,7 @@ automation:
             level: debug
             logger: homeassistant.components.pc
             message: "Avvio script start carichi: sospesa ({{ states('sensor.potenza_carichi_sospesa')|int(default=0) }})>0 "
-        - service: script.turn_on
-          data: {}
-          entity_id: script.start_carichi_generale
+        - service: script.start_carichi_generale
 
 # Controlla se un carico viene riacceso manualmente, cioè se il relativo interruttore viene attivato dall'utente,
 # e resetta la relativa potenza sospesa.
