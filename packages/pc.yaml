@@ -568,12 +568,12 @@ automation:
     description: ''
     trigger:
     - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states('sensor.potenza_massima_immediato')|int }}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0) }}"
       for:
         seconds: "{{ states('input_number.tempo_stop_immediato')|int }}"
       id: immediato
     - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int > states('sensor.potenza_massima_ritardato')|int }}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0) }}"
       for:
         minutes: "{{ states('input_number.tempo_stop_ritardato')|int }}"
       id: ritardato
@@ -639,7 +639,7 @@ automation:
     mode: single
     trigger:
     - platform: template
-      value_template: "{{ ((states(states('input_text.potenza_carichi'))|int + states('sensor.potenza_carichi_sospesa')|int) < states('sensor.potenza_massima_ritardato')|int) and (states('sensor.potenza_carichi_sospesa')|int > 0) }}"
+      value_template: "{{ ((states(states('input_text.potenza_carichi'))|int(default=0) + states('sensor.potenza_carichi_sospesa')|int(default=0)) < states('sensor.potenza_massima_ritardato')|int(default=0)) and (states('sensor.potenza_carichi_sospesa')|int(default=0) > 0) }}"
       for:
         minutes: "{{ states('input_number.tempo_start')|int }}"
     condition:
