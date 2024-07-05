@@ -524,7 +524,7 @@ automation:
 # All'avvio di HA attende che l'automazione "Popola entità" termini, poi carica la configurazione di interruttori
 # e sensori di potenza.
   - id: 'powercontrol_configurazione_carica'
-    alias: PowerControl   - Configurazione - Carica
+    alias: PowerControl - Configurazione - Carica
     mode: single
     trigger:
       - platform: homeassistant
@@ -535,6 +535,11 @@ automation:
         event_type:
           - automation_reloaded
     action:
+      - service: system_log.write
+        data_template:
+          level: debug
+          logger: homeassistant.components.pc
+          message: "HA_PowerControl Versione: 3.51e"
       - service: system_log.write
         data_template:
           level: debug
