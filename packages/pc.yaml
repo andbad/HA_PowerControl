@@ -1474,7 +1474,7 @@ script:
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 1.5 - Ok"
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 1.5 - Ok"
 
     # Controllo se l'interruttore del carico è stato configurato
     - condition: template
@@ -1492,7 +1492,7 @@ script:
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.5 - Ok"
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.5 - Ok"
 
     # Verifica se la potenza sospesa del carico è maggiore di 0 (in questo caso il carico è stato spento dal contollo carichi)
     - condition: template
