@@ -36,6 +36,21 @@ Questo comporta di monitorare tutti i maggiori carichi (forno, fornelli, phon, c
 Naturalmente in questo modo non si può valutare il consumo complessivo, quindi si potrebbe superare il valore limite senza che intervenga il controllo carichi.
 Ma utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando sulla tolleranze di 180 minuti fino al 33% (nell'es. 4kW) dovrebbe essere funzionale.
 
+# Disinstallazione package
+Per eliminare il package basta eliminare i file che lo compongono:
+  - ./python_scripts/update_entities.py
+  - ./python_scripts/update_entities_new.py
+  - ./packages/pc.yaml
+
+Eliminare la pagina nell'interfaccia (click sull'icona della matita, poi "Elimina vista").\
+Eliminare il gruppo di notifica "group.tutti"\
+Eliminare dal [recoder](https://www.home-assistant.io/integrations/recorder/) i seguenti sensori:
+  - sensor.potenza_carichi_selezionato
+  - sensor.potenza_carichi_sospesa
+  - sensor.potenza_massima
+
+
+
 # Screenshot
 ![pc_new](https://github.com/andbad/HA_PowerControl/assets/7837288/329312df-9b3c-4e11-8a57-0a11712186a2)
 ![1](https://user-images.githubusercontent.com/7837288/212674703-2ba39593-9dea-4e0d-8f14-76562bd82f96.png)
