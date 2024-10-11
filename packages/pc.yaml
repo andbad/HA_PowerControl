@@ -3,7 +3,7 @@
 #################################################################
 # Autore: andbad                                                #
 # GitHub: https://github.com/andbad/HA_PowerControl             #
-# Versione: 3.51e                                               #
+# Versione: 3.60                                               #
 #################################################################
 ########################### CREDITS #############################
 # Un ringraziamento alla community di InDomus per l'aiuto       #
@@ -515,6 +515,12 @@ input_select:
     options:
       - Seleziona
 
+timer:
+  #Quanto manca alla prossima riattivazione 
+  tempo_mancate_riattivazione:
+    duration: "00:05:00"
+
+
 #################################################################
 ####################### AUTOMAZIONI #############################
 #################################################################
@@ -524,7 +530,7 @@ automation:
 # All'avvio di HA attende che l'automazione "Popola entità" termini, poi carica la configurazione di interruttori
 # e sensori di potenza.
   - id: 'powercontrol_configurazione_carica'
-    alias: PowerControl - Configurazione - Carica
+    alias: PowerControl   - Configurazione - Carica
     mode: single
     trigger:
       - platform: homeassistant
@@ -535,11 +541,6 @@ automation:
         event_type:
           - automation_reloaded
     action:
-      - service: system_log.write
-        data_template:
-          level: debug
-          logger: homeassistant.components.pc
-          message: "HA_PowerControl Versione: 3.51e"
       - service: system_log.write
         data_template:
           level: debug
@@ -636,6 +637,43 @@ automation:
     - service: input_boolean.turn_off
       target:
         entity_id: input_boolean.sensore_trigger
+
+# Se il limite di potenza è rispettato, fermo il timer.
+  - id: 'powercontrol_timer_stop'
+    alias: PowerControl - Timer Stop
+    description: ''
+    mode: single
+    trigger:
+    - platform: template
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0) }}"
+    action:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Automazione stop timer triggerata: Potenza carichi+sospesa ({{ states(states('input_text.potenza_carichi'))|int + states('sensor.potenza_carichi_sospesa')|int}}) < Potenza massima ({{states('sensor.potenza_massima_ritardato')|int }}) "
+    - service: timer.cancel
+      data:
+        entity_id: timer.tempo_mancate_riattivazione
+        
+# Se il limite di potenza è superato, avvio il timer.
+  - id: 'powercontrol_timer_start'
+    alias: PowerControl - Timer Start
+    description: ''
+    mode: single
+    trigger:
+    - platform: template
+      value_template: "{{ ((states(states('input_text.potenza_carichi'))|int(default=0) + states('sensor.potenza_carichi_sospesa')|int(default=0)) < states('sensor.potenza_massima_ritardato')|int(default=0)) and (states('sensor.potenza_carichi_sospesa')|int(default=0) > 0) }}"
+    action:
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Automazione start timer triggerata: Potenza carichi+sospesa ({{ states(states('input_text.potenza_carichi'))|int + states('sensor.potenza_carichi_sospesa')|int}}) < Potenza massima ({{states('sensor.potenza_massima_ritardato')|int }}) "
+    - service: timer.start
+      data_template:
+        duration: 00:{{ states('input_number.tempo_start') | int }}:00
+        entity_id: timer.tempo_mancate_riattivazione
 
 # Se per TOT minuti il limite di potenza è rispettato, avvia lo script di riattivazione dei carichi fino a che la potenza "sospesa" non è zero.
   - id: 'powercontrol_carichi_start'
@@ -1346,7 +1384,7 @@ script:
 #################################################################
 
 # Avvia il distacco del carico.
-# Verifica che il carico si aconfigurato come seonsore di potenza e come interruttore.
+# Verifica che il carico sia configurato come sensore di potenza e come interruttore.
 # Controlla se la potenza massima è superata, se il carico è acceso (potenza impegnata > 10W).
 # Salva la potenza attualmente utilizzata nel relativo valore "sospesa".
 # Spegne l'interruttore a monte del carico ed invia la notifica. Attende TOT secondi prima di procedere col carico successivo.
@@ -1448,6 +1486,16 @@ script:
         level: debug
         logger: homeassistant.components.pc
         message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Inviata notifica. Attendo {{ states('input_number.attesa_stop') }} secondi "
+    #Modifico il timer di riattivazione
+    - if:
+        - condition: template
+          value_template: sensor.potenza_carichi_sospesa > 0
+      then:
+        - service: timer.start
+          data_template:
+            duration: 00:{{ states('input_number.attesa_start') | int }}:00
+            entity_id: timer.tempo_mancate_riattivazione
+    
     # Attendo prima di passare al prossimo carico da distaccare.
     - delay:
         seconds: "{{ states('input_number.attesa_stop') }}"
