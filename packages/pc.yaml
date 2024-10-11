@@ -3,7 +3,7 @@
 #################################################################
 # Autore: andbad                                                #
 # GitHub: https://github.com/andbad/HA_PowerControl             #
-# Versione: 3.51c                                               #
+# Versione: 3.51e                                               #
 #################################################################
 ########################### CREDITS #############################
 # Un ringraziamento alla community di InDomus per l'aiuto       #
@@ -124,7 +124,7 @@ template:
       unit_of_measurement: 'W'
       device_class: power
       state_class: measurement
-      state: "{{ states(states('input_text.potenza_carichi')) |int(default=0) }}"
+      state: "{{ states(states('input_text.potenza_carichi'))|int(default=0) }}"
 
 # Valore massimo che i carichi possono impegnare prima di cominciare il distacco
     - name: potenza_massima_immediato
@@ -309,31 +309,31 @@ input_number:
 
   #Attende tot SECONDI tra un distacco e l'altro.
   tempo_stop_immediato:
-    min: 0
+    min: 5
     max: 60
     step: 1
 
   #Attende tot MINUTI tra un distacco e l'altro.
   tempo_stop_ritardato:
-    min: 0
+    min: 1
     max: 180
     step: 10
 
   #Dopo tot MINUTI che la potenza utilizzata è rientrata nei limiti, inizia a riattivare i carichi
   tempo_start:
-    min: 0
+    min: 1
     max: 60
     step: 1
 
   #Attende tot SECONDI tra un distacco e l'altro.
   attesa_stop:
-    min: 0
+    min: 5
     max: 60
     step: 1
 
   #Attende tot MINUTI tra una riattivazione e l'altra per dare il tempo al carico di riprendere il suo normale assorbimento
   attesa_start:
-    min: 0
+    min: 1
     max: 60
     step: 1
 
@@ -524,7 +524,7 @@ automation:
 # All'avvio di HA attende che l'automazione "Popola entità" termini, poi carica la configurazione di interruttori
 # e sensori di potenza.
   - id: 'powercontrol_configurazione_carica'
-    alias: PowerControl   - Configurazione - Carica
+    alias: PowerControl - Configurazione - Carica
     mode: single
     trigger:
       - platform: homeassistant
@@ -539,26 +539,25 @@ automation:
         data_template:
           level: debug
           logger: homeassistant.components.pc
+          message: "HA_PowerControl Versione: 3.51e"
+      - service: system_log.write
+        data_template:
+          level: debug
+          logger: homeassistant.components.pc
           message: "Automazione Configurazione - Carica - Lancio script configurazione"
       - choose:
         - conditions:
             - condition: trigger
               id: start
           sequence:
-            - service: script.turn_on
-              data: {}
-              entity_id: script.powercontrol_configurazione_popola_entita
-            - wait_template: "{{ state_attr('script.powercontrol_configurazione_popola_entita','current') == 0 }}"
+            - service: script.powercontrol_configurazione_popola_entita
         - conditions:
             - condition: trigger
               id: reload
           sequence:
             - delay:
                 minutes: 1
-            - service: script.turn_on
-              data: {}
-              entity_id: script.powercontrol_configurazione_popola_entita
-            - wait_template: "{{ state_attr('script.powercontrol_configurazione_popola_entita','current') == 0 }}"
+            - service: script.powercontrol_configurazione_popola_entita
       - service: system_log.write
         data_template:
           level: debug
@@ -574,14 +573,14 @@ automation:
     description: ''
     trigger:
     - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi')) |int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0) }}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0) }}"
       for:
-        seconds: "{{ states('input_number.tempo_stop_immediato')|int(default=0) }}"
+        seconds: "{{ states('input_number.tempo_stop_immediato')|int }}"
       id: immediato
     - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi')) |int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0) }}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0) }}"
       for:
-        minutes: "{{ states('input_number.tempo_stop_ritardato')|int(default=0) }}"
+        minutes: "{{ states('input_number.tempo_stop_ritardato')|int }}"
       id: ritardato
     condition:
     - condition: state
@@ -592,7 +591,7 @@ automation:
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Automazione Carichi Stop triggerata: Potenza carichi ({{ states(states('input_text.potenza_carichi'))|int(default=0) }}))"
+        message: "Automazione Carichi Stop triggerata: Potenza carichi ({{ states(states('input_text.potenza_carichi'))|int }} > {{states('sensor.potenza_massima_immediato')|int}}/{{states('sensor.potenza_massima_ritardato')|int}}))"
     - choose:
       - conditions:
           - condition: trigger
@@ -625,16 +624,14 @@ automation:
             data_template:
               level: debug
               logger: homeassistant.components.pc
-              message: "Avviato script stop carichi: potenza carichi {{ states(states('input_text.potenza_carichi'))|int(default=0)}}"
-          - service: script.turn_on
-            data: {}
-            entity_id: script.stop_carichi_generale
+              message: "Avviato script stop carichi: potenza carichi {{ states(states('input_text.potenza_carichi'))}}"
+          - service: script.stop_carichi_generale
         until:
           - condition: template
             value_template: >
               {{
-              ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0)) and states('input_boolean.sensore_trigger') == "off") or
-              ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0)) and states('input_boolean.sensore_trigger') == "on")
+              ( (states(states('input_text.potenza_carichi'))|int > states('sensor.potenza_massima_ritardato')|int) and states('input_boolean.sensore_trigger') == "off") or
+              ( (states(states('input_text.potenza_carichi'))|int > states('sensor.potenza_massima_immediato')|int) and states('input_boolean.sensore_trigger') == "on")
               }}
     - service: input_boolean.turn_off
       target:
@@ -649,32 +646,30 @@ automation:
     - platform: template
       value_template: "{{ ((states(states('input_text.potenza_carichi'))|int(default=0) + states('sensor.potenza_carichi_sospesa')|int(default=0)) < states('sensor.potenza_massima_ritardato')|int(default=0)) and (states('sensor.potenza_carichi_sospesa')|int(default=0) > 0) }}"
       for:
-        minutes: "{{ states('input_number.tempo_start')|int(default=0) }}"
+        minutes: "{{ states('input_number.tempo_start')|int }}"
     condition:
     - condition: state
       entity_id: input_boolean.attiva_power_control
       state: 'on'
     - condition: template
-      value_template: "{{ states('sensor.potenza_carichi_sospesa')|int(default=0) > 0 }}"
+      value_template: "{{ states('sensor.potenza_carichi_sospesa')|int > 0 }}"
     action:
     - service: system_log.write
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Automazione start carichi triggerata: Potenza carichi+sospesa ({{ states(states('input_text.potenza_carichi'))|int(default=0) + states('sensor.potenza_carichi_sospesa')|int(default=0)}}) < Potenza massima ({{states('sensor.potenza_massima_ritardato')|int(default=0) }}) "
+        message: "Automazione start carichi triggerata: Potenza carichi+sospesa ({{ states(states('input_text.potenza_carichi'))|int + states('sensor.potenza_carichi_sospesa')|int}}) < Potenza massima ({{states('sensor.potenza_massima_ritardato')|int }}) "
     - repeat:
         until:
         - condition: template
-          value_template: "{{ states('sensor.potenza_carichi_sospesa')|int(default=0) > 0 }}"
+          value_template: "{{ states('sensor.potenza_carichi_sospesa')|int > 0 }}"
         sequence:
         - service: system_log.write
           data_template:
             level: debug
             logger: homeassistant.components.pc
-            message: "Avvio script start carichi: sospesa ({{ states('sensor.potenza_carichi_sospesa')|int(default=0) }})>0 "
-        - service: script.turn_on
-          data: {}
-          entity_id: script.start_carichi_generale
+            message: "Avvio script start carichi: sospesa ({{ states('sensor.potenza_carichi_sospesa')|int }}) > 0"
+        - service: script.start_carichi_generale
 
 # Controlla se un carico viene riacceso manualmente, cioè se il relativo interruttore viene attivato dall'utente,
 # e resetta la relativa potenza sospesa.
@@ -920,11 +915,17 @@ script:
       data_template:
         level: debug
         logger: homeassistant.components.pc
+        message: "Avvio script stop carichi generale"
+
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
         message: "Avvio script stop carico 20"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_20_potenza')}}"
-        switch: "{{states('input_text.carico_20_switch')}}"
+        potenza: "{{states('input_text.carico_20_potenza')|int}}"
+        switch: "{{states('input_text.carico_20_switch')|int}}"
         sospesa: "input_number.potenza_20_sospesa"
     - service: system_log.write
       data_template:
@@ -933,8 +934,8 @@ script:
         message: "Avvio script stop carico 19"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_19_potenza')}}"
-        switch: "{{states('input_text.carico_19_switch')}}"
+        potenza: "{{states('input_text.carico_19_potenza')|int}}"
+        switch: "{{states('input_text.carico_19_switch')|int}}"
         sospesa: "input_number.potenza_19_sospesa"
     - service: system_log.write
       data_template:
@@ -943,8 +944,8 @@ script:
         message: "Avvio script stop carico 18"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_18_potenza')}}"
-        switch: "{{states('input_text.carico_18_switch')}}"
+        potenza: "{{states('input_text.carico_18_potenza')|int}}"
+        switch: "{{states('input_text.carico_18_switch')|int}}"
         sospesa: "input_number.potenza_18_sospesa"
     - service: system_log.write
       data_template:
@@ -953,8 +954,8 @@ script:
         message: "Avvio script stop carico 17"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_17_potenza')}}"
-        switch: "{{states('input_text.carico_17_switch')}}"
+        potenza: "{{states('input_text.carico_17_potenza')|int}}"
+        switch: "{{states('input_text.carico_17_switch')|int}}"
         sospesa: "input_number.potenza_17_sospesa"
     - service: system_log.write
       data_template:
@@ -963,8 +964,8 @@ script:
         message: "Avvio script stop carico 16"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_16_potenza')}}"
-        switch: "{{states('input_text.carico_16_switch')}}"
+        potenza: "{{states('input_text.carico_16_potenza')|int}}"
+        switch: "{{states('input_text.carico_16_switch')|int}}"
         sospesa: "input_number.potenza_16_sospesa"
     - service: system_log.write
       data_template:
@@ -973,8 +974,8 @@ script:
         message: "Avvio script stop carico 15"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_15_potenza')}}"
-        switch: "{{states('input_text.carico_15_switch')}}"
+        potenza: "{{states('input_text.carico_15_potenza')|int}}"
+        switch: "{{states('input_text.carico_15_switch')|int}}"
         sospesa: "input_number.potenza_15_sospesa"
     - service: system_log.write
       data_template:
@@ -983,8 +984,8 @@ script:
         message: "Avvio script stop carico 14"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_14_potenza')}}"
-        switch: "{{states('input_text.carico_14_switch')}}"
+        potenza: "{{states('input_text.carico_14_potenza')|int}}"
+        switch: "{{states('input_text.carico_14_switch')|int}}"
         sospesa: "input_number.potenza_14_sospesa"
     - service: system_log.write
       data_template:
@@ -993,8 +994,8 @@ script:
         message: "Avvio script stop carico 13"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_13_potenza')}}"
-        switch: "{{states('input_text.carico_13_switch')}}"
+        potenza: "{{states('input_text.carico_13_potenza')|int}}"
+        switch: "{{states('input_text.carico_13_switch')|int}}"
         sospesa: "input_number.potenza_13_sospesa"
     - service: system_log.write
       data_template:
@@ -1003,8 +1004,8 @@ script:
         message: "Avvio script stop carico 12"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_12_potenza')}}"
-        switch: "{{states('input_text.carico_12_switch')}}"
+        potenza: "{{states('input_text.carico_12_potenza')|int}}"
+        switch: "{{states('input_text.carico_12_switch')|int}}"
         sospesa: "input_number.potenza_12_sospesa"
     - service: system_log.write
       data_template:
@@ -1013,8 +1014,8 @@ script:
         message: "Avvio script stop carico 11"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_11_potenza')}}"
-        switch: "{{states('input_text.carico_11_switch')}}"
+        potenza: "{{states('input_text.carico_11_potenza')|int}}"
+        switch: "{{states('input_text.carico_11_switch')|int}}"
         sospesa: "input_number.potenza_11_sospesa"
     - service: system_log.write
       data_template:
@@ -1023,8 +1024,8 @@ script:
         message: "Avvio script stop carico 10"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_10_potenza')}}"
-        switch: "{{states('input_text.carico_10_switch')}}"
+        potenza: "{{states('input_text.carico_10_potenza')|int}}"
+        switch: "{{states('input_text.carico_10_switch')|int}}"
         sospesa: "input_number.potenza_10_sospesa"
     - service: system_log.write
       data_template:
@@ -1033,8 +1034,8 @@ script:
         message: "Avvio script stop carico 9"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_9_potenza')}}"
-        switch: "{{states('input_text.carico_9_switch')}}"
+        potenza: "{{states('input_text.carico_9_potenza'|int)}}"
+        switch: "{{states('input_text.carico_9_switch')|int}}"
         sospesa: "input_number.potenza_9_sospesa"
     - service: system_log.write
       data_template:
@@ -1043,8 +1044,8 @@ script:
         message: "Avvio script stop carico 8"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_8_potenza')}}"
-        switch: "{{states('input_text.carico_8_switch')}}"
+        potenza: "{{states('input_text.carico_8_potenza')|int}}"
+        switch: "{{states('input_text.carico_8_switch')|int}}"
         sospesa: "input_number.potenza_8_sospesa"
     - service: system_log.write
       data_template:
@@ -1053,8 +1054,8 @@ script:
         message: "Avvio script stop carico 7"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_7_potenza')}}"
-        switch: "{{states('input_text.carico_7_switch')}}"
+        potenza: "{{states('input_text.carico_7_potenza')|int}}"
+        switch: "{{states('input_text.carico_7_switch')|int}}"
         sospesa: "input_number.potenza_7_sospesa"
     - service: system_log.write
       data_template:
@@ -1063,8 +1064,8 @@ script:
         message: "Avvio script stop carico 6"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_6_potenza')}}"
-        switch: "{{states('input_text.carico_6_switch')}}"
+        potenza: "{{states('input_text.carico_6_potenza')|int}}"
+        switch: "{{states('input_text.carico_6_switch')|int}}"
         sospesa: "input_number.potenza_6_sospesa"
     - service: system_log.write
       data_template:
@@ -1073,8 +1074,8 @@ script:
         message: "Avvio script stop carico 5"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_5_potenza')}}"
-        switch: "{{states('input_text.carico_5_switch')}}"
+        potenza: "{{states('input_text.carico_5_potenza')|int}}"
+        switch: "{{states('input_text.carico_5_switch')|int}}"
         sospesa: "input_number.potenza_5_sospesa"
     - service: system_log.write
       data_template:
@@ -1083,8 +1084,8 @@ script:
         message: "Avvio script stop carico 4"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_4_potenza')}}"
-        switch: "{{states('input_text.carico_4_switch')}}"
+        potenza: "{{states('input_text.carico_4_potenza')|int}}"
+        switch: "{{states('input_text.carico_4_switch')|int}}"
         sospesa: "input_number.potenza_4_sospesa"
     - service: system_log.write
       data_template:
@@ -1093,8 +1094,8 @@ script:
         message: "Avvio script stop carico 3"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_3_potenza')}}"
-        switch: "{{states('input_text.carico_3_switch')}}"
+        potenza: "{{states('input_text.carico_3_potenza')|int}}"
+        switch: "{{states('input_text.carico_3_switch')|int}}"
         sospesa: "input_number.potenza_3_sospesa"
     - service: system_log.write
       data_template:
@@ -1103,8 +1104,8 @@ script:
         message: "Avvio script stop carico 2"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_2_potenza')}}"
-        switch: "{{states('input_text.carico_2_switch')}}"
+        potenza: "{{states('input_text.carico_2_potenza')|int}}"
+        switch: "{{states('input_text.carico_2_switch')|int}}"
         sospesa: "input_number.potenza_2_sospesa"
     - service: system_log.write
       data_template:
@@ -1113,9 +1114,14 @@ script:
         message: "Avvio script stop carico 1"
     - service: script.stop_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_1_potenza')}}"
-        switch: "{{states('input_text.carico_1_switch')}}"
+        potenza: "{{states('input_text.carico_1_potenza')|int}}"
+        switch: "{{states('input_text.carico_1_switch')|int}}"
         sospesa: "input_number.potenza_1_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Fine script stop carichi generale"
     mode: single
 
 # I carichi vengono riattivati secondo l'ordine numerico (da maggiore priorità a minore priorità)
@@ -1127,11 +1133,16 @@ script:
       data_template:
         level: debug
         logger: homeassistant.components.pc
+        message: "Avvio script start carichi generale"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
         message: "Avvio script start carico 1"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_1_potenza')}}"
-        switch: "{{states('input_text.carico_1_switch')}}"
+        potenza: "{{states('input_text.carico_1_potenza')|int}}"
+        switch: "{{states('input_text.carico_1_switch')|int}}"
         sospesa: "input_number.potenza_1_sospesa"
     - service: system_log.write
       data_template:
@@ -1140,8 +1151,8 @@ script:
         message: "Avvio script start carico 2"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_2_potenza')}}"
-        switch: "{{states('input_text.carico_2_switch')}}"
+        potenza: "{{states('input_text.carico_2_potenza')|int}}"
+        switch: "{{states('input_text.carico_2_switch')|int}}"
         sospesa: "input_number.potenza_2_sospesa"
     - service: system_log.write
       data_template:
@@ -1150,8 +1161,8 @@ script:
         message: "Avvio script start carico 3"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_3_potenza')}}"
-        switch: "{{states('input_text.carico_3_switch')}}"
+        potenza: "{{states('input_text.carico_3_potenza')|int}}"
+        switch: "{{states('input_text.carico_3_switch')|int}}"
         sospesa: "input_number.potenza_3_sospesa"
     - service: system_log.write
       data_template:
@@ -1160,8 +1171,8 @@ script:
         message: "Avvio script start carico 4"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_4_potenza')}}"
-        switch: "{{states('input_text.carico_4_switch')}}"
+        potenza: "{{states('input_text.carico_4_potenza')|int}}"
+        switch: "{{states('input_text.carico_4_switch')|int}}"
         sospesa: "input_number.potenza_4_sospesa"
     - service: system_log.write
       data_template:
@@ -1170,8 +1181,8 @@ script:
         message: "Avvio script start carico 5"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_5_potenza')}}"
-        switch: "{{states('input_text.carico_5_switch')}}"
+        potenza: "{{states('input_text.carico_5_potenza')|int}}"
+        switch: "{{states('input_text.carico_5_switch')|int}}"
         sospesa: "input_number.potenza_5_sospesa"
     - service: system_log.write
       data_template:
@@ -1180,8 +1191,8 @@ script:
         message: "Avvio script start carico 6"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_6_potenza')}}"
-        switch: "{{states('input_text.carico_6_switch')}}"
+        potenza: "{{states('input_text.carico_6_potenza')|int}}"
+        switch: "{{states('input_text.carico_6_switch')|int}}"
         sospesa: "input_number.potenza_6_sospesa"
     - service: system_log.write
       data_template:
@@ -1190,8 +1201,8 @@ script:
         message: "Avvio script start carico 7"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_7_potenza')}}"
-        switch: "{{states('input_text.carico_7_switch')}}"
+        potenza: "{{states('input_text.carico_7_potenza')|int}}"
+        switch: "{{states('input_text.carico_7_switch')|int}}"
         sospesa: "input_number.potenza_7_sospesa"
     - service: system_log.write
       data_template:
@@ -1200,8 +1211,8 @@ script:
         message: "Avvio script start carico 8"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_8_potenza')}}"
-        switch: "{{states('input_text.carico_8_switch')}}"
+        potenza: "{{states('input_text.carico_8_potenza')|int}}"
+        switch: "{{states('input_text.carico_8_switch')|int}}"
         sospesa: "input_number.potenza_8_sospesa"
     - service: system_log.write
       data_template:
@@ -1210,8 +1221,8 @@ script:
         message: "Avvio script start carico 9"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_9_potenza')}}"
-        switch: "{{states('input_text.carico_9_switch')}}"
+        potenza: "{{states('input_text.carico_9_potenza')|int}}"
+        switch: "{{states('input_text.carico_9_switch')|int}}"
         sospesa: "input_number.potenza_9_sospesa"
     - service: system_log.write
       data_template:
@@ -1220,8 +1231,8 @@ script:
         message: "Avvio script start carico 10"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_10_potenza')}}"
-        switch: "{{states('input_text.carico_10_switch')}}"
+        potenza: "{{states('input_text.carico_10_potenza')|int}}"
+        switch: "{{states('input_text.carico_10_switch')|int}}"
         sospesa: "input_number.potenza_10_sospesa"
     - service: system_log.write
       data_template:
@@ -1230,8 +1241,8 @@ script:
         message: "Avvio script start carico 11"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_11_potenza')}}"
-        switch: "{{states('input_text.carico_11_switch')}}"
+        potenza: "{{states('input_text.carico_11_potenza')|int}}"
+        switch: "{{states('input_text.carico_11_switch')|int}}"
         sospesa: "input_number.potenza_11_sospesa"
     - service: system_log.write
       data_template:
@@ -1240,8 +1251,8 @@ script:
         message: "Avvio script start carico 12"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_12_potenza')}}"
-        switch: "{{states('input_text.carico_12_switch')}}"
+        potenza: "{{states('input_text.carico_12_potenza')|int}}"
+        switch: "{{states('input_text.carico_12_switch')|int}}"
         sospesa: "input_number.potenza_12_sospesa"
     - service: system_log.write
       data_template:
@@ -1250,8 +1261,8 @@ script:
         message: "Avvio script start carico 13"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_13_potenza')}}"
-        switch: "{{states('input_text.carico_13_switch')}}"
+        potenza: "{{states('input_text.carico_13_potenza')|int}}"
+        switch: "{{states('input_text.carico_13_switch')|int}}"
         sospesa: "input_number.potenza_13_sospesa"
     - service: system_log.write
       data_template:
@@ -1260,8 +1271,8 @@ script:
         message: "Avvio script start carico 14"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_14_potenza')}}"
-        switch: "{{states('input_text.carico_14_switch')}}"
+        potenza: "{{states('input_text.carico_14_potenza')|int}}"
+        switch: "{{states('input_text.carico_14_switch')|int}}"
         sospesa: "input_number.potenza_14_sospesa"
     - service: system_log.write
       data_template:
@@ -1270,8 +1281,8 @@ script:
         message: "Avvio script start carico 15"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_15_potenza')}}"
-        switch: "{{states('input_text.carico_15_switch')}}"
+        potenza: "{{states('input_text.carico_15_potenza')|int}}"
+        switch: "{{states('input_text.carico_15_switch')|int}}"
         sospesa: "input_number.potenza_15_sospesa"
     - service: system_log.write
       data_template:
@@ -1280,8 +1291,8 @@ script:
         message: "Avvio script start carico 16"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_16_potenza')}}"
-        switch: "{{states('input_text.carico_16_switch')}}"
+        potenza: "{{states('input_text.carico_16_potenza')|int}}"
+        switch: "{{states('input_text.carico_16_switch')|int}}"
         sospesa: "input_number.potenza_16_sospesa"
     - service: system_log.write
       data_template:
@@ -1290,8 +1301,8 @@ script:
         message: "Avvio script start carico 17"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_17_potenza')}}"
-        switch: "{{states('input_text.carico_17_switch')}}"
+        potenza: "{{states('input_text.carico_17_potenza')|int}}"
+        switch: "{{states('input_text.carico_17_switch')|int}}"
         sospesa: "input_number.potenza_17_sospesa"
     - service: system_log.write
       data_template:
@@ -1300,8 +1311,8 @@ script:
         message: "Avvio script start carico 18"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_18_potenza')}}"
-        switch: "{{states('input_text.carico_18_switch')}}"
+        potenza: "{{states('input_text.carico_18_potenza')|int}}"
+        switch: "{{states('input_text.carico_18_switch')|int}}"
         sospesa: "input_number.potenza_18_sospesa"
     - service: system_log.write
       data_template:
@@ -1310,8 +1321,8 @@ script:
         message: "Avvio script start carico 19"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_19_potenza')}}"
-        switch: "{{states('input_text.carico_19_switch')}}"
+        potenza: "{{states('input_text.carico_19_potenza')|int}}"
+        switch: "{{states('input_text.carico_19_switch')|int}}"
         sospesa: "input_number.potenza_19_sospesa"
     - service: system_log.write
       data_template:
@@ -1320,9 +1331,14 @@ script:
         message: "Avvio script start carico 20"
     - service: script.start_carichi_singolo
       data_template:
-        potenza: "{{states('input_text.carico_20_potenza')}}"
-        switch: "{{states('input_text.carico_20_switch')}}"
+        potenza: "{{states('input_text.carico_20_potenza')|int}}"
+        switch: "{{states('input_text.carico_20_switch')|int}}"
         sospesa: "input_number.potenza_20_sospesa"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Fine script start carichi generale"
     mode: single
 
 #################################################################
@@ -1383,17 +1399,17 @@ script:
     - condition: template
       value_template: >
         {{
-        ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0)) and states('input_boolean.sensore_trigger') == "off") or
-        ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0)) and states('input_boolean.sensore_trigger') == "on")
+        ((states(states('input_text.potenza_carichi'))|int > states('sensor.potenza_massima_ritardato')|int) and states('input_boolean.sensore_trigger') == "off") or
+        ((states(states('input_text.potenza_carichi'))|int > states('sensor.potenza_massima_immediato')|int) and states('input_boolean.sensore_trigger') == "on")
         }}
     - service: system_log.write
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 3 - Ok {{ states(states('input_text.potenza_carichi'))|int(default=0)}}W}}"
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 3 - Ok {{ states(states('input_text.potenza_carichi'))|int}}W"
     # Controlla se il carico è attualmente in uso 
     - condition: template
-      value_template: "{{ states(potenza) |int(default=0) > 10 }}"
+      value_template: "{{ states(potenza)|int > 15 }}"
     - service: system_log.write
       data_template:
         level: debug
@@ -1402,13 +1418,13 @@ script:
     #Salvo potenza in uso dal carico sul relativo sensore sospesa
     - service: input_number.set_value
       data_template:
-        value: "{{ states(potenza) }}"
+        value: "{{ states(potenza)|int(default=100) }}"
         entity_id: "{{sospesa}}"
     - service: system_log.write
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Spostata potenza da carico {{ states(potenza) }} a sospesa {{states(sospesa)|int(default=0)}} (dovrebbero essere uguali)."
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Spostata potenza da carico {{ states(potenza) }} a sospesa {{states(sospesa)}} (dovrebbero essere uguali)."
     # Spengo il carico
     - service_template: switch.turn_off
       data_template:
@@ -1435,7 +1451,7 @@ script:
     # Attendo prima di passare al prossimo carico da distaccare.
     - delay:
         seconds: "{{ states('input_number.attesa_stop') }}"
-    mode: queued
+    mode: single
 
 
 
@@ -1478,7 +1494,7 @@ script:
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 1.5 - Ok"
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 1.5 - Ok"
 
     # Controllo se l'interruttore del carico è stato configurato
     - condition: template
@@ -1496,11 +1512,11 @@ script:
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.5 - Ok"
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.5 - Ok"
 
     # Verifica se la potenza sospesa del carico è maggiore di 0 (in questo caso il carico è stato spento dal contollo carichi)
     - condition: template
-      value_template: "{{ states(sospesa)|int(default=0) > 0 }}"
+      value_template: "{{ states(sospesa)|int > 0 }}"
     - service: system_log.write
       data_template:
         level: debug
@@ -1508,7 +1524,7 @@ script:
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 3 ok"
     # Verifico che la potenza in uso sia inferiore alla potenza massima ritardato.
     - condition: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) < states('sensor.potenza_massima_ritardato')|int(default=0)}}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int < states('sensor.potenza_massima_ritardato')|int }}"
     - service: system_log.write
       data_template:
         level: debug
@@ -1516,7 +1532,7 @@ script:
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 4 ok"
     #Controlla se, riattivnado il carico, non si superi nuovamente il limite di potenza.
     - condition: template
-      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) + states(sospesa)|int(default=0) < states('sensor.potenza_massima_ritardato')|int(default=0) }}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int + states(sospesa)|int < states('sensor.potenza_massima_ritardato')|int }}"
     - service: system_log.write
       data_template:
         level: debug
@@ -1557,7 +1573,7 @@ script:
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Inviata notifica. Attendo {{ states('input_number.attesa_start') }} minuti"
     - delay:
         minutes: "{{ states('input_number.attesa_start') }}"
-    mode: queued
+    mode: single
 
 
 
@@ -1770,192 +1786,194 @@ script:
         level: debug
         logger: homeassistant.components.pc
         message: "Script Configurazione - Carica - Fine caricamento"
+    mode: single
 
 # Aggiorna gli input_slider con la lista delle entità per i campi di configurazione quando richiamato da pannello di configurazione
   powercontrol_configurazione_salva:
     alias: PowerControl - Configurazione - Salva
     sequence:
-      - service: system_log.write
-        data_template:
-          level: debug
-          logger: homeassistant.components.pc
-          message: "Script Configurazione - Salva - Avvio automazione, attendo fine automazione powercontrol_configurazione_carica"
-      - wait_template: "{{ state_attr('automation.powercontrol_configurazione_carica','current') == 0 }}"
-      - service: system_log.write
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Configurazione - Salva - Avvio automazione, attendo fine automazione powercontrol_configurazione_carica"
+    - wait_template: "{{ state_attr('automation.powercontrol_configurazione_carica','current') == 0 }}"
+    - service: system_log.write
 
-        data_template:
-          level: debug
-          logger: homeassistant.components.pc
-          message: "Script Configurazione - Salva - Salvo input_select in input_text"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.potenza_carichi
-          value: "{{ states('input_select.potenza_carichi') }}"
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Configurazione - Salva - Salvo input_select in input_text"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.potenza_carichi
+        value: "{{ states('input_select.potenza_carichi') }}"
 
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_1_potenza
-          value: "{{ states('input_select.carico_1_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_2_potenza
-          value: "{{ states('input_select.carico_2_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_3_potenza
-          value: "{{ states('input_select.carico_3_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_4_potenza
-          value: "{{ states('input_select.carico_4_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_5_potenza
-          value: "{{ states('input_select.carico_5_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_6_potenza
-          value: "{{ states('input_select.carico_6_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_7_potenza
-          value: "{{ states('input_select.carico_7_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_8_potenza
-          value: "{{ states('input_select.carico_8_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_9_potenza
-          value: "{{ states('input_select.carico_9_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_10_potenza
-          value: "{{ states('input_select.carico_10_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_11_potenza
-          value: "{{ states('input_select.carico_11_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_12_potenza
-          value: "{{ states('input_select.carico_12_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_13_potenza
-          value: "{{ states('input_select.carico_13_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_14_potenza
-          value: "{{ states('input_select.carico_14_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_15_potenza
-          value: "{{ states('input_select.carico_15_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_16_potenza
-          value: "{{ states('input_select.carico_16_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_17_potenza
-          value: "{{ states('input_select.carico_17_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_18_potenza
-          value: "{{ states('input_select.carico_18_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_19_potenza
-          value: "{{ states('input_select.carico_19_potenza') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_20_potenza
-          value: "{{ states('input_select.carico_20_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_1_potenza
+        value: "{{ states('input_select.carico_1_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_2_potenza
+        value: "{{ states('input_select.carico_2_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_3_potenza
+        value: "{{ states('input_select.carico_3_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_4_potenza
+        value: "{{ states('input_select.carico_4_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_5_potenza
+        value: "{{ states('input_select.carico_5_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_6_potenza
+        value: "{{ states('input_select.carico_6_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_7_potenza
+        value: "{{ states('input_select.carico_7_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_8_potenza
+        value: "{{ states('input_select.carico_8_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_9_potenza
+        value: "{{ states('input_select.carico_9_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_10_potenza
+        value: "{{ states('input_select.carico_10_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_11_potenza
+        value: "{{ states('input_select.carico_11_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_12_potenza
+        value: "{{ states('input_select.carico_12_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_13_potenza
+        value: "{{ states('input_select.carico_13_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_14_potenza
+        value: "{{ states('input_select.carico_14_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_15_potenza
+        value: "{{ states('input_select.carico_15_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_16_potenza
+        value: "{{ states('input_select.carico_16_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_17_potenza
+        value: "{{ states('input_select.carico_17_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_18_potenza
+        value: "{{ states('input_select.carico_18_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_19_potenza
+        value: "{{ states('input_select.carico_19_potenza') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_20_potenza
+        value: "{{ states('input_select.carico_20_potenza') }}"
 
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_1_switch
-          value: "{{ states('input_select.carico_1_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_2_switch
-          value: "{{ states('input_select.carico_2_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_3_switch
-          value: "{{ states('input_select.carico_3_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_4_switch
-          value: "{{ states('input_select.carico_4_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_5_switch
-          value: "{{ states('input_select.carico_5_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_6_switch
-          value: "{{ states('input_select.carico_6_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_7_switch
-          value: "{{ states('input_select.carico_7_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_8_switch
-          value: "{{ states('input_select.carico_8_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_9_switch
-          value: "{{ states('input_select.carico_9_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_10_switch
-          value: "{{ states('input_select.carico_10_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_11_switch
-          value: "{{ states('input_select.carico_11_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_12_switch
-          value: "{{ states('input_select.carico_12_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_13_switch
-          value: "{{ states('input_select.carico_13_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_14_switch
-          value: "{{ states('input_select.carico_14_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_15_switch
-          value: "{{ states('input_select.carico_15_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_16_switch
-          value: "{{ states('input_select.carico_16_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_17_switch
-          value: "{{ states('input_select.carico_17_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_18_switch
-          value: "{{ states('input_select.carico_18_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_19_switch
-          value: "{{ states('input_select.carico_19_switch') }}"
-      - service: input_text.set_value
-        data:
-          entity_id: input_text.carico_20_switch
-          value: "{{ states('input_select.carico_20_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_1_switch
+        value: "{{ states('input_select.carico_1_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_2_switch
+        value: "{{ states('input_select.carico_2_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_3_switch
+        value: "{{ states('input_select.carico_3_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_4_switch
+        value: "{{ states('input_select.carico_4_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_5_switch
+        value: "{{ states('input_select.carico_5_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_6_switch
+        value: "{{ states('input_select.carico_6_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_7_switch
+        value: "{{ states('input_select.carico_7_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_8_switch
+        value: "{{ states('input_select.carico_8_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_9_switch
+        value: "{{ states('input_select.carico_9_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_10_switch
+        value: "{{ states('input_select.carico_10_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_11_switch
+        value: "{{ states('input_select.carico_11_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_12_switch
+        value: "{{ states('input_select.carico_12_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_13_switch
+        value: "{{ states('input_select.carico_13_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_14_switch
+        value: "{{ states('input_select.carico_14_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_15_switch
+        value: "{{ states('input_select.carico_15_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_16_switch
+        value: "{{ states('input_select.carico_16_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_17_switch
+        value: "{{ states('input_select.carico_17_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_18_switch
+        value: "{{ states('input_select.carico_18_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_19_switch
+        value: "{{ states('input_select.carico_19_switch') }}"
+    - service: input_text.set_value
+      data:
+        entity_id: input_text.carico_20_switch
+        value: "{{ states('input_select.carico_20_switch') }}"
 
-      - service: system_log.write
-        data_template:
-          level: debug
-          logger: homeassistant.components.pc
-          message: "Script Configurazione - Salva - Fine salvataggio"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Configurazione - Salva - Fine salvataggio"
+    mode: single
