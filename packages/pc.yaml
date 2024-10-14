@@ -3,7 +3,7 @@
 #################################################################
 # Autore: andbad                                                #
 # GitHub: https://github.com/andbad/HA_PowerControl             #
-# Versione: 3.60.1                                               #
+# Versione: 3.60.b1                                             #
 #################################################################
 ########################### CREDITS #############################
 # Un ringraziamento alla community di InDomus per l'aiuto       #
@@ -539,7 +539,7 @@ automation:
         data_template:
           level: debug
           logger: homeassistant.components.pc
-          message: "HA_PowerControl Versione: 3.60"
+          message: "HA_PowerControl Versione: 3.60.b1"
       - service: system_log.write
         data_template:
           level: debug
