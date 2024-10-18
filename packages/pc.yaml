@@ -3,7 +3,7 @@
 #################################################################
 # Autore: andbad                                                #
 # GitHub: https://github.com/andbad/HA_PowerControl             #
-# Versione: 3.60.b1                                             #
+# Versione: 3.60.b2                                             #
 #################################################################
 ########################### CREDITS #############################
 # Un ringraziamento alla community di InDomus per l'aiuto       #
@@ -26,7 +26,7 @@
 # il distacco avviene invece dopo alcuni secondi (anche in questo caso regolati da relativo slider).
 # Lo script tiene memoria dell'assorbimento del carico prima del distacco e lo ricollega solo quando la disponibilità
 # di potenza è sufficiente a non causare un nuovo distacco.
-# La configurazione è interamente tramite interfaccia lovelace, tranne il gruppo di notifica (group.tutti) che va impostato
+# La configurazione è interamente tramite interfaccia grafica, tranne il gruppo di notifica (group.tutti) che va impostato
 # manualmente.
 
 #################################################################
@@ -53,13 +53,13 @@
 #      name: "Potenza carichi"
 #      state_topic: "shellies/NOME_SHELLY/emeter/0/power"
 #      value_template: "{{ value }}"
-#      unit_of_measurement : "Watt"
+#      unit_of_measurement : "W"
 #      icon: mdi:speedometer
 
 template:
 # In alternativa è possibile utilizzare i sensori di potenza dei maggiori carichi utilizzati e mantenere un certo margine 
 # di tolleranza.
-# Questo comporta di monitorare tutti i maggiori carichi (forno, fornelli, phon, condizionatori, ecc...).
+# Questo comporta di monitorare tutti i maggiori carichi (forno, piano induzione, phon, condizionatori, ecc...).
 # Naturalmente in questo modo non si può valutare il consumo complessivo, quindi si potrebbe superare il valore limite 
 # senza che intervenga il controllo carichi.
 # Utilizzando un valore conservativo di potenza massima (ad es. 3kW) e contando sulla tolleranze di 180 minuti fino al 80% 
@@ -124,7 +124,7 @@ template:
       unit_of_measurement: 'W'
       device_class: power
       state_class: measurement
-      state: "{{ states(states('input_text.potenza_carichi')) |int(default=0) }}"
+      state: "{{ states(states('input_text.potenza_carichi'))|int(default=0) }}"
 
 # Valore massimo che i carichi possono impegnare prima di cominciare il distacco
     - name: potenza_massima_immediato
@@ -214,83 +214,63 @@ input_number:
 
 # Mantengono memoria della potenza utilizzata al momento del distacco, per valutare la riattivazione.
   potenza_1_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_2_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_3_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_4_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_5_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_6_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_7_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_8_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_9_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_10_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_11_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_12_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_13_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_14_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_15_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_16_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_17_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_18_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_19_sospesa:
-    initial: 0
     min: 0
     max: 10000
   potenza_20_sospesa:
-    initial: 0
     min: 0
     max: 10000
 
@@ -339,7 +319,7 @@ input_number:
 
 
 input_select:
-# Drop-down per la configurazione di PC. L'elenco di interruttori e sensori viene aggiornato all'avvio di HA.
+# Drop-down per la configurazione di PowerControl. L'elenco di interruttori e sensori viene aggiornato all'avvio di HA.
   lista_carichi:
     name: Lista potenza carichi
     options:
@@ -515,6 +495,10 @@ input_select:
     options:
       - Seleziona
 
+timer:
+  tempo_riattivazione:
+    duration: "00:00:00"
+
 #################################################################
 ####################### AUTOMAZIONI #############################
 #################################################################
@@ -539,17 +523,17 @@ automation:
         data_template:
           level: debug
           logger: homeassistant.components.pc
-          message: "HA_PowerControl Versione: 3.60.b1"
-      - service: system_log.write
-        data_template:
-          level: debug
-          logger: homeassistant.components.pc
           message: "Automazione Configurazione - Carica - Lancio script configurazione"
       - choose:
         - conditions:
             - condition: trigger
               id: start
           sequence:
+            - service: system_log.write
+              data_template:
+                level: debug
+                logger: homeassistant.components.pc
+                message: "HA_PowerControl Versione: 3.60.b1"
             - service: script.powercontrol_configurazione_popola_entita
         - conditions:
             - condition: trigger
@@ -573,14 +557,14 @@ automation:
     description: ''
     trigger:
     - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi')) |int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0) }}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0) }}"
       for:
-        seconds: "{{ states('input_number.tempo_stop_immediato')|int(default=0) }}"
+        seconds: "{{ states('input_number.tempo_stop_immediato')|int(default=30) }}"
       id: immediato
     - platform: template
-      value_template: "{{ states(states('input_text.potenza_carichi')) |int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0) }}"
+      value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0) }}"
       for:
-        minutes: "{{ states('input_number.tempo_stop_ritardato')|int(default=0) }}"
+        minutes: "{{ states('input_number.tempo_stop_ritardato')|int(default=170) }}"
       id: ritardato
     condition:
     - condition: state
@@ -617,27 +601,40 @@ automation:
               level: debug
               logger: homeassistant.components.pc
               message: "Automazione Carichi Stop triggerata: Tipo di innesco Ritardato"
-
     - repeat:
         sequence:
+          - condition: template
+            value_template: >
+              {{
+                ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0)) and states('input_boolean.sensore_trigger') == "off") or
+                ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0)) and states('input_boolean.sensore_trigger') == "on")
+              }}
           - service: system_log.write
             data_template:
               level: debug
               logger: homeassistant.components.pc
-              message: "Avviato script stop carichi: potenza carichi {{ states(states('input_text.potenza_carichi'))|int(default=0)}}"
+              message: "Avviato script stop carichi: potenza carichi {{ states(states('input_text.potenza_carichi'))|int }} Tipo: - {{ states('input_boolean.sensore_trigger') }}"
           - service: script.stop_carichi_generale
+#          - if:
+#              - condition: template
+#                value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) <= states('sensor.potenza_massima_immediato')|int(default=0) }}"
+#            then:
+#              - service: input_boolean.turn_off
+#                target:
+#                  entity_id: input_boolean.sensore_trigger
         until:
           - condition: template
             value_template: >
               {{
-              ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0)) and states('input_boolean.sensore_trigger') == "off") or
-              ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0)) and states('input_boolean.sensore_trigger') == "on")
+                ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0)) and states('input_boolean.sensore_trigger') == "off") or
+                ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0)) and states('input_boolean.sensore_trigger') == "on")
+                or repeat.index == 5
               }}
     - service: input_boolean.turn_off
       target:
         entity_id: input_boolean.sensore_trigger
 
-# Se il limite di potenza è rispettato, fermo il timer.
+# Se il limite di potenza è superato, fermo il timer.
   - id: 'powercontrol_timer_stop'
     alias: PowerControl - Timer Stop
     description: ''
@@ -653,9 +650,9 @@ automation:
         message: "Automazione stop timer triggerata: Potenza carichi+sospesa ({{ states(states('input_text.potenza_carichi'))|int + states('sensor.potenza_carichi_sospesa')|int}}) < Potenza massima ({{states('sensor.potenza_massima_ritardato')|int }}) "
     - service: timer.cancel
       data:
-        entity_id: timer.tempo_mancate_riattivazione
+        entity_id: timer.tempo_riattivazione
 
-# Se il limite di potenza è superato, avvio il timer.
+# Se il limite di potenza è rispettato, avvio il timer.
   - id: 'powercontrol_timer_start'
     alias: PowerControl - Timer Start
     description: ''
@@ -672,9 +669,8 @@ automation:
     - service: timer.start
       data_template:
         duration: 00:{{ states('input_number.tempo_start') | int }}:00
-        entity_id: timer.tempo_mancate_riattivazione
+        entity_id: timer.tempo_riattivazione
 
-        
 
 # Se per TOT minuti il limite di potenza è rispettato, avvia lo script di riattivazione dei carichi fino a che la potenza "sospesa" non è zero.
   - id: 'powercontrol_carichi_start'
@@ -685,7 +681,7 @@ automation:
     - platform: template
       value_template: "{{ ((states(states('input_text.potenza_carichi'))|int(default=0) + states('sensor.potenza_carichi_sospesa')|int(default=0)) < states('sensor.potenza_massima_ritardato')|int(default=0)) and (states('sensor.potenza_carichi_sospesa')|int(default=0) > 0) }}"
       for:
-        minutes: "{{ states('input_number.tempo_start')|int(default=0) }}"
+        minutes: "{{ states('input_number.tempo_start')|int(default=5) }}"
     condition:
     - condition: state
       entity_id: input_boolean.attiva_power_control
@@ -697,17 +693,19 @@ automation:
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Automazione start carichi triggerata: Potenza carichi+sospesa ({{ states(states('input_text.potenza_carichi'))|int(default=0) + states('sensor.potenza_carichi_sospesa')|int(default=0)}}) < Potenza massima ({{states('sensor.potenza_massima_ritardato')|int(default=0) }}) "
+        message: "Automazione start carichi triggerata: Potenza carichi+sospesa ({{ states(states('input_text.potenza_carichi'))|int + states('sensor.potenza_carichi_sospesa')|int }}) < Potenza massima ({{states('sensor.potenza_massima_ritardato')|int }}) "
     - repeat:
         until:
         - condition: template
-          value_template: "{{ states('sensor.potenza_carichi_sospesa')|int(default=0) > 0 }}"
+          value_template: "{{ states('sensor.potenza_carichi_sospesa')|int(default=0) > 0 or repeat.index == 5 }}"
         sequence:
+        - condition: template
+          value_template: "{{ states('sensor.potenza_carichi_sospesa')|int(default=0) > 0 }}"
         - service: system_log.write
           data_template:
             level: debug
             logger: homeassistant.components.pc
-            message: "Avvio script start carichi: sospesa ({{ states('sensor.potenza_carichi_sospesa')|int(default=0) }})>0 "
+            message: "Avvio script start carichi: sospesa ({{ states('sensor.potenza_carichi_sospesa')|int }})>0 "
         - service: script.start_carichi_generale
 
 # Controlla se un carico viene riacceso manualmente, cioè se il relativo interruttore viene attivato dall'utente,
@@ -723,26 +721,26 @@ automation:
       - platform: template
         value_template: >
               {{
-              ( states(states('input_text.carico_1_switch')) == 'on' and states('input_number.potenza_1_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_2_switch')) == 'on' and states('input_number.potenza_2_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_3_switch')) == 'on' and states('input_number.potenza_3_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_4_switch')) == 'on' and states('input_number.potenza_4_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_5_switch')) == 'on' and states('input_number.potenza_5_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_6_switch')) == 'on' and states('input_number.potenza_6_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_7_switch')) == 'on' and states('input_number.potenza_7_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_8_switch')) == 'on' and states('input_number.potenza_8_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_9_switch')) == 'on' and states('input_number.potenza_9_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_10_switch')) == 'on' and states('input_number.potenza_10_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_11_switch')) == 'on' and states('input_number.potenza_11_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_12_switch')) == 'on' and states('input_number.potenza_12_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_13_switch')) == 'on' and states('input_number.potenza_13_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_14_switch')) == 'on' and states('input_number.potenza_14_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_15_switch')) == 'on' and states('input_number.potenza_15_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_16_switch')) == 'on' and states('input_number.potenza_16_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_17_switch')) == 'on' and states('input_number.potenza_17_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_18_switch')) == 'on' and states('input_number.potenza_18_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_19_switch')) == 'on' and states('input_number.potenza_19_sospesa')|int(default=0) > 0 ) or
-              ( states(states('input_text.carico_20_switch')) == 'on' and states('input_number.potenza_20_sospesa')|int(default=0) > 0 )
+                ( states(states('input_text.carico_1_switch')) == 'on' and states('input_number.potenza_1_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_2_switch')) == 'on' and states('input_number.potenza_2_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_3_switch')) == 'on' and states('input_number.potenza_3_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_4_switch')) == 'on' and states('input_number.potenza_4_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_5_switch')) == 'on' and states('input_number.potenza_5_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_6_switch')) == 'on' and states('input_number.potenza_6_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_7_switch')) == 'on' and states('input_number.potenza_7_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_8_switch')) == 'on' and states('input_number.potenza_8_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_9_switch')) == 'on' and states('input_number.potenza_9_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_10_switch')) == 'on' and states('input_number.potenza_10_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_11_switch')) == 'on' and states('input_number.potenza_11_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_12_switch')) == 'on' and states('input_number.potenza_12_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_13_switch')) == 'on' and states('input_number.potenza_13_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_14_switch')) == 'on' and states('input_number.potenza_14_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_15_switch')) == 'on' and states('input_number.potenza_15_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_16_switch')) == 'on' and states('input_number.potenza_16_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_17_switch')) == 'on' and states('input_number.potenza_17_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_18_switch')) == 'on' and states('input_number.potenza_18_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_19_switch')) == 'on' and states('input_number.potenza_19_sospesa')|int(default=0) > 0 ) or
+                ( states(states('input_text.carico_20_switch')) == 'on' and states('input_number.potenza_20_sospesa')|int(default=0) > 0 )
               }}
         for:
           seconds: 5
@@ -759,26 +757,26 @@ automation:
           logger: homeassistant.components.pc
           message: >
             Automazione Check riattivazione manuale:
-            {% if states(states('input_text.carico_1_switch')) == 'on' and states('input_number.potenza_1_sospesa')|int(default=0) > 0 %}Carico 1: {{states('input_number.potenza_1_sospesa')}}W
-            {% elif states(states('input_text.carico_2_switch')) == 'on' and states('input_number.potenza_2_sospesa')|int(default=0) > 0 %}Carico 2: {{states('input_number.potenza_2_sospesa')}}W
-            {% elif states(states('input_text.carico_3_switch')) == 'on' and states('input_number.potenza_3_sospesa')|int(default=0) > 0 %}Carico 3: {{states('input_number.potenza_3_sospesa')}}W
-            {% elif states(states('input_text.carico_4_switch')) == 'on' and states('input_number.potenza_4_sospesa')|int(default=0) > 0 %}Carico 4: {{states('input_number.potenza_4_sospesa')}}W
-            {% elif states(states('input_text.carico_5_switch')) == 'on' and states('input_number.potenza_5_sospesa')|int(default=0) > 0 %}Carico 5: {{states('input_number.potenza_5_sospesa')}}W
-            {% elif states(states('input_text.carico_6_switch')) == 'on' and states('input_number.potenza_6_sospesa')|int(default=0) > 0 %}Carico 6: {{states('input_number.potenza_6_sospesa')}}W
-            {% elif states(states('input_text.carico_7_switch')) == 'on' and states('input_number.potenza_7_sospesa')|int(default=0) > 0 %}Carico 7: {{states('input_number.potenza_7_sospesa')}}W
-            {% elif states(states('input_text.carico_8_switch')) == 'on' and states('input_number.potenza_8_sospesa')|int(default=0) > 0 %}Carico 8: {{states('input_number.potenza_8_sospesa')}}W
-            {% elif states(states('input_text.carico_9_switch')) == 'on' and states('input_number.potenza_9_sospesa')|int(default=0) > 0 %}Carico 9: {{states('input_number.potenza_9_sospesa')}}W
-            {% elif states(states('input_text.carico_10_switch')) == 'on' and states('input_number.potenza_10_sospesa')|int(default=0) > 0 %}Carico 10: {{states('input_number.potenza_10_sospesa')}}W
-            {% elif states(states('input_text.carico_11_switch')) == 'on' and states('input_number.potenza_11_sospesa')|int(default=0) > 0 %}Carico 11: {{states('input_number.potenza_11_sospesa')}}W
-            {% elif states(states('input_text.carico_12_switch')) == 'on' and states('input_number.potenza_12_sospesa')|int(default=0) > 0 %}Carico 12: {{states('input_number.potenza_12_sospesa')}}W
-            {% elif states(states('input_text.carico_13_switch')) == 'on' and states('input_number.potenza_13_sospesa')|int(default=0) > 0 %}Carico 13: {{states('input_number.potenza_13_sospesa')}}W
-            {% elif states(states('input_text.carico_14_switch')) == 'on' and states('input_number.potenza_14_sospesa')|int(default=0) > 0 %}Carico 14: {{states('input_number.potenza_14_sospesa')}}W
-            {% elif states(states('input_text.carico_15_switch')) == 'on' and states('input_number.potenza_15_sospesa')|int(default=0) > 0 %}Carico 15: {{states('input_number.potenza_15_sospesa')}}W
-            {% elif states(states('input_text.carico_16_switch')) == 'on' and states('input_number.potenza_16_sospesa')|int(default=0) > 0 %}Carico 16: {{states('input_number.potenza_16_sospesa')}}W
-            {% elif states(states('input_text.carico_17_switch')) == 'on' and states('input_number.potenza_17_sospesa')|int(default=0) > 0 %}Carico 17: {{states('input_number.potenza_17_sospesa')}}W
-            {% elif states(states('input_text.carico_18_switch')) == 'on' and states('input_number.potenza_18_sospesa')|int(default=0) > 0 %}Carico 18: {{states('input_number.potenza_18_sospesa')}}W
-            {% elif states(states('input_text.carico_19_switch')) == 'on' and states('input_number.potenza_19_sospesa')|int(default=0) > 0 %}Carico 19: {{states('input_number.potenza_19_sospesa')}}W
-            {% elif states(states('input_text.carico_20_switch')) == 'on' and states('input_number.potenza_20_sospesa')|int(default=0) > 0 %}Carico 20: {{states('input_number.potenza_20_sospesa')}}W
+            {% if states(states('input_text.carico_1_switch')) == 'on' and states('input_number.potenza_1_sospesa')|int(default=0) > 0 %}Carico 1: {{states('input_number.potenza_1_sospesa')|int }}W
+            {% elif states(states('input_text.carico_2_switch')) == 'on' and states('input_number.potenza_2_sospesa')|int(default=0) > 0 %}Carico 2: {{states('input_number.potenza_2_sospesa')|int }}W
+            {% elif states(states('input_text.carico_3_switch')) == 'on' and states('input_number.potenza_3_sospesa')|int(default=0) > 0 %}Carico 3: {{states('input_number.potenza_3_sospesa')|int }}W
+            {% elif states(states('input_text.carico_4_switch')) == 'on' and states('input_number.potenza_4_sospesa')|int(default=0) > 0 %}Carico 4: {{states('input_number.potenza_4_sospesa')|int }}W
+            {% elif states(states('input_text.carico_5_switch')) == 'on' and states('input_number.potenza_5_sospesa')|int(default=0) > 0 %}Carico 5: {{states('input_number.potenza_5_sospesa')|int }}W
+            {% elif states(states('input_text.carico_6_switch')) == 'on' and states('input_number.potenza_6_sospesa')|int(default=0) > 0 %}Carico 6: {{states('input_number.potenza_6_sospesa')|int }}W
+            {% elif states(states('input_text.carico_7_switch')) == 'on' and states('input_number.potenza_7_sospesa')|int(default=0) > 0 %}Carico 7: {{states('input_number.potenza_7_sospesa')|int }}W
+            {% elif states(states('input_text.carico_8_switch')) == 'on' and states('input_number.potenza_8_sospesa')|int(default=0) > 0 %}Carico 8: {{states('input_number.potenza_8_sospesa')|int }}W
+            {% elif states(states('input_text.carico_9_switch')) == 'on' and states('input_number.potenza_9_sospesa')|int(default=0) > 0 %}Carico 9: {{states('input_number.potenza_9_sospesa')|int }}W
+            {% elif states(states('input_text.carico_10_switch')) == 'on' and states('input_number.potenza_10_sospesa')|int(default=0) > 0 %}Carico 10: {{states('input_number.potenza_10_sospesa')|int }}W
+            {% elif states(states('input_text.carico_11_switch')) == 'on' and states('input_number.potenza_11_sospesa')|int(default=0) > 0 %}Carico 11: {{states('input_number.potenza_11_sospesa')|int }}W
+            {% elif states(states('input_text.carico_12_switch')) == 'on' and states('input_number.potenza_12_sospesa')|int(default=0) > 0 %}Carico 12: {{states('input_number.potenza_12_sospesa')|int }}W
+            {% elif states(states('input_text.carico_13_switch')) == 'on' and states('input_number.potenza_13_sospesa')|int(default=0) > 0 %}Carico 13: {{states('input_number.potenza_13_sospesa')|int }}W
+            {% elif states(states('input_text.carico_14_switch')) == 'on' and states('input_number.potenza_14_sospesa')|int(default=0) > 0 %}Carico 14: {{states('input_number.potenza_14_sospesa')|int }}W
+            {% elif states(states('input_text.carico_15_switch')) == 'on' and states('input_number.potenza_15_sospesa')|int(default=0) > 0 %}Carico 15: {{states('input_number.potenza_15_sospesa')|int }}W
+            {% elif states(states('input_text.carico_16_switch')) == 'on' and states('input_number.potenza_16_sospesa')|int(default=0) > 0 %}Carico 16: {{states('input_number.potenza_16_sospesa')|int }}W
+            {% elif states(states('input_text.carico_17_switch')) == 'on' and states('input_number.potenza_17_sospesa')|int(default=0) > 0 %}Carico 17: {{states('input_number.potenza_17_sospesa')|int }}W
+            {% elif states(states('input_text.carico_18_switch')) == 'on' and states('input_number.potenza_18_sospesa')|int(default=0) > 0 %}Carico 18: {{states('input_number.potenza_18_sospesa')|int }}W
+            {% elif states(states('input_text.carico_19_switch')) == 'on' and states('input_number.potenza_19_sospesa')|int(default=0) > 0 %}Carico 19: {{states('input_number.potenza_19_sospesa')|int }}W
+            {% elif states(states('input_text.carico_20_switch')) == 'on' and states('input_number.potenza_20_sospesa')|int(default=0) > 0 %}Carico 20: {{states('input_number.potenza_20_sospesa')|int }}W
             {% else %}none
             {% endif %}
       - service: input_number.set_value
@@ -1384,7 +1382,7 @@ script:
 #################################################################
 
 # Avvia il distacco del carico.
-# Verifica che il carico si aconfigurato come seonsore di potenza e come interruttore.
+# Verifica che il carico sia configurato come sensore di potenza e come interruttore.
 # Controlla se la potenza massima è superata, se il carico è acceso (potenza impegnata > 10W).
 # Salva la potenza attualmente utilizzata nel relativo valore "sospesa".
 # Spegne l'interruttore a monte del carico ed invia la notifica. Attende TOT secondi prima di procedere col carico successivo.
@@ -1437,14 +1435,14 @@ script:
     - condition: template
       value_template: >
         {{
-        ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0)) and states('input_boolean.sensore_trigger') == "off") or
-        ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0)) and states('input_boolean.sensore_trigger') == "on")
+          ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_ritardato')|int(default=0)) and states('input_boolean.sensore_trigger') == "off") or
+          ((states(states('input_text.potenza_carichi'))|int(default=0) > states('sensor.potenza_massima_immediato')|int(default=0)) and states('input_boolean.sensore_trigger') == "on")
         }}
     - service: system_log.write
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 3 - Ok {{ states(states('input_text.potenza_carichi'))|int(default=0)}}W}}"
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Condition 3 - Ok {{ states(states('input_text.potenza_carichi'))|int }}W"
     # Controlla se il carico è attualmente in uso 
     - condition: template
       value_template: "{{ states(potenza)|int(default=0) > 10 }}"
@@ -1462,7 +1460,7 @@ script:
       data_template:
         level: debug
         logger: homeassistant.components.pc
-        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Spostata potenza da carico {{ states(potenza) }} a sospesa {{states(sospesa)|int(default=0)}} (dovrebbero essere uguali)."
+        message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Spostata potenza da carico {{ states(potenza)|int }} a sospesa {{ states(sospesa)|int }} (dovrebbero essere uguali)."
     # Spengo il carico
     - service_template: switch.turn_off
       data_template:
@@ -1486,15 +1484,6 @@ script:
         level: debug
         logger: homeassistant.components.pc
         message: "Script Stop Carico {{ state_attr(switch,'friendly_name') }} - Inviata notifica. Attendo {{ states('input_number.attesa_stop') }} secondi "
-    #Modifico il timer di riattivazione
-    - if:
-        - condition: template
-          value_template: sensor.potenza_carichi_sospesa > 0
-      then:
-        - service: timer.start
-          data_template:
-            duration: 00:{{ states('input_number.attesa_start') | int }}:00
-            entity_id: timer.tempo_mancate_riattivazione
 
     # Attendo prima di passare al prossimo carico da distaccare.
     - delay:
@@ -1578,7 +1567,7 @@ script:
         level: debug
         logger: homeassistant.components.pc
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 4 ok"
-    #Controlla se, riattivnado il carico, non si superi nuovamente il limite di potenza.
+    #Controlla se, riattivanado il carico, non si superi nuovamente il limite di potenza.
     - condition: template
       value_template: "{{ states(states('input_text.potenza_carichi'))|int(default=0) + states(sospesa)|int(default=0) < states('sensor.potenza_massima_ritardato')|int(default=0) }}"
     - service: system_log.write
@@ -1614,6 +1603,12 @@ script:
         data:
           push:
             thread-id: "powercontrol"
+    #Resetto il timer
+    - service: timer.start
+      data_template:
+        duration: 00:{{ states('input_number.attesa_start') | int }}:00
+        entity_id: timer.tempo_riattivazione
+
     - service: system_log.write
       data_template:
         level: debug
