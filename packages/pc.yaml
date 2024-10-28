@@ -533,7 +533,7 @@ automation:
               data_template:
                 level: debug
                 logger: homeassistant.components.pc
-                message: "HA_PowerControl Versione: 3.60.b1"
+                message: "HA_PowerControl Versione: 3.60"
             - service: script.powercontrol_configurazione_popola_entita
         - conditions:
             - condition: trigger
