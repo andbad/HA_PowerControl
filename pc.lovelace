@@ -2,7 +2,6 @@ theme: Backend-selected
 title: PC
 path: pc
 icon: hass:car-cruise-control
-badges: []
 cards:
   - type: vertical-stack
     cards:
@@ -32,6 +31,8 @@ cards:
           - entity: script.powercontrol_configurazione_salva
             name: Salva Configurazione
             icon: mdi:floppy
+          - entity: timer.tempo_riattivazione
+            name: Timer riattivazione prossimo carico
         state_color: true
         show_header_toggle: false
       - type: horizontal-stack
