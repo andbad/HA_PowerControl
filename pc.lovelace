@@ -3,6 +3,8 @@ title: PC
 path: pc
 icon: hass:car-cruise-control
 cards:
+  - type: markdown
+    content: "**Power Control v.3.60**"
   - type: vertical-stack
     cards:
       - type: history-graph
