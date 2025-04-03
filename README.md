@@ -23,7 +23,8 @@ https://github.com/andbad/HA_PowerControl/assets/7837288/73233fa8-2143-4486-bd43
 - [Configurare il recoder](https://www.home-assistant.io/integrations/recorder/) per includere i seguenti sensori:
   - sensor.potenza_carichi_selezionato
   - sensor.potenza_carichi_sospesa
-  - sensor.potenza_massima
+  - sensor.potenza_massima_immediato
+  - sensor.potenza_massima_ritardato
 
 # Configurazione
 Impostare i parametri di configurazione dell'interfaccia grafica Lovelace.
