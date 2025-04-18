@@ -12,7 +12,7 @@ La logica prevede la configurazione di due soglie di potenza massima e due tempi
 - se l'assorbimento complessivo supera invece il valor di "Potenza massima immediato", attende un numero di secondi impostato in "Secondi distacco immediato" e poi inizia il distacco.
 
 Lo scollegamento dei carichi che stanno assorbendo energia parte da quelli a minore priorità (Carico 20) fino a quelli a maggiore priorità (Carico 1), fino a che l'utilizzo complessivo della potenza rientri nel limite prefissato. Se un carico non sta assorbendo, non viene distaccato.
-Lo script tiene memoria dell'assorbimento del carico prima del distacco e lo ricollega solo quando la disponibilità di potenza è sufficiente a non causare un nuovo distacco, in ordine di priorità inverso (da Carico 1 a Carico 20).
+Lo script tiene memoria dell'assorbimento del carico prima del distacco e lo ricollega solo quando la disponibilità di potenza è sufficiente a non causare un nuovo distacco, in ordine di priorità inverso (da Carico 1 a Carico 20). La riattivazione automatica può essere disabilitata per ogni singolo carico.
 La configurazione è interamente tramite interfaccia grafica, tranne il gruppo di notifica (notify.tutti) che va impostato manualmente.
 
 ## Installazione
