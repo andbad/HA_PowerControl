@@ -3,7 +3,7 @@
 #################################################################
 # Autore: andbad                                                #
 # GitHub: https://github.com/andbad/HA_PowerControl             #
-# Versione: 3.60                                                #
+# Versione: 3.70                                                #
 #################################################################
 ########################### CREDITS #############################
 # Un ringraziamento alla community di InDomus per l'aiuto       #
@@ -25,7 +25,8 @@
 # (regolabili da apposita opzione) prima di procedere con il distacco; nel caso in cui si superi il valore massimo immediato,
 # il distacco avviene invece dopo alcuni secondi (anche in questo caso regolati da relativo slider).
 # Lo script tiene memoria dell'assorbimento del carico prima del distacco e lo ricollega solo quando la disponibilità
-# di potenza è sufficiente a non causare un nuovo distacco.
+# di potenza è sufficiente a non causare un nuovo distacco, a meno che non sia abilitata l'opzione specifica di non riavvio
+# per quel singolo carico.
 # La configurazione è interamente tramite interfaccia grafica, tranne il gruppo di notifica (group.tutti) che va impostato
 # manualmente.
 
@@ -54,7 +55,7 @@
 #      state_topic: "shellies/NOME_SHELLY/emeter/0/power"
 #      value_template: "{{ value }}"
 #      unit_of_measurement : "W"
-#      icon: mdi:speedometer
+#      icon: hass:speedometer
 
 template:
 # In alternativa è possibile utilizzare i sensori di potenza dei maggiori carichi utilizzati e mantenere un certo margine 
@@ -192,11 +193,11 @@ input_boolean:
 # Switch per l'interfaccia grafica 
   attiva_power_control:
     name: Attiva Power Control
-    icon: mdi:car-cruise-control
+    icon: hass:car-cruise-control
 
   impostazioni_power_control:
     name: Mostra Impostazioni Power Control
-    icon: mdi:car-cruise-control
+    icon: hass:car-cruise-control
 
   # Tiene traccia del trigger che ha innescato l'automazione di stop: 
   # se è "0"significa che si è superata la soglia del distacco ritardato
@@ -209,6 +210,66 @@ input_boolean:
   selezione_script_python:
     name: Selezione script Pyton
 
+  mantini_spento_1:
+    name: Mantieni spento Carico 1
+    icon: hass:cancel
+  mantini_spento_2:
+    name: Mantieni spento Carico 2
+    icon: hass:cancel
+  mantini_spento_3:
+    name: Mantieni spento Carico 3
+    icon: hass:cancel
+  mantini_spento_4:
+    name: Mantieni spento Carico 4
+    icon: hass:cancel
+  mantini_spento_5:
+    name: Mantieni spento Carico 5
+    icon: hass:cancel
+  mantini_spento_6:
+    name: Mantieni spento Carico 6
+    icon: hass:cancel
+  mantini_spento_7:
+    name: Mantieni spento Carico 7
+    icon: hass:cancel
+  mantini_spento_8:
+    name: Mantieni spento Carico 8
+    icon: hass:cancel
+  mantini_spento_9:
+    name: Mantieni spento Carico 9
+    icon: hass:cancel
+  mantini_spento_10:
+    name: Mantieni spento Carico 10
+    icon: hass:cancel
+  mantini_spento_11:
+    name: Mantieni spento Carico 11
+    icon: hass:cancel
+  mantini_spento_12:
+    name: Mantieni spento Carico 12
+    icon: hass:cancel
+  mantini_spento_13:
+    name: Mantieni spento Carico 13
+    icon: hass:cancel
+  mantini_spento_14:
+    name: Mantieni spento Carico 14
+    icon: hass:cancel
+  mantini_spento_15:
+    name: Mantieni spento Carico 15
+    icon: hass:cancel
+  mantini_spento_16:
+    name: Mantieni spento Carico 16
+    icon: hass:cancel
+  mantini_spento_17:
+    name: Mantieni spento Carico 17
+    icon: hass:cancel
+  mantini_spento_18:
+    name: Mantieni spento Carico 18
+    icon: hass:cancel
+  mantini_spento_19:
+    name: Mantieni spento Carico 19
+    icon: hass:cancel
+  mantini_spento_20:
+    name: Mantieni spento Carico 20
+    icon: hass:cancel
 
 input_number:
 
@@ -533,7 +594,7 @@ automation:
               data_template:
                 level: debug
                 logger: homeassistant.components.pc
-                message: "HA_PowerControl Versione: 3.60"
+                message: "HA_PowerControl Versione: 3.60.b1"
             - service: script.powercontrol_configurazione_popola_entita
         - conditions:
             - condition: trigger
@@ -1180,6 +1241,7 @@ script:
         potenza: "{{states('input_text.carico_1_potenza')}}"
         switch: "{{states('input_text.carico_1_switch')}}"
         sospesa: "input_number.potenza_1_sospesa"
+        riavvio: "input_boolean.mantini_spento_1"
     - service: system_log.write
       data_template:
         level: debug
@@ -1190,6 +1252,7 @@ script:
         potenza: "{{states('input_text.carico_2_potenza')}}"
         switch: "{{states('input_text.carico_2_switch')}}"
         sospesa: "input_number.potenza_2_sospesa"
+        riavvio: "input_boolean.mantini_spento_2"
     - service: system_log.write
       data_template:
         level: debug
@@ -1200,6 +1263,7 @@ script:
         potenza: "{{states('input_text.carico_3_potenza')}}"
         switch: "{{states('input_text.carico_3_switch')}}"
         sospesa: "input_number.potenza_3_sospesa"
+        riavvio: "input_boolean.mantini_spento_3"
     - service: system_log.write
       data_template:
         level: debug
@@ -1210,6 +1274,7 @@ script:
         potenza: "{{states('input_text.carico_4_potenza')}}"
         switch: "{{states('input_text.carico_4_switch')}}"
         sospesa: "input_number.potenza_4_sospesa"
+        riavvio: "input_boolean.mantini_spento_4"
     - service: system_log.write
       data_template:
         level: debug
@@ -1220,6 +1285,7 @@ script:
         potenza: "{{states('input_text.carico_5_potenza')}}"
         switch: "{{states('input_text.carico_5_switch')}}"
         sospesa: "input_number.potenza_5_sospesa"
+        riavvio: "input_boolean.mantini_spento_5"
     - service: system_log.write
       data_template:
         level: debug
@@ -1230,6 +1296,7 @@ script:
         potenza: "{{states('input_text.carico_6_potenza')}}"
         switch: "{{states('input_text.carico_6_switch')}}"
         sospesa: "input_number.potenza_6_sospesa"
+        riavvio: "input_boolean.mantini_spento_6"
     - service: system_log.write
       data_template:
         level: debug
@@ -1240,6 +1307,7 @@ script:
         potenza: "{{states('input_text.carico_7_potenza')}}"
         switch: "{{states('input_text.carico_7_switch')}}"
         sospesa: "input_number.potenza_7_sospesa"
+        riavvio: "input_boolean.mantini_spento_7"
     - service: system_log.write
       data_template:
         level: debug
@@ -1250,6 +1318,7 @@ script:
         potenza: "{{states('input_text.carico_8_potenza')}}"
         switch: "{{states('input_text.carico_8_switch')}}"
         sospesa: "input_number.potenza_8_sospesa"
+        riavvio: "input_boolean.mantini_spento_8"
     - service: system_log.write
       data_template:
         level: debug
@@ -1260,6 +1329,7 @@ script:
         potenza: "{{states('input_text.carico_9_potenza')}}"
         switch: "{{states('input_text.carico_9_switch')}}"
         sospesa: "input_number.potenza_9_sospesa"
+        riavvio: "input_boolean.mantini_spento_9"
     - service: system_log.write
       data_template:
         level: debug
@@ -1270,6 +1340,7 @@ script:
         potenza: "{{states('input_text.carico_10_potenza')}}"
         switch: "{{states('input_text.carico_10_switch')}}"
         sospesa: "input_number.potenza_10_sospesa"
+        riavvio: "input_boolean.mantini_spento_10"
     - service: system_log.write
       data_template:
         level: debug
@@ -1280,6 +1351,7 @@ script:
         potenza: "{{states('input_text.carico_11_potenza')}}"
         switch: "{{states('input_text.carico_11_switch')}}"
         sospesa: "input_number.potenza_11_sospesa"
+        riavvio: "input_boolean.mantini_spento_11"
     - service: system_log.write
       data_template:
         level: debug
@@ -1290,6 +1362,7 @@ script:
         potenza: "{{states('input_text.carico_12_potenza')}}"
         switch: "{{states('input_text.carico_12_switch')}}"
         sospesa: "input_number.potenza_12_sospesa"
+        riavvio: "input_boolean.mantini_spento_12"
     - service: system_log.write
       data_template:
         level: debug
@@ -1300,6 +1373,7 @@ script:
         potenza: "{{states('input_text.carico_13_potenza')}}"
         switch: "{{states('input_text.carico_13_switch')}}"
         sospesa: "input_number.potenza_13_sospesa"
+        riavvio: "input_boolean.mantini_spento_13"
     - service: system_log.write
       data_template:
         level: debug
@@ -1310,6 +1384,7 @@ script:
         potenza: "{{states('input_text.carico_14_potenza')}}"
         switch: "{{states('input_text.carico_14_switch')}}"
         sospesa: "input_number.potenza_14_sospesa"
+        riavvio: "input_boolean.mantini_spento_14"
     - service: system_log.write
       data_template:
         level: debug
@@ -1320,6 +1395,7 @@ script:
         potenza: "{{states('input_text.carico_15_potenza')}}"
         switch: "{{states('input_text.carico_15_switch')}}"
         sospesa: "input_number.potenza_15_sospesa"
+        riavvio: "input_boolean.mantini_spento_15"
     - service: system_log.write
       data_template:
         level: debug
@@ -1330,6 +1406,7 @@ script:
         potenza: "{{states('input_text.carico_16_potenza')}}"
         switch: "{{states('input_text.carico_16_switch')}}"
         sospesa: "input_number.potenza_16_sospesa"
+        riavvio: "input_boolean.mantini_spento_16"
     - service: system_log.write
       data_template:
         level: debug
@@ -1340,6 +1417,7 @@ script:
         potenza: "{{states('input_text.carico_17_potenza')}}"
         switch: "{{states('input_text.carico_17_switch')}}"
         sospesa: "input_number.potenza_17_sospesa"
+        riavvio: "input_boolean.mantini_spento_17"
     - service: system_log.write
       data_template:
         level: debug
@@ -1350,6 +1428,7 @@ script:
         potenza: "{{states('input_text.carico_18_potenza')}}"
         switch: "{{states('input_text.carico_18_switch')}}"
         sospesa: "input_number.potenza_18_sospesa"
+        riavvio: "input_boolean.mantini_spento_18"
     - service: system_log.write
       data_template:
         level: debug
@@ -1360,6 +1439,7 @@ script:
         potenza: "{{states('input_text.carico_19_potenza')}}"
         switch: "{{states('input_text.carico_19_switch')}}"
         sospesa: "input_number.potenza_19_sospesa"
+        riavvio: "input_boolean.mantini_spento_19"
     - service: system_log.write
       data_template:
         level: debug
@@ -1370,6 +1450,7 @@ script:
         potenza: "{{states('input_text.carico_20_potenza')}}"
         switch: "{{states('input_text.carico_20_switch')}}"
         sospesa: "input_number.potenza_20_sospesa"
+        riavvio: "input_boolean.mantini_spento_20"
     - service: system_log.write
       data_template:
         level: debug
@@ -1497,6 +1578,7 @@ script:
 #################################################################
 
 # Script per la riattivazione dei carichi.
+# Controlla che il carico sia abilitato alla riattivazzione
 # Verifica che il carico si aconfigurato come seonsore di potenza e come interruttore.
 # Controlla che il carico sia stato disattivato (potenza in attesa)
 # Controlla che il limite di potenza venga rispettato.
@@ -1515,6 +1597,7 @@ script:
         level: debug
         logger: homeassistant.components.pc
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Avvio"
+
     # Controllo se il sensore potenza del carico è stato configurato
     - condition: template
       value_template: "{{ potenza != 'Seleziona' }}"
@@ -1550,6 +1633,20 @@ script:
         level: debug
         logger: homeassistant.components.pc
         message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.5 - Ok"
+
+    # Controllo che il carico sia abilitato alla riattivazione
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.75 {{states(riavvio)}}"
+    - condition: template
+      value_template: "{{ states(riavvio) == 'off' }}"
+    - service: system_log.write
+      data_template:
+        level: debug
+        logger: homeassistant.components.pc
+        message: "Script Start Carico {{ state_attr(switch,'friendly_name') }} - Condition 2.75 ok"
 
     # Verifica se la potenza sospesa del carico è maggiore di 0 (in questo caso il carico è stato spento dal contollo carichi)
     - condition: template
