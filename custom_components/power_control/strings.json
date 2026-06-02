@@ -1,0 +1,89 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Impostazioni globali",
+        "description": "Configura i parametri principali di Power Control.",
+        "data": {
+          "instance_name": "Nome istanza",
+          "global_power_sensor": "Sensore potenza globale (entity_id, opzionale)",
+          "threshold_immediate": "Soglia distacco immediato (W)",
+          "threshold_delayed": "Soglia distacco ritardato (W)",
+          "delay_immediate_sec": "Attesa prima del distacco immediato (secondi)",
+          "delay_delayed_min": "Attesa prima del distacco ritardato (minuti)",
+          "wait_between_stops_sec": "Attesa tra un distacco e l'altro (secondi)",
+          "wait_between_starts_min": "Attesa tra una riattivazione e l'altra (minuti)",
+          "wait_before_start_min": "Minuti sotto soglia prima di riattivare i carichi",
+          "notify_service": "Servizio di notifica (es. notify.mobile_app_telefono, opzionale)"
+        }
+      },
+      "num_loads": {
+        "title": "Numero di carichi",
+        "description": "Quanti carichi vuoi configurare? (1-20, in ordine di priorità: 1 = massima priorità)",
+        "data": {
+          "num_loads": "Numero di carichi"
+        }
+      },
+      "load": {
+        "title": "Configurazione carico {load_number} di {total_loads}",
+        "description": "Il carico 1 ha la massima priorità e sarà l'ultimo ad essere distaccato.",
+        "data": {
+          "name": "Nome carico",
+          "power_sensor": "Sensore potenza (entity_id, es. sensor.potenza_lavatrice)",
+          "switch": "Interruttore (entity_id, es. switch.shelly_lavatrice)",
+          "auto_restart": "Riattivazione automatica abilitata"
+        }
+      },
+      "dashboard": {
+        "title": "Crea dashboard",
+        "description": "Vuoi che Power Control crei automaticamente una dashboard Lovelace? Sarà accessibile dal menu laterale come 'Power Control'.",
+        "data": {
+          "create_dashboard": "Crea dashboard Lovelace"
+        }
+      }
+    },
+    "error": {
+      "threshold_order": "La soglia immediata deve essere maggiore della soglia ritardata."
+    },
+    "abort": {
+      "already_configured": "Power Control è già configurato."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Modifica impostazioni globali",
+        "data": {
+          "instance_name": "Nome istanza",
+          "global_power_sensor": "Sensore potenza globale (entity_id, opzionale)",
+          "threshold_immediate": "Soglia distacco immediato (W)",
+          "threshold_delayed": "Soglia distacco ritardato (W)",
+          "delay_immediate_sec": "Attesa prima del distacco immediato (secondi)",
+          "delay_delayed_min": "Attesa prima del distacco ritardato (minuti)",
+          "wait_between_stops_sec": "Attesa tra un distacco e l'altro (secondi)",
+          "wait_between_starts_min": "Attesa tra una riattivazione e l'altra (minuti)",
+          "wait_before_start_min": "Minuti sotto soglia prima di riattivare i carichi",
+          "notify_service": "Servizio di notifica (opzionale)"
+        }
+      },
+      "num_loads": {
+        "title": "Numero di carichi",
+        "data": {
+          "num_loads": "Numero di carichi"
+        }
+      },
+      "load": {
+        "title": "Modifica carico {load_number} di {total_loads}",
+        "data": {
+          "name": "Nome carico",
+          "power_sensor": "Sensore potenza (entity_id)",
+          "switch": "Interruttore (entity_id)",
+          "auto_restart": "Riattivazione automatica abilitata"
+        }
+      }
+    },
+    "error": {
+      "threshold_order": "La soglia immediata deve essere maggiore della soglia ritardata."
+    }
+  }
+}
