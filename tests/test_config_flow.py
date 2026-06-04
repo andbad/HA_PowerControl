@@ -21,7 +21,7 @@ from custom_components.power_control.const import (
 
 GLOBAL_STEP_DATA = {
     "instance_name": "Test PC",
-    "global_power_sensor": "",
+    # global_power_sensor omitted — optional, EntitySelector rejects empty string
     "threshold_immediate": 3300,
     "threshold_delayed": 3000,
     "delay_immediate_sec": 30,
@@ -29,7 +29,7 @@ GLOBAL_STEP_DATA = {
     "wait_between_stops_sec": 10,
     "wait_between_starts_min": 5,
     "wait_before_start_min": 5,
-    "notify_service": "",
+    # notify_service omitted — plain text, but keep consistent
 }
 
 LOAD_DATA = {
@@ -37,7 +37,7 @@ LOAD_DATA = {
     "power_sensor": "sensor.potenza_lavatrice",
     "switch": "switch.lavatrice",
     "auto_restart": True,
-}
+}  # power_sensor and switch are real entity IDs here so EntitySelector is happy
 
 
 async def _start_flow(hass):

@@ -58,27 +58,26 @@ _INT_FIELDS = {
 
 
 def _coerce_ints(data: dict) -> dict:
-    """Coerce NumberSelector float outputs to int for numeric config fields."""
-    return {
-        k: int(v) if k in _INT_FIELDS and v is not None else v
-        for k, v in data.items()
-    }
+    """Coerce NumberSelector float outputs to int for numeric config fields.
 
-
-def _optional_entity(config: EntitySelectorConfig):
-    """EntitySelector that accepts empty string or None (optional field).
-
-    The HA EntitySelector rejects empty strings, so we wrap it to allow the
-    user to leave the field blank when configuring optional entity pickers.
+    Also normalises optional entity fields from None (frontend sends None
+    when left blank) to empty string so downstream code can do `if value:`
+    checks uniformly.
     """
-    inner = EntitySelector(config)
-
-    def validate(value: str | None) -> str:
-        if value is None or value == "":
-            return ""
-        return inner(value)
-
-    return validate
+    _ENTITY_FIELDS = {
+        CONF_GLOBAL_POWER_SENSOR,
+        LOAD_POWER_SENSOR,
+        LOAD_SWITCH,
+    }
+    result = {}
+    for k, v in data.items():
+        if k in _INT_FIELDS and v is not None:
+            result[k] = int(v)
+        elif k in _ENTITY_FIELDS and v is None:
+            result[k] = ""
+        else:
+            result[k] = v
+    return result
 
 
 def _global_schema(defaults: dict = {}) -> vol.Schema:
@@ -92,8 +91,7 @@ def _global_schema(defaults: dict = {}) -> vol.Schema:
             # Entity picker filtered to power sensors only
             vol.Optional(
                 CONF_GLOBAL_POWER_SENSOR,
-                default=defaults.get(CONF_GLOBAL_POWER_SENSOR, ""),
-            ): _optional_entity(
+            ): EntitySelector(
                 EntitySelectorConfig(domain="sensor", device_class="power")
             ),
 
@@ -170,16 +168,14 @@ def _load_schema(index: int, defaults: dict = {}) -> vol.Schema:
             # Dropdown filtered to power sensors (device_class=power)
             vol.Optional(
                 LOAD_POWER_SENSOR,
-                default=defaults.get(LOAD_POWER_SENSOR, ""),
-            ): _optional_entity(
+            ): EntitySelector(
                 EntitySelectorConfig(domain="sensor", device_class="power")
             ),
 
             # Dropdown filtered to switches and lights (common controllable loads)
             vol.Optional(
                 LOAD_SWITCH,
-                default=defaults.get(LOAD_SWITCH, ""),
-            ): _optional_entity(
+            ): EntitySelector(
                 EntitySelectorConfig(domain=["switch", "light"])
             ),
 
@@ -248,7 +244,7 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            self._loads.append(user_input)
+            self._loads.append(_coerce_ints(user_input))
             self._current_load_index += 1
 
             if self._current_load_index >= self._num_loads:
