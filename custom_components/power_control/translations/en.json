@@ -1,0 +1,89 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Global Settings",
+        "description": "Configure the main parameters for Power Control.",
+        "data": {
+          "instance_name": "Instance name",
+          "global_power_sensor": "Global power sensor (entity_id, optional)",
+          "threshold_immediate": "Immediate disconnection threshold (W)",
+          "threshold_delayed": "Delayed disconnection threshold (W)",
+          "delay_immediate_sec": "Delay before immediate disconnection (seconds)",
+          "delay_delayed_min": "Delay before delayed disconnection (minutes)",
+          "wait_between_stops_sec": "Delay between disconnections (seconds)",
+          "wait_between_starts_min": "Delay between reconnections (minutes)",
+          "wait_before_start_min": "Minutes below threshold before reconnecting loads",
+          "notify_service": "Notification service (e.g., notify.mobile_app_phone, optional)"
+        }
+      },
+      "num_loads": {
+        "title": "Number of Loads",
+        "description": "How many loads do you want to configure? (1-20, in priority order: 1 = highest priority)",
+        "data": {
+          "num_loads": "Number of loads"
+        }
+      },
+      "load": {
+        "title": "Configure load {load_number} of {total_loads}",
+        "description": "Load 1 has the highest priority and will be the last one to be disconnected.",
+        "data": {
+          "name": "Load name",
+          "power_sensor": "Power sensor (entity_id, e.g., sensor.washing_machine_power)",
+          "switch": "Switch (entity_id, e.g., switch.shelly_washing_machine)",
+          "auto_restart": "Automatic reconnection enabled"
+        }
+      },
+      "dashboard": {
+        "title": "Create Dashboard",
+        "description": "Do you want Power Control to automatically create a Lovelace dashboard? It will be accessible from the sidebar as 'Power Control'.",
+        "data": {
+          "create_dashboard": "Create Lovelace dashboard"
+        }
+      }
+    },
+    "error": {
+      "threshold_order": "The immediate threshold must be greater than the delayed threshold."
+    },
+    "abort": {
+      "already_configured": "Power Control is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Modify Global Settings",
+        "data": {
+          "instance_name": "Instance name",
+          "global_power_sensor": "Global power sensor (entity_id, optional)",
+          "threshold_immediate": "Immediate disconnection threshold (W)",
+          "threshold_delayed": "Delayed disconnection threshold (W)",
+          "delay_immediate_sec": "Delay before immediate disconnection (seconds)",
+          "delay_delayed_min": "Delay before delayed disconnection (minutes)",
+          "wait_between_stops_sec": "Delay between disconnections (seconds)",
+          "wait_between_starts_min": "Delay between reconnections (minutes)",
+          "wait_before_start_min": "Minutes below threshold before reconnecting loads",
+          "notify_service": "Notification service (optional)"
+        }
+      },
+      "num_loads": {
+        "title": "Number of Loads",
+        "data": {
+          "num_loads": "Number of loads"
+        }
+      },
+      "load": {
+        "title": "Modify load {load_number} of {total_loads}",
+        "data": {
+          "name": "Load name",
+          "power_sensor": "Power sensor (entity_id)",
+          "switch": "Switch (entity_id)",
+          "auto_restart": "Automatic reconnection enabled"
+        }
+      }
+    },
+    "error": {
+      "threshold_order": "The immediate threshold must be greater than the delayed threshold."
+    }
+  }
+}
