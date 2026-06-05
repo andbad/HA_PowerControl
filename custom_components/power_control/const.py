@@ -23,5 +23,5 @@ LOAD_SWITCH = "switch"
 LOAD_AUTO_RESTART = "auto_restart"
 
 # ── misc ──────────────────────────────────────────────────────────────────────
-UPDATE_INTERVAL_SEC = 10
+UPDATE_INTERVAL_SEC = 5
 MIN_ACTIVE_POWER_W = 10        # below this a load is considered off

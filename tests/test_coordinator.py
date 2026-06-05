@@ -33,6 +33,7 @@ def make_coordinator(hass, config_entry):
     coord._over_immediate_since = None
     coord._over_delayed_since = None
     coord._under_threshold_since = None
+    coord._global_sensor_unsub = None
     coord.data = None
     coord._loads = coord._build_loads()
     return coord
@@ -407,3 +408,159 @@ class TestResetHelpers:
     def test_reset_out_of_range_is_safe(self, mock_hass, mock_config_entry):
         coord = make_coordinator(mock_hass, mock_config_entry)
         coord.reset_load_suspended(99)  # should not raise
+
+
+# ── Global sensor listener ────────────────────────────────────────────────────
+
+class TestGlobalSensorListener:
+    def test_listener_registered_when_sensor_configured(
+        self, mock_hass, mock_config_entry
+    ):
+        """setup_global_sensor_listener registers a listener when sensor is set."""
+        mock_config_entry.data = {
+            **mock_config_entry.data,
+            "global_power_sensor": "sensor.shelly_em",
+        }
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._global_sensor_unsub = None
+
+        unsub_mock = MagicMock()
+        with patch(
+            "custom_components.power_control.coordinator.async_track_state_change",
+            return_value=unsub_mock,
+        ) as track_mock:
+            coord.setup_global_sensor_listener()
+
+        track_mock.assert_called_once()
+        # First positional arg is hass, second is the entity_id
+        assert track_mock.call_args.args[1] == "sensor.shelly_em"
+        assert coord._global_sensor_unsub is unsub_mock
+
+    def test_listener_not_registered_without_sensor(
+        self, mock_hass, mock_config_entry
+    ):
+        """No listener when global_power_sensor is empty."""
+        mock_config_entry.data = {
+            **mock_config_entry.data,
+            "global_power_sensor": "",
+        }
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._global_sensor_unsub = None
+
+        with patch(
+            "custom_components.power_control.coordinator.async_track_state_change",
+        ) as track_mock:
+            coord.setup_global_sensor_listener()
+
+        track_mock.assert_not_called()
+        assert coord._global_sensor_unsub is None
+
+    def test_previous_listener_cancelled_on_re_register(
+        self, mock_hass, mock_config_entry
+    ):
+        """Re-calling setup cancels the old listener before registering new one."""
+        mock_config_entry.data = {
+            **mock_config_entry.data,
+            "global_power_sensor": "sensor.shelly_em",
+        }
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        old_unsub = MagicMock()
+        coord._global_sensor_unsub = old_unsub
+
+        with patch(
+            "custom_components.power_control.coordinator.async_track_state_change",
+            return_value=MagicMock(),
+        ):
+            coord.setup_global_sensor_listener()
+
+        old_unsub.assert_called_once()
+
+    def test_async_shutdown_cancels_listener(self, mock_hass, mock_config_entry):
+        """async_shutdown calls the unsub callback and clears it."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        unsub = MagicMock()
+        coord._global_sensor_unsub = unsub
+
+        coord.async_shutdown()
+
+        unsub.assert_called_once()
+        assert coord._global_sensor_unsub is None
+
+    def test_async_shutdown_safe_without_listener(
+        self, mock_hass, mock_config_entry
+    ):
+        """async_shutdown is a no-op when no listener is registered."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._global_sensor_unsub = None
+        coord.async_shutdown()  # must not raise
+
+    @pytest.mark.asyncio
+    async def test_sensor_change_triggers_refresh(
+        self, mock_hass, mock_config_entry
+    ):
+        """When the global sensor changes, async_request_refresh is scheduled."""
+        mock_config_entry.data = {
+            **mock_config_entry.data,
+            "global_power_sensor": "sensor.shelly_em",
+        }
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._global_sensor_unsub = None
+
+        captured_callback = None
+
+        def capture_track(hass, entity_id, action):
+            nonlocal captured_callback
+            captured_callback = action
+            return MagicMock()
+
+        with patch(
+            "custom_components.power_control.coordinator.async_track_state_change",
+            side_effect=capture_track,
+        ):
+            coord.setup_global_sensor_listener()
+
+        assert captured_callback is not None
+
+        # Simulate a sensor state change
+        new_state = MagicMock()
+        new_state.state = "2500"
+        mock_hass.async_create_task = MagicMock()
+
+        captured_callback("sensor.shelly_em", None, new_state)
+
+        mock_hass.async_create_task.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_sensor_change_ignored_when_unavailable(
+        self, mock_hass, mock_config_entry
+    ):
+        """Unavailable/unknown sensor states do not trigger a refresh."""
+        mock_config_entry.data = {
+            **mock_config_entry.data,
+            "global_power_sensor": "sensor.shelly_em",
+        }
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._global_sensor_unsub = None
+
+        captured_callback = None
+
+        def capture_track(hass, entity_id, action):
+            nonlocal captured_callback
+            captured_callback = action
+            return MagicMock()
+
+        with patch(
+            "custom_components.power_control.coordinator.async_track_state_change",
+            side_effect=capture_track,
+        ):
+            coord.setup_global_sensor_listener()
+
+        mock_hass.async_create_task = MagicMock()
+
+        for bad_state in ("unavailable", "unknown", None):
+            new_state = MagicMock() if bad_state else None
+            if new_state:
+                new_state.state = bad_state
+            captured_callback("sensor.shelly_em", None, new_state)
+
+        mock_hass.async_create_task.assert_not_called()

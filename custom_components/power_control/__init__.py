@@ -35,6 +35,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
+    # Register state-change listener on the global power sensor (if configured)
+    coordinator.setup_global_sensor_listener()
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
@@ -160,12 +163,17 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
     """Handle options update: rebuild load list without full reload."""
     coordinator: PowerControlCoordinator = hass.data[DOMAIN][entry.entry_id]
     coordinator.rebuild_loads()
+    coordinator.setup_global_sensor_listener()
     await coordinator.async_request_refresh()
     _LOGGER.debug("[%s] Loads rebuilt after options update", DOMAIN)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a Power Control config entry."""
+    coordinator: PowerControlCoordinator = hass.data[DOMAIN].get(entry.entry_id)
+    if coordinator:
+        coordinator.async_shutdown()
+
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)

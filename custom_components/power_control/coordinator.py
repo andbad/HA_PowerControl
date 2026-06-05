@@ -8,7 +8,8 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, State
+from homeassistant.core import HomeAssistant, State, callback
+from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .notify import async_notify
@@ -90,6 +91,9 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         # Build initial load list from config
         self._loads: list[LoadState] = self._build_loads()
 
+        # Listener cancel callback for the global power sensor
+        self._global_sensor_unsub: object | None = None
+
         # Timers for threshold hysteresis (set when threshold first exceeded)
         self._over_immediate_since: datetime | None = None
         self._over_delayed_since: datetime | None = None
@@ -114,6 +118,59 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         ]
 
 
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Global sensor listener
+    # ──────────────────────────────────────────────────────────────────────────
+
+    @callback
+    def setup_global_sensor_listener(self) -> None:
+        """Register a state-change listener on the global power sensor.
+
+        Called once during setup and again whenever the user changes the
+        global sensor in the options flow.  Always cancels the previous
+        listener before registering a new one.
+        """
+        # Cancel previous listener if any
+        if self._global_sensor_unsub is not None:
+            self._global_sensor_unsub()
+            self._global_sensor_unsub = None
+
+        global_sensor: str = self.config_entry.data.get(CONF_GLOBAL_POWER_SENSOR, "")
+        if not global_sensor:
+            _LOGGER.debug(
+                "[%s] No global sensor configured — listener not registered", DOMAIN
+            )
+            return
+
+        @callback
+        def _on_sensor_change(entity_id: str, old_state, new_state) -> None:  # type: ignore[type-arg]
+            """Trigger a coordinator refresh when the global sensor changes."""
+            if new_state is None or new_state.state in ("unavailable", "unknown"):
+                return
+            _LOGGER.debug(
+                "[%s] Global sensor %s changed to %s W — triggering refresh",
+                DOMAIN, entity_id, new_state.state,
+            )
+            self.hass.async_create_task(self.async_request_refresh())
+
+        self._global_sensor_unsub = async_track_state_change(
+            self.hass,
+            global_sensor,
+            _on_sensor_change,
+        )
+
+        _LOGGER.debug(
+            "[%s] Registered state-change listener on %s", DOMAIN, global_sensor
+        )
+
+    @callback
+    def async_shutdown(self) -> None:
+        """Cancel the global sensor listener on integration unload."""
+        if self._global_sensor_unsub is not None:
+            self._global_sensor_unsub()
+            self._global_sensor_unsub = None
+            _LOGGER.debug("[%s] Global sensor listener cancelled", DOMAIN)
 
     # ──────────────────────────────────────────────────────────────────────────
     # Core update
