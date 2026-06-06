@@ -40,6 +40,20 @@
         "data": {
           "create_dashboard": "Crea dashboard Lovelace"
         }
+      },
+      "migrate": {
+        "title": "Configurazione precedente rilevata",
+        "description": "È stato rilevato il vecchio package PowerControl (pc.yaml) con {load_count} carichi configurati.\n\nVuoi importare automaticamente la configurazione esistente?",
+        "data": {
+          "migrate": "Importa configurazione dal vecchio package"
+        }
+      },
+      "migrate_confirm": {
+        "title": "Conferma importazione",
+        "description": "Configurazione importata:\n\n- **{load_count} carichi**: {load_names}\n- Soglia immediata: **{threshold_immediate} W**\n- Soglia ritardata: **{threshold_delayed} W**\n\nConfermi l'importazione? Scegli 'No' per configurare manualmente.",
+        "data": {
+          "confirm": "Conferma e crea integrazione"
+        }
       }
     },
     "error": {

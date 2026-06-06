@@ -41,17 +41,28 @@ LOAD_DATA = {
 
 
 async def _start_flow(hass):
-    """Initialize a fresh user config flow and return the result."""
-    return await hass.config_entries.flow.async_init(
+    """Initialize a fresh user config flow and return the global settings form.
+
+    async_step_user is a router: it goes to 'migrate' if old package is
+    detected, or 'global' on a fresh install.  In tests we always land on
+    'global' because the mock hass has no legacy entities.
+    """
+    result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
+    # async_step_user routes to 'global' when no legacy package is found
+    if result.get("step_id") == "user":
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input=None
+        )
+    return result
 
 
 async def _complete_flow(hass, num_loads: int = 1) -> dict:
     """Run the config flow end-to-end and return the final result."""
     result = await _start_flow(hass)
     assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "user"
+    assert result["step_id"] == "global"
 
     # Step 1 — global settings
     result = await hass.config_entries.flow.async_configure(
@@ -94,7 +105,7 @@ class TestConfigFlow:
         """First step must be the user form."""
         result = await _start_flow(hass)
         assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "user"
+        assert result["step_id"] == "global"
         assert "errors" not in result or result["errors"] == {}
 
     async def test_flow_rejects_inverted_thresholds(

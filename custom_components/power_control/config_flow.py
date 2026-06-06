@@ -21,6 +21,7 @@ from homeassistant.helpers.selector import (
     BooleanSelector,
 )
 
+from .migration import detect_old_package, read_old_config
 from .const import (
     DOMAIN,
     CONF_INSTANCE_NAME,
@@ -199,11 +200,93 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
         self._num_loads: int = 0
         self._current_load_index: int = 0
         self._create_dashboard: bool = True
+        self._migrating: bool = False
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Step 1 — global settings."""
+        """Step 0 — detect old package and offer migration, or go straight to setup."""
+        if detect_old_package(self.hass):
+            return await self.async_step_migrate()
+        return await self.async_step_global()
+
+    async def async_step_migrate(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Offer to import configuration from the old pc.yaml package."""
+        if user_input is not None:
+            if user_input.get("migrate", True):
+                # Read config from old entities
+                migrated = read_old_config(self.hass)
+                self._migrating = True
+                self._data.update({
+                    k: v for k, v in migrated.items()
+                    if not k.startswith("_")
+                    and k not in (CONF_NUM_LOADS, CONF_LOADS)
+                })
+                self._loads = migrated.get(CONF_LOADS, [])
+                self._num_loads = len(self._loads)
+                # Skip wizard, go straight to confirmation
+                return await self.async_step_migrate_confirm()
+            # User declined migration — proceed with normal setup
+            return await self.async_step_global()
+
+        detected_loads = len([
+            i for i in range(1, 21)
+            if self.hass.states.get(f"input_text.carico_{i}_switch") is not None
+            and self.hass.states.get(f"input_text.carico_{i}_switch").state not in
+               ("", "Seleziona", "unknown", "unavailable")
+        ])
+
+        return self.async_show_form(
+            step_id="migrate",
+            data_schema=vol.Schema(
+                {vol.Required("migrate", default=True): BooleanSelector()}
+            ),
+            description_placeholders={"load_count": str(detected_loads)},
+        )
+
+    async def async_step_migrate_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Show the imported config for review before creating the entry."""
+        if user_input is not None:
+            if user_input.get("confirm", True):
+                self._data[CONF_NUM_LOADS] = self._num_loads
+                self._data[CONF_LOADS] = self._loads
+                return await self.async_step_dashboard()
+            # User wants to edit manually — pre-fill the wizard
+            self._migrating = False
+            return await self.async_step_global()
+
+        # Build summary for display
+        load_names = ", ".join(
+            l.get(LOAD_NAME, f"Carico {i+1}")
+            for i, l in enumerate(self._loads[:5])
+        )
+        if len(self._loads) > 5:
+            load_names += f" ... (+{len(self._loads) - 5} altri)"
+
+        imm = self._data.get(CONF_THRESHOLD_IMMEDIATE, "?")
+        delayed = self._data.get(CONF_THRESHOLD_DELAYED, "?")
+
+        return self.async_show_form(
+            step_id="migrate_confirm",
+            data_schema=vol.Schema(
+                {vol.Required("confirm", default=True): BooleanSelector()}
+            ),
+            description_placeholders={
+                "load_count": str(self._num_loads),
+                "load_names": load_names,
+                "threshold_immediate": str(imm),
+                "threshold_delayed": str(delayed),
+            },
+        )
+
+    async def async_step_global(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Global settings step (normal setup path)."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -217,8 +300,8 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
                 return await self.async_step_num_loads()
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=_global_schema(user_input or {}),
+            step_id="global",
+            data_schema=_global_schema(self._data or {}),
             errors=errors,
         )
 
