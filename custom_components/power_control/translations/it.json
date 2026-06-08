@@ -14,7 +14,7 @@
           "wait_between_stops_sec": "Attesa tra un distacco e l'altro (secondi)",
           "wait_between_starts_min": "Attesa tra una riattivazione e l'altra (minuti)",
           "wait_before_start_min": "Minuti sotto soglia prima di riattivare i carichi",
-          "notify_service": "Servizio di notifica (es. notify.mobile_app_telefono, opzionale)"
+          "notify_entity": "Entità di notifica (app mobile, Telegram, ecc.)"
         }
       },
       "num_loads": {
@@ -77,7 +77,7 @@
           "wait_between_stops_sec": "Attesa tra un distacco e l'altro (secondi)",
           "wait_between_starts_min": "Attesa tra una riattivazione e l'altra (minuti)",
           "wait_before_start_min": "Minuti sotto soglia prima di riattivare i carichi",
-          "notify_service": "Servizio di notifica (opzionale)"
+          "notify_entity": "Entità di notifica (app mobile, Telegram, ecc.)"
         }
       },
       "num_loads": {

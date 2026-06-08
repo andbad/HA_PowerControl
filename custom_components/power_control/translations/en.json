@@ -14,7 +14,7 @@
           "wait_between_stops_sec": "Delay between disconnections (seconds)",
           "wait_between_starts_min": "Delay between reconnections (minutes)",
           "wait_before_start_min": "Minutes below threshold before reconnecting loads",
-          "notify_service": "Notification service (e.g., notify.mobile_app_phone, optional)"
+          "notify_entity": "Notification entity (mobile app, Telegram, etc.)"
         }
       },
       "num_loads": {
@@ -77,7 +77,7 @@
           "wait_between_stops_sec": "Delay between disconnections (seconds)",
           "wait_between_starts_min": "Delay between reconnections (minutes)",
           "wait_before_start_min": "Minutes below threshold before reconnecting loads",
-          "notify_service": "Notification service (optional)"
+          "notify_entity": "Notification entity (mobile app, Telegram, etc.)"
         }
       },
       "num_loads": {

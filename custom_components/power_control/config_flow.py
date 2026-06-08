@@ -33,7 +33,8 @@ from .const import (
     CONF_WAIT_BETWEEN_STOPS_SEC,
     CONF_WAIT_BETWEEN_STARTS_MIN,
     CONF_WAIT_BEFORE_START_MIN,
-    CONF_NOTIFY_SERVICE,
+    CONF_NOTIFY_ENTITY,
+    CONF_NOTIFY_SERVICE,  # alias
     CONF_NUM_LOADS,
     CONF_LOADS,
     LOAD_NAME,
@@ -139,11 +140,13 @@ def _global_schema(defaults: dict = {}) -> vol.Schema:
                 NumberSelectorConfig(min=1, max=60, step=1, unit_of_measurement="min", mode=NumberSelectorMode.SLIDER)
             ),
 
-            # Entity picker filtered to notify services
+            # Entity picker filtered to notify entities
+            # Works with: Companion app, Telegram (2025.11+), Pushover, etc.
             vol.Optional(
-                CONF_NOTIFY_SERVICE,
-                default=defaults.get(CONF_NOTIFY_SERVICE, ""),
-            ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+                CONF_NOTIFY_ENTITY,
+            ): EntitySelector(
+                EntitySelectorConfig(domain="notify")
+            ),
         }
     )
 

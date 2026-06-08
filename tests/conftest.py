@@ -21,7 +21,7 @@ SAMPLE_DATA = {
     "wait_between_stops_sec": 1,
     "wait_between_starts_min": 1,
     "wait_before_start_min": 1,
-    "notify_service": "",
+    "notify_entity": "",
     "num_loads": 3,
     "loads": [
         {

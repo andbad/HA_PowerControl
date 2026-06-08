@@ -10,7 +10,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN, CONF_NOTIFY_SERVICE
+from .const import DOMAIN, CONF_NOTIFY_ENTITY, CONF_NOTIFY_SERVICE
 from .dashboard import async_create_dashboard
 from .coordinator import PowerControlCoordinator
 from .notify import async_notify
@@ -114,9 +114,9 @@ def _register_services(hass: HomeAssistant) -> None:
         await hass.services.async_call(
             "switch", "turn_off", {"entity_id": load.switch}, blocking=True
         )
-        notify_service: str = coord.config_entry.data.get(CONF_NOTIFY_SERVICE, "")
+        notify_entity: str = coord.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
         await async_notify(
-            hass, notify_service,
+            hass, notify_entity,
             title="Distacco manuale",
             message=f"{load.name} distaccato manualmente.",
         )
@@ -141,9 +141,9 @@ def _register_services(hass: HomeAssistant) -> None:
         await hass.services.async_call(
             "switch", "turn_on", {"entity_id": load.switch}, blocking=True
         )
-        notify_service: str = coord.config_entry.data.get(CONF_NOTIFY_SERVICE, "")
+        notify_entity: str = coord.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
         await async_notify(
-            hass, notify_service,
+            hass, notify_entity,
             title="Riattivazione manuale",
             message=f"{load.name} riattivato manualmente.",
         )

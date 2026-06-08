@@ -22,7 +22,8 @@ from .const import (
     CONF_THRESHOLD_DELAYED,
     CONF_DELAY_IMMEDIATE_SEC,
     CONF_DELAY_DELAYED_MIN,
-    CONF_NOTIFY_SERVICE,
+    CONF_NOTIFY_ENTITY,
+    CONF_NOTIFY_SERVICE,  # alias
     CONF_WAIT_BETWEEN_STOPS_SEC,
     CONF_WAIT_BETWEEN_STARTS_MIN,
     CONF_WAIT_BEFORE_START_MIN,
@@ -470,10 +471,10 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             )
 
             # Notify
-            notify_service: str = self.config_entry.data.get(CONF_NOTIFY_SERVICE, "")
+            notify_entity: str = self.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
             await async_notify(
                 self.hass,
-                notify_service,
+                notify_entity,
                 title="Limite potenza superato",
                 message=f"{load.name} disattivato.",
             )
@@ -611,10 +612,10 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             )
 
             # Notify
-            notify_service_r: str = self.config_entry.data.get(CONF_NOTIFY_SERVICE, "")
+            notify_entity: str = self.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
             await async_notify(
                 self.hass,
-                notify_service_r,
+                notify_entity,
                 title="Limite potenza rientrato",
                 message=f"{load.name} riattivato.",
             )

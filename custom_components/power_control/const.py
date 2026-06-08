@@ -12,7 +12,8 @@ CONF_DELAY_DELAYED_MIN = "delay_delayed_min"
 CONF_WAIT_BETWEEN_STOPS_SEC = "wait_between_stops_sec"
 CONF_WAIT_BETWEEN_STARTS_MIN = "wait_between_starts_min"
 CONF_WAIT_BEFORE_START_MIN = "wait_before_start_min"
-CONF_NOTIFY_SERVICE = "notify_service"
+CONF_NOTIFY_ENTITY = "notify_entity"
+CONF_NOTIFY_SERVICE = CONF_NOTIFY_ENTITY  # backwards-compat alias
 CONF_NUM_LOADS = "num_loads"
 CONF_LOADS = "loads"
 
