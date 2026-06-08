@@ -374,6 +374,15 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     config = _build_dashboard_config(hass, entry)
     await dashboard_store.async_save(config)
+
+    # Force the dashboard store to load its own data immediately.
+    # Without this, the store is created but its in-memory config is empty
+    # until the next HA restart, causing the dashboard to appear blank.
+    try:
+        await dashboard_store.async_load()
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.debug("[%s] Dashboard async_load after save raised (non-fatal): %s", DOMAIN, err)
+
     _LOGGER.info(
         "[%s] Dashboard saved at /%s (%d load cards)",
         DOMAIN, DASHBOARD_URL_PATH, len(entry.data.get(CONF_LOADS, [])),
