@@ -266,3 +266,134 @@ class TestOptionsFlow:
             result["flow_id"], user_input=bad
         )
         assert result["errors"]["base"] == "threshold_order"
+
+
+class TestOptionsFlowFixes:
+    """Regression tests for the three options flow bugs."""
+
+    async def _run_options_flow(self, hass, entry, global_data, num_loads, loads_data):
+        """Helper: run the full options flow with given inputs."""
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        assert result["step_id"] == "init"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=global_data
+        )
+        assert result["step_id"] == "num_loads"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={"num_loads": num_loads}
+        )
+
+        for load_input in loads_data:
+            assert result["step_id"] == "load"
+            result = await hass.config_entries.options.async_configure(
+                result["flow_id"], user_input=load_input
+            )
+
+        return result
+
+    async def test_load_form_shows_saved_entities(
+        self, hass, setup_integration
+    ):
+        """Fix 1: load form must pre-populate saved power_sensor and switch values."""
+        hass, coordinator, entry = setup_integration
+
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        # Step through global and num_loads
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={
+                "instance_name": "Power Control",
+                "threshold_immediate": 3300,
+                "threshold_delayed": 3000,
+                "delay_immediate_sec": 30,
+                "delay_delayed_min": 10,
+                "wait_between_stops_sec": 10,
+                "wait_between_starts_min": 5,
+                "wait_before_start_min": 5,
+            }
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={"num_loads": 3}
+        )
+        assert result["step_id"] == "load"
+
+        # The schema description for load 0 must contain suggested_value
+        # from the saved config
+        schema = result["data_schema"].schema
+        for key in schema:
+            if hasattr(key, "schema") and key.schema == "power_sensor":
+                assert key.description is not None
+                assert "suggested_value" in key.description
+                break
+
+    async def test_options_flow_saves_to_config_entry_data(
+        self, hass, setup_integration
+    ):
+        """Fix 3: options flow must update config_entry.data, not config_entry.options."""
+        hass, coordinator, entry = setup_integration
+
+        new_threshold = 4000
+
+        result = await self._run_options_flow(
+            hass, entry,
+            global_data={
+                "instance_name": "Power Control",
+                "threshold_immediate": new_threshold,
+                "threshold_delayed": 3500,
+                "delay_immediate_sec": 30,
+                "delay_delayed_min": 10,
+                "wait_between_stops_sec": 10,
+                "wait_between_starts_min": 5,
+                "wait_before_start_min": 5,
+            },
+            num_loads=3,
+            loads_data=[
+                {"name": "Lavatrice", "power_sensor": "sensor.potenza_lavatrice",
+                 "switch": "switch.lavatrice", "auto_restart": True},
+                {"name": "Lavastoviglie", "power_sensor": "sensor.potenza_lavastoviglie",
+                 "switch": "switch.lavastoviglie", "auto_restart": True},
+                {"name": "Condizionatore", "power_sensor": "sensor.potenza_condizionatore",
+                 "switch": "switch.condizionatore", "auto_restart": False},
+            ],
+        )
+
+        assert result["type"] == "create_entry"
+        await hass.async_block_till_done()
+
+        # Must be saved in .data, not .options
+        assert entry.data.get("threshold_immediate") == new_threshold
+        # .options should be empty (we don't use it)
+        assert entry.options == {} or entry.options.get("threshold_immediate") is None
+
+    async def test_options_flow_coerces_floats_in_load_step(
+        self, hass, setup_integration
+    ):
+        """Fix 2: options flow must coerce float inputs to int for numeric fields."""
+        hass, coordinator, entry = setup_integration
+
+        # Simulate NumberSelector returning floats
+        result = await self._run_options_flow(
+            hass, entry,
+            global_data={
+                "instance_name": "Power Control",
+                "threshold_immediate": 3300.0,
+                "threshold_delayed": 3000.0,
+                "delay_immediate_sec": 30.0,
+                "delay_delayed_min": 10.0,
+                "wait_between_stops_sec": 10.0,
+                "wait_between_starts_min": 5.0,
+                "wait_before_start_min": 5.0,
+            },
+            num_loads=1,
+            loads_data=[
+                {"name": "Test", "auto_restart": True},
+            ],
+        )
+
+        assert result["type"] == "create_entry"
+        await hass.async_block_till_done()
+
+        # Thresholds must be saved as int
+        assert isinstance(entry.data.get("threshold_immediate"), int)
+        assert isinstance(entry.data.get("threshold_delayed"), int)
