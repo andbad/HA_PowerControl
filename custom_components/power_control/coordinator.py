@@ -1,7 +1,6 @@
 """Coordinator for Power Control integration."""
 from __future__ import annotations
 
-import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -100,6 +99,10 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         self._over_delayed_since: datetime | None = None
         # Timer for restart hysteresis (set when power returns below threshold)
         self._under_threshold_since: datetime | None = None
+
+        # Cooldown timestamps: block next stop/start until enough time has elapsed
+        self._last_stop_at: datetime | None = None
+        self._last_start_at: datetime | None = None
 
     # ──────────────────────────────────────────────────────────────────────────
     # Setup helpers
@@ -318,6 +321,8 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         """Reset suspended power for all loads (called on disable)."""
         for load in self._loads:
             load.suspended_power = 0.0
+        self._last_stop_at = None
+        self._last_start_at = None
         _LOGGER.debug("[%s] All suspended powers reset", DOMAIN)
 
     def reset_load_suspended(self, index: int) -> None:
@@ -426,6 +431,18 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             self.config_entry.data.get(CONF_WAIT_BETWEEN_STOPS_SEC, 10)
         )
 
+        # Cooldown: block shed if the previous one happened too recently.
+        # This replaces asyncio.sleep — the coordinator keeps running normally
+        # and simply skips shedding until the cooldown has elapsed.
+        if self._last_stop_at is not None:
+            elapsed = (datetime.now() - self._last_stop_at).total_seconds()
+            if elapsed < wait_sec:
+                _LOGGER.debug(
+                    "[%s] Stop cooldown active — %.0f / %d s elapsed",
+                    DOMAIN, elapsed, wait_sec,
+                )
+                return
+
         for i in range(len(self._loads) - 1, -1, -1):   # highest index first
             load = self._loads[i]
 
@@ -479,16 +496,10 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 message=f"{load.name} disattivato.",
             )
 
-            # Brief pause so HA state propagates before the next shed decision
-            await asyncio.sleep(wait_sec)
-
-            # Re-read power after the pause
-            ps = self.hass.states.get(load.power_sensor)
-            if ps and ps.state not in ("unavailable", "unknown"):
-                try:
-                    load.current_power = float(ps.state)
-                except ValueError:
-                    pass
+            # Record the stop time — the next shed is blocked until
+            # wait_between_stops_sec have elapsed (checked at the top of this method).
+            # The coordinator keeps running normally in the meantime.
+            self._last_stop_at = datetime.now()
 
             return  # one load per call — let the poll loop decide if more are needed
 
@@ -563,6 +574,16 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             self.config_entry.data.get(CONF_WAIT_BETWEEN_STARTS_MIN, 5)
         )
 
+        # Cooldown: block restore if the previous one happened too recently.
+        if self._last_start_at is not None:
+            elapsed = (datetime.now() - self._last_start_at).total_seconds()
+            if elapsed < wait_min * 60:
+                _LOGGER.debug(
+                    "[%s] Start cooldown active — %.0f / %d s elapsed",
+                    DOMAIN, elapsed, wait_min * 60,
+                )
+                return
+
         for i, load in enumerate(self._loads):   # index 0 = highest priority first
             if not load.is_suspended:
                 continue
@@ -628,9 +649,11 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 DOMAIN, i, load.name, wait_min,
             )
 
-            # Pause between restores so the load reaches steady-state before
-            # the coordinator decides whether another one can be restored
-            await asyncio.sleep(wait_min * 60)
+            # Record the start time — the next restore is blocked until
+            # wait_between_starts_min have elapsed.
+            self._last_start_at = datetime.now()
+            # Also reset the under-threshold timer: the next restore
+            # must wait the full wait_before_start_min again.
 
             return  # one load per call
 

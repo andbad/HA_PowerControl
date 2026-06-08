@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import pytest
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, AsyncMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch, call
 
 import sys
 import os
@@ -34,6 +34,8 @@ def make_coordinator(hass, config_entry):
     coord._over_delayed_since = None
     coord._under_threshold_since = None
     coord._global_sensor_unsub = None
+    coord._last_stop_at = None
+    coord._last_start_at = None
     coord.data = None
     coord._loads = coord._build_loads()
     return coord
@@ -164,8 +166,7 @@ class TestStopLogic:
         coord.loads[2].current_power = 1500.0
         coord.loads[2].switch_state = "on"
 
-        with patch("asyncio.sleep", new_callable=AsyncMock):
-            await coord.async_check_and_stop(current_power=3500.0)
+        await coord.async_check_and_stop(current_power=3500.0)
 
         mock_hass.services.async_call.assert_called_once_with(
             "switch", "turn_off", {"entity_id": "switch.condizionatore"}, blocking=True
@@ -209,8 +210,7 @@ class TestStopLogic:
             load.current_power = 1000.0
             load.switch_state = "on"
 
-        with patch("asyncio.sleep", new_callable=AsyncMock):
-            await coord.async_check_and_stop(current_power=3500.0)
+        await coord.async_check_and_stop(current_power=3500.0)
 
         # Should have turned off load index 2 (Condizionatore) — highest index
         call_args = mock_hass.services.async_call.call_args
@@ -280,8 +280,7 @@ class TestStartLogic:
         # Timer already expired
         coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
 
-        with patch("asyncio.sleep", new_callable=AsyncMock):
-            await coord.async_check_and_start(current_power=1000.0)
+        await coord.async_check_and_start(current_power=1000.0)
 
         mock_hass.services.async_call.assert_called_once_with(
             "switch", "turn_on", {"entity_id": "switch.lavatrice"}, blocking=True
@@ -296,8 +295,7 @@ class TestStartLogic:
         coord.loads[1].suspended_power = 800.0
         coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
 
-        with patch("asyncio.sleep", new_callable=AsyncMock):
-            await coord.async_check_and_start(current_power=500.0)
+        await coord.async_check_and_start(current_power=500.0)
 
         call_args = mock_hass.services.async_call.call_args
         assert call_args.args[0] == "switch"
@@ -311,8 +309,7 @@ class TestStartLogic:
         coord.loads[0].keep_off = True
         coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
 
-        with patch("asyncio.sleep", new_callable=AsyncMock):
-            await coord.async_check_and_start(current_power=500.0)
+        await coord.async_check_and_start(current_power=500.0)
 
         mock_hass.services.async_call.assert_not_called()
 
@@ -325,8 +322,7 @@ class TestStartLogic:
         coord.loads[2].suspended_power = 1500.0
         coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
 
-        with patch("asyncio.sleep", new_callable=AsyncMock):
-            await coord.async_check_and_start(current_power=500.0)
+        await coord.async_check_and_start(current_power=500.0)
 
         mock_hass.services.async_call.assert_not_called()
         # suspended_power must be cleared so it no longer blocks headroom
@@ -344,8 +340,7 @@ class TestStartLogic:
         coord.loads[2].suspended_power = 0.0
         coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
 
-        with patch("asyncio.sleep", new_callable=AsyncMock):
-            await coord.async_check_and_start(current_power=100.0)
+        await coord.async_check_and_start(current_power=100.0)
 
         call_args = mock_hass.services.async_call.call_args
         assert call_args.args[2]["entity_id"] == "switch.lavastoviglie"
@@ -356,8 +351,7 @@ class TestStartLogic:
         coord.loads[0].suspended_power = 800.0
         coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
 
-        with patch("asyncio.sleep", new_callable=AsyncMock):
-            await coord.async_check_and_start(current_power=500.0)
+        await coord.async_check_and_start(current_power=500.0)
 
         assert coord._under_threshold_since is None
 
@@ -564,3 +558,124 @@ class TestGlobalSensorListener:
             captured_callback("sensor.shelly_em", None, new_state)
 
         mock_hass.async_create_task.assert_not_called()
+
+
+# ── Cooldown mechanism ────────────────────────────────────────────────────────
+
+class TestCooldown:
+    """Verify that stop/start cooldowns work via timestamps, not asyncio.sleep."""
+
+    @pytest.mark.asyncio
+    async def test_stop_cooldown_blocks_second_shed(
+        self, mock_hass, mock_config_entry
+    ):
+        """A second shed within wait_between_stops_sec is skipped."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._over_immediate_since = datetime.now() - timedelta(seconds=60)
+        for load in coord.loads:
+            load.current_power = 1500.0
+            load.switch_state = "on"
+
+        # First shed — succeeds and sets _last_stop_at
+        await coord.async_check_and_stop(current_power=4000.0)
+        assert coord._last_stop_at is not None
+        first_call_count = mock_hass.services.async_call.call_count
+
+        # Second shed immediately after — blocked by cooldown
+        await coord.async_check_and_stop(current_power=4000.0)
+        assert mock_hass.services.async_call.call_count == first_call_count
+
+    @pytest.mark.asyncio
+    async def test_stop_cooldown_allows_shed_after_elapsed(
+        self, mock_hass, mock_config_entry
+    ):
+        """A shed is allowed after wait_between_stops_sec have elapsed."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._over_immediate_since = datetime.now() - timedelta(seconds=60)
+        # Simulate last stop happened more than wait_sec ago
+        coord._last_stop_at = datetime.now() - timedelta(seconds=999)
+        coord.loads[2].current_power = 1500.0
+        coord.loads[2].switch_state = "on"
+
+        await coord.async_check_and_stop(current_power=4000.0)
+        mock_hass.services.async_call.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_start_cooldown_blocks_second_restore(
+        self, mock_hass, mock_config_entry
+    ):
+        """A second restore within wait_between_starts_min is skipped."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.loads[0].suspended_power = 800.0
+        coord.loads[1].suspended_power = 800.0
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+
+        # First restore — succeeds and sets _last_start_at
+        await coord.async_check_and_start(current_power=100.0)
+        assert coord._last_start_at is not None
+        assert coord.loads[0].suspended_power == 0.0  # load 0 was restored
+        first_call_count = mock_hass.services.async_call.call_count
+
+        # Reset timer to simulate enough time passed for threshold
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+
+        # Second restore immediately after — blocked by cooldown
+        await coord.async_check_and_start(current_power=100.0)
+        assert mock_hass.services.async_call.call_count == first_call_count
+
+    @pytest.mark.asyncio
+    async def test_start_cooldown_allows_restore_after_elapsed(
+        self, mock_hass, mock_config_entry
+    ):
+        """A restore is allowed after wait_between_starts_min have elapsed."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.loads[0].suspended_power = 800.0
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+        # Simulate last start happened long ago
+        coord._last_start_at = datetime.now() - timedelta(minutes=999)
+
+        await coord.async_check_and_start(current_power=100.0)
+        mock_hass.services.async_call.assert_called()
+
+    def test_reset_all_suspended_clears_cooldowns(
+        self, mock_hass, mock_config_entry
+    ):
+        """Disabling resets both cooldown timestamps."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._last_stop_at = datetime.now()
+        coord._last_start_at = datetime.now()
+
+        coord.reset_all_suspended()
+
+        assert coord._last_stop_at is None
+        assert coord._last_start_at is None
+
+    @pytest.mark.asyncio
+    async def test_coordinator_does_not_block_during_cooldown(
+        self, mock_hass, mock_config_entry
+    ):
+        """_async_update_data completes immediately even while cooldown is active.
+
+        This is the core regression test: previously asyncio.sleep() would have
+        blocked the coordinator for the full cooldown duration.
+        """
+        import time
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        # Set a very long cooldown to ensure it would have blocked
+        coord._last_stop_at = datetime.now()
+        coord._last_start_at = datetime.now()
+
+        # Patch the update method dependencies
+        coord._refresh_load_states = AsyncMock()
+        coord._read_global_power = MagicMock(return_value=5000.0)
+        coord._watchdog_manual_restart = MagicMock()
+
+        start = time.monotonic()
+        # Call stop/start directly (simulating what _async_update_data does)
+        await coord.async_check_and_stop(current_power=5000.0)
+        await coord.async_check_and_start(current_power=5000.0)
+        elapsed = time.monotonic() - start
+
+        # Should complete in milliseconds, not seconds
+        assert elapsed < 0.5, f"Coordinator blocked for {elapsed:.2f}s — cooldown not using timestamp"
