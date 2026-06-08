@@ -89,25 +89,7 @@ def _build_dashboard_config(entry: ConfigEntry) -> dict:
             "name": "Potenza sospesa",
             "icon": "mdi:pause-circle-outline",
         })
-        card["entities"].extend([
-            {"type": "section", "label": "Controllo"},
-            {
-                "type": "button", "name": "Forza distacco", "icon": "mdi:power-off",
-                "tap_action": {
-                    "action": "call-service",
-                    "service": f"{DOMAIN}.force_stop_load",
-                    "data": {"load_index": i},
-                },
-            },
-            {
-                "type": "button", "name": "Forza riattivazione", "icon": "mdi:power-on",
-                "tap_action": {
-                    "action": "call-service",
-                    "service": f"{DOMAIN}.force_start_load",
-                    "data": {"load_index": i},
-                },
-            },
-        ])
+
         load_cards.append(card)
 
     return {
@@ -163,17 +145,6 @@ def _build_dashboard_config(entry: ConfigEntry) -> dict:
                     ],
                 },
                 {"type": "vertical-stack", "title": "Carichi gestiti", "cards": load_cards},
-                {
-                    "type": "entities", "title": "Azioni rapide", "show_header_toggle": False,
-                    "entities": [
-                        {"type": "button", "name": "Abilita Power Control",
-                         "icon": "mdi:check-circle-outline",
-                         "tap_action": {"action": "call-service", "service": f"{DOMAIN}.enable"}},
-                        {"type": "button", "name": "Disabilita Power Control",
-                         "icon": "mdi:close-circle-outline",
-                         "tap_action": {"action": "call-service", "service": f"{DOMAIN}.disable"}},
-                    ],
-                },
             ],
         }]
     }
