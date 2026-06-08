@@ -1,0 +1,103 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ajustes globales",
+        "description": "Configurar los parámetros principales de Power Control.",
+        "data": {
+          "instance_name": "Nombre de la instancia",
+          "global_power_sensor": "Sensor de potencia global (entity_id, opcional)",
+          "threshold_immediate": "Umbral de desconexión inmediata (W)",
+          "threshold_delayed": "Umbral de desconexión diferida (W)",
+          "delay_immediate_sec": "Espera antes de la desconexión inmediata (segundos)",
+          "delay_delayed_min": "Espera antes de la desconexión diferida (minutos)",
+          "wait_between_stops_sec": "Espera entre desconexiones (segundos)",
+          "wait_between_starts_min": "Espera entre reconexiones (minutos)",
+          "wait_before_start_min": "Minutos bajo el umbral antes de reconectar",
+          "notify_entity": "Entidad de notificación (app móvil, Telegram, etc.)"
+        }
+      },
+      "num_loads": {
+        "title": "Número de cargas",
+        "description": "¿Cuántas cargas desea configurar? (1–20, por prioridad: 1 = prioridad máxima)",
+        "data": {
+          "num_loads": "Número de cargas"
+        }
+      },
+      "load": {
+        "title": "Configuración de la carga {load_number} de {total_loads}",
+        "description": "La carga 1 tiene la máxima prioridad y será la última en desconectarse.",
+        "data": {
+          "name": "Nombre de la carga",
+          "power_sensor": "Sensor de potencia (entity_id, ej. sensor.potencia_lavadora)",
+          "switch": "Interruptor (entity_id, ej. switch.shelly_lavadora)",
+          "auto_restart": "Reconexión automática habilitada"
+        }
+      },
+      "dashboard": {
+        "title": "Crear panel de control",
+        "description": "¿Desea que Power Control cree automáticamente un panel Lovelace? Estará accesible desde el menú lateral como 'Power Control'.",
+        "data": {
+          "create_dashboard": "Crear panel Lovelace"
+        }
+      },
+      "migrate": {
+        "title": "Configuración anterior detectada",
+        "description": "Se ha detectado el antiguo paquete PowerControl (pc.yaml) con {load_count} cargas configuradas.\n\n¿Desea importar automáticamente la configuración existente?",
+        "data": {
+          "migrate": "Importar configuración del paquete antiguo"
+        }
+      },
+      "migrate_confirm": {
+        "title": "Confirmar importación",
+        "description": "Configuración importada:\n\n- **{load_count} cargas**: {load_names}\n- Umbral inmediato: **{threshold_immediate} W**\n- Umbral diferido: **{threshold_delayed} W**\n\n¿Confirmar la importación? Elija 'No' para configurar manualmente.",
+        "data": {
+          "confirm": "Confirmar y crear integración"
+        }
+      }
+    },
+    "error": {
+      "threshold_order": "El umbral inmediato debe ser mayor que el umbral diferido."
+    },
+    "abort": {
+      "already_configured": "Power Control ya está configurado."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Editar ajustes globales",
+        "data": {
+          "instance_name": "Nombre de la instancia",
+          "global_power_sensor": "Sensor de potencia global (entity_id, opcional)",
+          "threshold_immediate": "Umbral de desconexión inmediata (W)",
+          "threshold_delayed": "Umbral de desconexión diferida (W)",
+          "delay_immediate_sec": "Espera antes de la desconexión inmediata (segundos)",
+          "delay_delayed_min": "Espera antes de la desconexión diferida (minutos)",
+          "wait_between_stops_sec": "Espera entre desconexiones (segundos)",
+          "wait_between_starts_min": "Espera entre reconexiones (minutos)",
+          "wait_before_start_min": "Minutos bajo el umbral antes de reconectar",
+          "notify_entity": "Entidad de notificación (app móvil, Telegram, etc.)"
+        }
+      },
+      "num_loads": {
+        "title": "Número de cargas",
+        "data": {
+          "num_loads": "Número de cargas"
+        }
+      },
+      "load": {
+        "title": "Editar carga {load_number} de {total_loads}",
+        "data": {
+          "name": "Nombre de la carga",
+          "power_sensor": "Sensor de potencia (entity_id)",
+          "switch": "Interruptor (entity_id)",
+          "auto_restart": "Reconexión automática habilitada"
+        }
+      }
+    },
+    "error": {
+      "threshold_order": "El umbral inmediato debe ser mayor que el umbral diferido."
+    }
+  }
+}

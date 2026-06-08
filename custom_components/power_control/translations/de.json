@@ -1,0 +1,103 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Globale Einstellungen",
+        "description": "Hauptparameter von Power Control konfigurieren.",
+        "data": {
+          "instance_name": "Instanzname",
+          "global_power_sensor": "Globaler Leistungssensor (entity_id, optional)",
+          "threshold_immediate": "Sofortige Abschaltschwelle (W)",
+          "threshold_delayed": "Verzögerte Abschaltschwelle (W)",
+          "delay_immediate_sec": "Wartezeit vor sofortiger Abschaltung (Sekunden)",
+          "delay_delayed_min": "Wartezeit vor verzögerter Abschaltung (Minuten)",
+          "wait_between_stops_sec": "Wartezeit zwischen Abschaltungen (Sekunden)",
+          "wait_between_starts_min": "Wartezeit zwischen Wiedereinschaltungen (Minuten)",
+          "wait_before_start_min": "Minuten unterhalb der Schwelle vor dem Wiedereinschalten",
+          "notify_entity": "Benachrichtigungsentität (Mobile App, Telegram usw.)"
+        }
+      },
+      "num_loads": {
+        "title": "Anzahl der Verbraucher",
+        "description": "Wie viele Verbraucher möchten Sie konfigurieren? (1–20, nach Priorität: 1 = höchste Priorität)",
+        "data": {
+          "num_loads": "Anzahl der Verbraucher"
+        }
+      },
+      "load": {
+        "title": "Verbraucher {load_number} von {total_loads} konfigurieren",
+        "description": "Verbraucher 1 hat die höchste Priorität und wird zuletzt abgeschaltet.",
+        "data": {
+          "name": "Name des Verbrauchers",
+          "power_sensor": "Leistungssensor (entity_id, z. B. sensor.leistung_waschmaschine)",
+          "switch": "Schalter (entity_id, z. B. switch.shelly_waschmaschine)",
+          "auto_restart": "Automatisches Wiedereinschalten aktiviert"
+        }
+      },
+      "dashboard": {
+        "title": "Dashboard erstellen",
+        "description": "Soll Power Control automatisch ein Lovelace-Dashboard erstellen? Es wird im Seitenmenü als 'Power Control' angezeigt.",
+        "data": {
+          "create_dashboard": "Lovelace-Dashboard erstellen"
+        }
+      },
+      "migrate": {
+        "title": "Frühere Konfiguration erkannt",
+        "description": "Das alte PowerControl-Paket (pc.yaml) wurde mit {load_count} konfigurierten Verbrauchern erkannt.\n\nMöchten Sie die vorhandene Konfiguration automatisch importieren?",
+        "data": {
+          "migrate": "Konfiguration aus altem Paket importieren"
+        }
+      },
+      "migrate_confirm": {
+        "title": "Import bestätigen",
+        "description": "Importierte Konfiguration:\n\n- **{load_count} Verbraucher**: {load_names}\n- Sofortschwelle: **{threshold_immediate} W**\n- Verzögerungsschwelle: **{threshold_delayed} W**\n\nImport bestätigen? Wählen Sie 'Nein' für manuelle Konfiguration.",
+        "data": {
+          "confirm": "Bestätigen und Integration erstellen"
+        }
+      }
+    },
+    "error": {
+      "threshold_order": "Die Sofortschwelle muss größer als die Verzögerungsschwelle sein."
+    },
+    "abort": {
+      "already_configured": "Power Control ist bereits konfiguriert."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Globale Einstellungen bearbeiten",
+        "data": {
+          "instance_name": "Instanzname",
+          "global_power_sensor": "Globaler Leistungssensor (entity_id, optional)",
+          "threshold_immediate": "Sofortige Abschaltschwelle (W)",
+          "threshold_delayed": "Verzögerte Abschaltschwelle (W)",
+          "delay_immediate_sec": "Wartezeit vor sofortiger Abschaltung (Sekunden)",
+          "delay_delayed_min": "Wartezeit vor verzögerter Abschaltung (Minuten)",
+          "wait_between_stops_sec": "Wartezeit zwischen Abschaltungen (Sekunden)",
+          "wait_between_starts_min": "Wartezeit zwischen Wiedereinschaltungen (Minuten)",
+          "wait_before_start_min": "Minuten unterhalb der Schwelle vor dem Wiedereinschalten",
+          "notify_entity": "Benachrichtigungsentität (Mobile App, Telegram usw.)"
+        }
+      },
+      "num_loads": {
+        "title": "Anzahl der Verbraucher",
+        "data": {
+          "num_loads": "Anzahl der Verbraucher"
+        }
+      },
+      "load": {
+        "title": "Verbraucher {load_number} von {total_loads} bearbeiten",
+        "data": {
+          "name": "Name des Verbrauchers",
+          "power_sensor": "Leistungssensor (entity_id)",
+          "switch": "Schalter (entity_id)",
+          "auto_restart": "Automatisches Wiedereinschalten aktiviert"
+        }
+      }
+    },
+    "error": {
+      "threshold_order": "Die Sofortschwelle muss größer als die Verzögerungsschwelle sein."
+    }
+  }
+}

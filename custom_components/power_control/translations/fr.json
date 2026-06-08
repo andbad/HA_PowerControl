@@ -1,0 +1,103 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Paramètres globaux",
+        "description": "Configurer les paramètres principaux de Power Control.",
+        "data": {
+          "instance_name": "Nom de l'instance",
+          "global_power_sensor": "Capteur de puissance global (entity_id, optionnel)",
+          "threshold_immediate": "Seuil de délestage immédiat (W)",
+          "threshold_delayed": "Seuil de délestage différé (W)",
+          "delay_immediate_sec": "Délai avant délestage immédiat (secondes)",
+          "delay_delayed_min": "Délai avant délestage différé (minutes)",
+          "wait_between_stops_sec": "Attente entre deux délestages (secondes)",
+          "wait_between_starts_min": "Attente entre deux réenclenchements (minutes)",
+          "wait_before_start_min": "Minutes sous le seuil avant réenclenchement",
+          "notify_entity": "Entité de notification (application mobile, Telegram, etc.)"
+        }
+      },
+      "num_loads": {
+        "title": "Nombre de charges",
+        "description": "Combien de charges souhaitez-vous configurer ? (1–20, par priorité : 1 = priorité maximale)",
+        "data": {
+          "num_loads": "Nombre de charges"
+        }
+      },
+      "load": {
+        "title": "Configuration de la charge {load_number} sur {total_loads}",
+        "description": "La charge 1 a la priorité maximale et sera la dernière à être délestée.",
+        "data": {
+          "name": "Nom de la charge",
+          "power_sensor": "Capteur de puissance (entity_id, ex. sensor.puissance_lave_linge)",
+          "switch": "Interrupteur (entity_id, ex. switch.shelly_lave_linge)",
+          "auto_restart": "Réenclenchement automatique activé"
+        }
+      },
+      "dashboard": {
+        "title": "Créer un tableau de bord",
+        "description": "Souhaitez-vous que Power Control crée automatiquement un tableau de bord Lovelace ? Il sera accessible depuis le menu latéral sous 'Power Control'.",
+        "data": {
+          "create_dashboard": "Créer le tableau de bord Lovelace"
+        }
+      },
+      "migrate": {
+        "title": "Configuration précédente détectée",
+        "description": "L'ancien package PowerControl (pc.yaml) a été détecté avec {load_count} charges configurées.\n\nSouhaitez-vous importer automatiquement la configuration existante ?",
+        "data": {
+          "migrate": "Importer la configuration depuis l'ancien package"
+        }
+      },
+      "migrate_confirm": {
+        "title": "Confirmer l'importation",
+        "description": "Configuration importée :\n\n- **{load_count} charges** : {load_names}\n- Seuil immédiat : **{threshold_immediate} W**\n- Seuil différé : **{threshold_delayed} W**\n\nConfirmer l'importation ? Choisissez 'Non' pour configurer manuellement.",
+        "data": {
+          "confirm": "Confirmer et créer l'intégration"
+        }
+      }
+    },
+    "error": {
+      "threshold_order": "Le seuil immédiat doit être supérieur au seuil différé."
+    },
+    "abort": {
+      "already_configured": "Power Control est déjà configuré."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Modifier les paramètres globaux",
+        "data": {
+          "instance_name": "Nom de l'instance",
+          "global_power_sensor": "Capteur de puissance global (entity_id, optionnel)",
+          "threshold_immediate": "Seuil de délestage immédiat (W)",
+          "threshold_delayed": "Seuil de délestage différé (W)",
+          "delay_immediate_sec": "Délai avant délestage immédiat (secondes)",
+          "delay_delayed_min": "Délai avant délestage différé (minutes)",
+          "wait_between_stops_sec": "Attente entre deux délestages (secondes)",
+          "wait_between_starts_min": "Attente entre deux réenclenchements (minutes)",
+          "wait_before_start_min": "Minutes sous le seuil avant réenclenchement",
+          "notify_entity": "Entité de notification (application mobile, Telegram, etc.)"
+        }
+      },
+      "num_loads": {
+        "title": "Nombre de charges",
+        "data": {
+          "num_loads": "Nombre de charges"
+        }
+      },
+      "load": {
+        "title": "Modifier la charge {load_number} sur {total_loads}",
+        "data": {
+          "name": "Nom de la charge",
+          "power_sensor": "Capteur de puissance (entity_id)",
+          "switch": "Interrupteur (entity_id)",
+          "auto_restart": "Réenclenchement automatique activé"
+        }
+      }
+    },
+    "error": {
+      "threshold_order": "Le seuil immédiat doit être supérieur au seuil différé."
+    }
+  }
+}
