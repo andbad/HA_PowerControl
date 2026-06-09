@@ -129,20 +129,18 @@ L'`load_index` corrisponde alla posizione del carico nel wizard (0 = prima posiz
 
 ## Dashboard
 
-Il file `power_control_dashboard.yaml` contiene una dashboard Lovelace pronta all'uso con:
+La dashboard Lovelace viene creata automaticamente al termine del wizard di configurazione, se si abilita l'opzione **"Crea dashboard"**. Non è necessario importare nessun file manualmente.
+
+La dashboard include:
 
 - Gauge del carico impianto con colori (verde/giallo/rosso)
 - Stato in tempo reale di potenza attuale e sospesa
 - Grafico storico dell'ultima ora
-- Card per ogni carico con bottoni forza distacco/riattivazione
-- Azioni rapide abilita/disabilita
+- Card di configurazione con soglie e parametri di timing
+- Card timer con progress bar per i timer interni
+- Card per ogni carico configurato con sensore di potenza e stato sospensione
 
-### Come importare
-
-1. **Impostazioni → Dashboard → Aggiungi dashboard → Dashboard vuota**
-2. Apri la dashboard → **menu ⋮ → Modifica dashboard → menu ⋮ → Modifica YAML grezzo**
-3. Incolla il contenuto del file
-4. Sostituisci gli `entity_id` degli switch (`switch.shelly_carico_N`) con i tuoi
+La dashboard è disponibile nella barra laterale come **Power Control** e viene rimossa automaticamente quando si elimina l'integrazione.
 
 ---
 
