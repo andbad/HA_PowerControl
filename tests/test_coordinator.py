@@ -518,7 +518,9 @@ class TestGlobalSensorListener:
         # Simulate a sensor state change
         new_state = MagicMock()
         new_state.state = "2500"
-        mock_hass.async_create_task = MagicMock()
+        def _create_task(coro):
+            coro.close()  # prevent "coroutine never awaited" ResourceWarning
+        mock_hass.async_create_task = MagicMock(side_effect=_create_task)
 
         captured_callback("sensor.shelly_em", None, new_state)
 
