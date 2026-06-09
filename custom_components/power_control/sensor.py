@@ -162,6 +162,13 @@ class PowerControlSensor(
         except Exception:
             return None
 
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Expose timer state on the current_power sensor for dashboard use."""
+        if self.entity_description.key != "current_power":
+            return {}
+        return self.coordinator.timer_state
+
 
 # ── Per-load sensor entity ────────────────────────────────────────────────────
 

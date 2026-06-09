@@ -317,6 +317,61 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         source = opts if (opts is not None and len(opts) > 0) else self.config_entry.data
         return source.get(key, default)
 
+    @property
+    def timer_state(self) -> dict:
+        """Return a snapshot of all internal timer states for dashboard display.
+
+        All durations are in seconds; None means the timer is not running.
+        Negative elapsed values are clamped to 0.
+        """
+        now = datetime.now()
+        _, threshold_delayed = self.thresholds
+        delay_imm_sec: int = int(self._get_conf(CONF_DELAY_IMMEDIATE_SEC, 10))
+        delay_del_min: int = int(self._get_conf(CONF_DELAY_DELAYED_MIN, 3))
+        wait_stops_sec: int = int(self._get_conf(CONF_WAIT_BETWEEN_STOPS_SEC, 10))
+        wait_starts_min: int = int(self._get_conf(CONF_WAIT_BETWEEN_STARTS_MIN, 5))
+        wait_before_min: int = int(self._get_conf(CONF_WAIT_BEFORE_START_MIN, 5))
+
+        def _remaining(since: datetime | None, total_sec: int) -> int | None:
+            if since is None:
+                return None
+            elapsed = max(0, (now - since).total_seconds())
+            remaining = total_sec - elapsed
+            return max(0, int(remaining))
+
+        def _elapsed_pct(since: datetime | None, total_sec: int) -> int:
+            if since is None:
+                return 0
+            elapsed = max(0, (now - since).total_seconds())
+            return min(100, int(elapsed / total_sec * 100)) if total_sec > 0 else 100
+
+        imm_total = delay_imm_sec
+        del_total = delay_del_min * 60
+        stop_total = wait_stops_sec
+        start_total = wait_before_min * 60
+        between_total = wait_starts_min * 60
+
+        return {
+            # Threshold arming timers (None = not triggered)
+            "over_immediate_remaining_sec": _remaining(self._over_immediate_since, imm_total),
+            "over_immediate_total_sec": imm_total,
+            "over_immediate_pct": _elapsed_pct(self._over_immediate_since, imm_total),
+            "over_delayed_remaining_sec": _remaining(self._over_delayed_since, del_total),
+            "over_delayed_total_sec": del_total,
+            "over_delayed_pct": _elapsed_pct(self._over_delayed_since, del_total),
+            # Cooldown after last stop
+            "stop_cooldown_remaining_sec": _remaining(self._last_stop_at, stop_total),
+            "stop_cooldown_total_sec": stop_total,
+            "stop_cooldown_pct": _elapsed_pct(self._last_stop_at, stop_total),
+            # Restart timers
+            "under_threshold_remaining_sec": _remaining(self._under_threshold_since, start_total),
+            "under_threshold_total_sec": start_total,
+            "under_threshold_pct": _elapsed_pct(self._under_threshold_since, start_total),
+            "start_cooldown_remaining_sec": _remaining(self._last_start_at, between_total),
+            "start_cooldown_total_sec": between_total,
+            "start_cooldown_pct": _elapsed_pct(self._last_start_at, between_total),
+        }
+
     def reset_all_suspended(self) -> None:
         """Reset suspended power for all loads (called on disable)."""
         for load in self._loads:
