@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 import homeassistant.helpers.config_validation as cv
 
 from .const import DOMAIN, CONF_NOTIFY_ENTITY, CONF_NOTIFY_SERVICE
-from .dashboard import async_create_dashboard
+from .dashboard import async_create_dashboard, async_remove_dashboard
 from .coordinator import PowerControlCoordinator
 from .notify import async_notify
 
@@ -183,6 +183,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for service in ["enable", "disable", "reset_load", "force_stop_load", "force_start_load"]:
             hass.services.async_remove(DOMAIN, service)
         _LOGGER.debug("[%s] Services unregistered", DOMAIN)
+        # Remove dashboard (only once, when the last entry is gone)
+        if entry.data.get("create_dashboard", False):
+            await async_remove_dashboard(hass)
 
     _LOGGER.debug("[%s] Unloaded entry %s (ok=%s)", DOMAIN, entry.entry_id, unload_ok)
     return unload_ok

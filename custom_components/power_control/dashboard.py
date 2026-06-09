@@ -674,7 +674,6 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 "allow_single_word": True,
             }
             await collection.async_create_item(create_data)
-            _register_dashboard_panel(hass, title, "mdi:lightning-bolt-circle")
             _LOGGER.info("[%s] Dashboard container created at /%s", DOMAIN, DASHBOARD_URL_PATH)
         except Exception as err:
             _LOGGER.error("[%s] Could not create dashboard container: %s", DOMAIN, err)
@@ -694,13 +693,11 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             storage_obj = lv_dashboard.LovelaceStorage(hass, item_config)
             if dashboards is not None:
                 dashboards[DASHBOARD_URL_PATH] = storage_obj
-                _register_dashboard_panel(hass, title, "mdi:lightning-bolt-circle")
             else:
                 _LOGGER.error("[%s] Cannot inject dashboard — dashboards dict not found", DOMAIN)
                 return False
     else:
         _LOGGER.debug("[%s] Dashboard /%s exists — overwriting content", DOMAIN, DASHBOARD_URL_PATH)
-        _register_dashboard_panel(hass, title, "mdi:lightning-bolt-circle", update=True)
 
     dashboards = _get_lovelace_dashboards(hass)
     dashboard_store = dashboards.get(DASHBOARD_URL_PATH) if dashboards else None
@@ -718,6 +715,13 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await dashboard_store.async_load()
     except Exception as err:  # noqa: BLE001
         _LOGGER.debug("[%s] Dashboard async_load after save raised (non-fatal): %s", DOMAIN, err)
+
+    # Register (or update) the panel only after content is in memory,
+    # so the frontend never sees an empty dashboard on first load.
+    _register_dashboard_panel(
+        hass, title, "mdi:lightning-bolt-circle",
+        update=DASHBOARD_URL_PATH in (_get_lovelace_dashboards(hass) or {}),
+    )
 
     _LOGGER.info(
         "[%s] Dashboard saved at /%s (%d load cards)",
@@ -737,3 +741,21 @@ async def async_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> Non
 
         hass.bus.async_listen_once("homeassistant_started", _on_ha_started)
         _LOGGER.debug("[%s] Dashboard creation deferred to homeassistant_started", DOMAIN)
+
+
+async def async_remove_dashboard(hass: HomeAssistant) -> None:
+    """Remove the Power Control Lovelace dashboard and its sidebar panel."""
+    # Remove sidebar panel
+    try:
+        frontend.async_remove_panel(hass, DASHBOARD_URL_PATH)
+        _LOGGER.debug("[%s] Sidebar panel '%s' removed", DOMAIN, DASHBOARD_URL_PATH)
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.debug("[%s] Could not remove panel (non-fatal): %s", DOMAIN, err)
+
+    # Remove dashboard from lovelace dashboards dict
+    dashboards = _get_lovelace_dashboards(hass)
+    if dashboards and DASHBOARD_URL_PATH in dashboards:
+        dashboards.pop(DASHBOARD_URL_PATH)
+        _LOGGER.debug("[%s] Dashboard '%s' removed from lovelace", DOMAIN, DASHBOARD_URL_PATH)
+    else:
+        _LOGGER.debug("[%s] Dashboard '%s' not found in lovelace — nothing to remove", DOMAIN, DASHBOARD_URL_PATH)
