@@ -484,41 +484,20 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             dashboards = _get_lovelace_dashboards(hass)
 
     if DASHBOARD_URL_PATH not in (dashboards or {}):
-        try:
-            collection = lv_dashboard.DashboardsCollection(hass)
-            await collection.async_load()
-
-            create_data: dict[str, Any] = {
-                CONF_URL_PATH: DASHBOARD_URL_PATH,
-                CONF_TITLE: title,
-                CONF_ICON: "mdi:lightning-bolt-circle",
-                CONF_SHOW_IN_SIDEBAR: True,
-                CONF_REQUIRE_ADMIN: False,
-                "allow_single_word": True,
-            }
-            await collection.async_create_item(create_data)
-            _LOGGER.info("[%s] Dashboard container created at /%s", DOMAIN, DASHBOARD_URL_PATH)
-        except Exception as err:
-            _LOGGER.error("[%s] Could not create dashboard container: %s", DOMAIN, err)
-            return False
-
-        dashboards = _get_lovelace_dashboards(hass)
-        if dashboards is None or DASHBOARD_URL_PATH not in dashboards:
-            _LOGGER.debug("[%s] Injecting LovelaceStorage directly", DOMAIN)
-            item_config = {
-                "id": DASHBOARD_URL_PATH,
-                CONF_URL_PATH: DASHBOARD_URL_PATH,
-                CONF_TITLE: title,
-                CONF_ICON: "mdi:lightning-bolt-circle",
-                CONF_SHOW_IN_SIDEBAR: True,
-                CONF_REQUIRE_ADMIN: False,
-            }
-            storage_obj = lv_dashboard.LovelaceStorage(hass, item_config)
-            if dashboards is not None:
-                dashboards[DASHBOARD_URL_PATH] = storage_obj
-            else:
-                _LOGGER.error("[%s] Cannot inject dashboard — dashboards dict not found", DOMAIN)
-                return False
+        # Inject LovelaceStorage directly — never use DashboardsCollection.async_create_item
+        # because its internal CHANGE_ADDED listener calls _register_panel immediately,
+        # before we have a chance to write the dashboard content. This causes the
+        # frontend to see an empty "New section" dashboard on first load.
+        item_config = {
+            "id": DASHBOARD_URL_PATH,
+            CONF_URL_PATH: DASHBOARD_URL_PATH,
+            CONF_TITLE: title,
+            CONF_ICON: "mdi:lightning-bolt-circle",
+            CONF_SHOW_IN_SIDEBAR: True,
+            CONF_REQUIRE_ADMIN: False,
+        }
+        dashboards[DASHBOARD_URL_PATH] = lv_dashboard.LovelaceStorage(hass, item_config)
+        _LOGGER.debug("[%s] LovelaceStorage injected for /%s", DOMAIN, DASHBOARD_URL_PATH)
     else:
         _LOGGER.debug("[%s] Dashboard /%s exists — overwriting content", DOMAIN, DASHBOARD_URL_PATH)
 
@@ -531,14 +510,7 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     config = _build_dashboard_config(hass, entry)
     config["version"] = DASHBOARD_VERSION
     await dashboard_store.async_save(config)
-
-    # Force the dashboard store to load its own data immediately.
-    # Without this, the store is created but its in-memory config is empty
-    # until the next HA restart, causing the dashboard to appear blank.
-    try:
-        await dashboard_store.async_load()
-    except Exception as err:  # noqa: BLE001
-        _LOGGER.debug("[%s] Dashboard async_load after save raised (non-fatal): %s", DOMAIN, err)
+    # async_save already populates _data internally — no need to call async_load.
 
     # Register (or update) the panel only after content is in memory,
     # so the frontend never sees an empty dashboard on first load.
