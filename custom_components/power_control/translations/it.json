@@ -38,7 +38,8 @@
         "title": "Crea dashboard",
         "description": "Vuoi che Power Control crei automaticamente una dashboard Lovelace? Sarà accessibile dal menu laterale come 'Power Control'.",
         "data": {
-          "create_dashboard": "Crea dashboard Lovelace"
+          "create_dashboard": "Crea dashboard Lovelace",
+          "dashboard_language": "Lingua della dashboard"
         }
       },
       "migrate": {
@@ -140,5 +141,16 @@
     "timer_idle": "Inattivo",
     "timer_sec_remaining": "{s}s rimanenti",
     "timer_min_remaining": "{m}m {s}s rimanenti"
+  },
+  "selector": {
+    "dashboard_language": {
+      "options": {
+        "en": "Inglese",
+        "it": "Italiano",
+        "de": "Tedesco",
+        "fr": "Francese",
+        "es": "Spagnolo"
+      }
+    }
   }
 }

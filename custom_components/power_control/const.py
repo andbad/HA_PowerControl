@@ -16,6 +16,7 @@ CONF_NOTIFY_ENTITY = "notify_entity"
 CONF_NOTIFY_SERVICE = CONF_NOTIFY_ENTITY  # backwards-compat alias
 CONF_NUM_LOADS = "num_loads"
 CONF_LOADS = "loads"
+CONF_DASHBOARD_LANGUAGE = "dashboard_language"
 
 # ── per-load keys (inside CONF_LOADS list) ────────────────────────────────────
 LOAD_NAME = "name"

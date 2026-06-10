@@ -38,7 +38,8 @@
         "title": "Créer un tableau de bord",
         "description": "Souhaitez-vous que Power Control crée automatiquement un tableau de bord Lovelace ? Il sera accessible depuis le menu latéral sous 'Power Control'.",
         "data": {
-          "create_dashboard": "Créer le tableau de bord Lovelace"
+          "create_dashboard": "Créer le tableau de bord Lovelace",
+          "dashboard_language": "Langue du tableau de bord"
         }
       },
       "migrate": {
@@ -140,5 +141,16 @@
     "timer_idle": "Inactif",
     "timer_sec_remaining": "{s}s restantes",
     "timer_min_remaining": "{m}m {s}s restantes"
+  },
+  "selector": {
+    "dashboard_language": {
+      "options": {
+        "en": "Anglais",
+        "it": "Italien",
+        "de": "Allemand",
+        "fr": "Français",
+        "es": "Espagnol"
+      }
+    }
   }
 }

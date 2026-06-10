@@ -38,7 +38,8 @@
         "title": "Dashboard erstellen",
         "description": "Soll Power Control automatisch ein Lovelace-Dashboard erstellen? Es wird im Seitenmenü als 'Power Control' angezeigt.",
         "data": {
-          "create_dashboard": "Lovelace-Dashboard erstellen"
+          "create_dashboard": "Lovelace-Dashboard erstellen",
+          "dashboard_language": "Dashboard-Sprache"
         }
       },
       "migrate": {
@@ -140,5 +141,16 @@
     "timer_idle": "Inaktiv",
     "timer_sec_remaining": "{s}s verbleibend",
     "timer_min_remaining": "{m}m {s}s verbleibend"
+  },
+  "selector": {
+    "dashboard_language": {
+      "options": {
+        "en": "Englisch",
+        "it": "Italienisch",
+        "de": "Deutsch",
+        "fr": "Französisch",
+        "es": "Spanisch"
+      }
+    }
   }
 }

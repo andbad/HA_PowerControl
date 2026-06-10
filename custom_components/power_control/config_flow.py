@@ -15,6 +15,9 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -37,6 +40,7 @@ from .const import (
     CONF_NOTIFY_SERVICE,  # alias
     CONF_NUM_LOADS,
     CONF_LOADS,
+    CONF_DASHBOARD_LANGUAGE,
     LOAD_NAME,
     LOAD_POWER_SENSOR,
     LOAD_SWITCH,
@@ -46,6 +50,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 _CONF_CREATE_DASHBOARD = "create_dashboard"
+_SUPPORTED_LANGUAGES = ["en", "it", "de", "fr", "es"]
 
 _INT_FIELDS = {
     CONF_THRESHOLD_IMMEDIATE,
@@ -324,18 +329,37 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_dashboard(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Ask whether to create the Lovelace dashboard."""
+        """Ask whether to create the Lovelace dashboard and in which language."""
         if user_input is not None:
             self._create_dashboard = user_input.get(_CONF_CREATE_DASHBOARD, True)
             return self.async_create_entry(
                 title=self._data[CONF_INSTANCE_NAME],
-                data={**self._data, _CONF_CREATE_DASHBOARD: self._create_dashboard},
+                data={
+                    **self._data,
+                    _CONF_CREATE_DASHBOARD: self._create_dashboard,
+                    CONF_DASHBOARD_LANGUAGE: user_input.get(
+                        CONF_DASHBOARD_LANGUAGE, "en"
+                    ),
+                },
             )
+
+        # Pre-select the user's browser language if supported, else "en"
+        raw_lang = (self.context.get("language") or "en").split("-")[0].lower()
+        default_lang = raw_lang if raw_lang in _SUPPORTED_LANGUAGES else "en"
 
         return self.async_show_form(
             step_id="dashboard",
             data_schema=vol.Schema(
-                {vol.Required(_CONF_CREATE_DASHBOARD, default=True): BooleanSelector()}
+                {
+                    vol.Required(_CONF_CREATE_DASHBOARD, default=True): BooleanSelector(),
+                    vol.Required(
+                        CONF_DASHBOARD_LANGUAGE, default=default_lang
+                    ): SelectSelector(SelectSelectorConfig(
+                        options=_SUPPORTED_LANGUAGES,
+                        mode=SelectSelectorMode.DROPDOWN,
+                        translation_key="dashboard_language",
+                    )),
+                }
             ),
         )
 

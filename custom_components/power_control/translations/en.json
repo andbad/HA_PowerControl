@@ -38,7 +38,8 @@
         "title": "Create Dashboard",
         "description": "Do you want Power Control to automatically create a Lovelace dashboard? It will be accessible from the sidebar as 'Power Control'.",
         "data": {
-          "create_dashboard": "Create Lovelace dashboard"
+          "create_dashboard": "Create Lovelace dashboard",
+          "dashboard_language": "Dashboard language"
         }
       },
       "migrate": {
@@ -140,5 +141,16 @@
     "timer_idle": "Idle",
     "timer_sec_remaining": "{s}s remaining",
     "timer_min_remaining": "{m}m {s}s remaining"
+  },
+  "selector": {
+    "dashboard_language": {
+      "options": {
+        "en": "English",
+        "it": "Italian",
+        "de": "German",
+        "fr": "French",
+        "es": "Spanish"
+      }
+    }
   }
 }

@@ -38,7 +38,8 @@
         "title": "Crear panel de control",
         "description": "¿Desea que Power Control cree automáticamente un panel Lovelace? Estará accesible desde el menú lateral como 'Power Control'.",
         "data": {
-          "create_dashboard": "Crear panel Lovelace"
+          "create_dashboard": "Crear panel Lovelace",
+          "dashboard_language": "Idioma del panel"
         }
       },
       "migrate": {
@@ -140,5 +141,16 @@
     "timer_idle": "Inactivo",
     "timer_sec_remaining": "{s}s restantes",
     "timer_min_remaining": "{m}m {s}s restantes"
+  },
+  "selector": {
+    "dashboard_language": {
+      "options": {
+        "en": "Inglés",
+        "it": "Italiano",
+        "de": "Alemán",
+        "fr": "Francés",
+        "es": "Español"
+      }
+    }
   }
 }

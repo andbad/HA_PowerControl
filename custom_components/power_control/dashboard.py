@@ -33,6 +33,7 @@ from .const import (
     CONF_WAIT_BEFORE_START_MIN,
     CONF_NOTIFY_ENTITY,
     CONF_LOADS,
+    CONF_DASHBOARD_LANGUAGE,
     LOAD_NAME,
 )
 
@@ -218,8 +219,14 @@ def _build_timer_card(lang: str) -> dict:
 def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     """Build the full Lovelace dashboard config dict for this entry."""
     # Resolve language: use HA language, fall back to "en"
-    raw_lang = getattr(hass.config, "language", "en") or "en"
-    lang = raw_lang.split("-")[0].lower()   # "pt-BR" → "pt"
+    # Resolve language from entry config (set by user during setup),
+    # falling back to HA system language and then "en".
+    raw_lang = (
+        entry.data.get(CONF_DASHBOARD_LANGUAGE)
+        or getattr(hass.config, "language", "en")
+        or "en"
+    )
+    lang = raw_lang.split("-")[0].lower()
     if not (_TRANSLATIONS_DIR / f"{lang}.json").exists():
         lang = "en"
     _LOGGER.debug(
