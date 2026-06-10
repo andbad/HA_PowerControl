@@ -1,7 +1,9 @@
 """Programmatic Lovelace dashboard creation for Power Control."""
 from __future__ import annotations
 
+import json
 import logging
+import pathlib
 from typing import Any
 
 from homeassistant.components import frontend
@@ -38,235 +40,38 @@ _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL_PATH = "power-control"
 
+_TRANSLATIONS_DIR = pathlib.Path(__file__).parent / "translations"
 
-# ── Translations ───────────────────────────────────────────────────────────────
-# Keys used in the dashboard. Each language provides all keys; any missing
-# language falls back to English.
+# Cache: lang code → dashboard strings dict
+_STRINGS_CACHE: dict[str, dict[str, str]] = {}
 
-_STRINGS: dict[str, dict[str, str]] = {
-    "en": {
-        "view_title":                   "Overview",
-        "system_status":                "Power Control",
-        "current_power":                "Current power",
-        "suspended_power":              "Suspended power",
-        "gauge_title":                  "Grid load",
-        "thresholds_title":             "Configured thresholds",
-        "threshold_immediate":          "Immediate threshold",
-        "threshold_delayed":            "Delayed threshold",
-        "history_title":                "Power trend (last hour)",
-        "loads_title":                  "Managed loads",
-        "section_status":               "Status",
-        "switch_label":                 "Switch",
-        "suspended_label":              "Suspended power",
-        "priority_high":                "High priority",
-        "priority_low":                 "Low priority",
-        "priority_n":                   "Priority {n}",
-        # Settings card
-        "settings_title":               "Configuration",
-        "power_sensor_label":           "Power sensor",
-        "power_sensor_virtual":         "Virtual (sum of loads)",
-        "delay_immediate_label":        "Immediate trip delay",
-        "delay_delayed_label":          "Delayed trip delay",
-        "wait_stops_label":             "Wait between stops",
-        "wait_starts_label":            "Wait between restarts",
-        "wait_before_start_label":      "Wait before first restart",
-        "notify_label":                 "Notification entity",
-        "notify_none":                  "Not configured",
-        "timing_section":               "Timing",
-        "auto_restart_label":           "Auto restart",
-        "unit_seconds":                 "s",
-        "unit_minutes":                 "min",
-        # Timers card
-        "timers_title":                 "Active timers",
-        "timer_over_immediate":         "Immediate trip arming",
-        "timer_over_delayed":           "Delayed trip arming",
-        "timer_stop_cooldown":          "Cooldown between stops",
-        "timer_under_threshold":        "Restart countdown",
-        "timer_start_cooldown":         "Cooldown between restarts",
-        "timer_idle":                   "Idle",
-        "timer_sec_remaining":          "{s}s remaining",
-        "timer_min_remaining":          "{m}m {s}s remaining",
-    },
-    "it": {
-        "view_title":                   "Panoramica",
-        "system_status":                "Power Control",
-        "current_power":                "Potenza attuale",
-        "suspended_power":              "Potenza sospesa",
-        "gauge_title":                  "Carico impianto",
-        "thresholds_title":             "Soglie configurate",
-        "threshold_immediate":          "Soglia immediata",
-        "threshold_delayed":            "Soglia ritardata",
-        "history_title":                "Andamento potenza (ultima ora)",
-        "loads_title":                  "Carichi gestiti",
-        "section_status":               "Stato",
-        "switch_label":                 "Interruttore",
-        "suspended_label":              "Potenza sospesa",
-        "priority_high":                "Alta priorità",
-        "priority_low":                 "Bassa priorità",
-        "priority_n":                   "Priorità {n}",
-        # Settings card
-        "settings_title":               "Configurazione",
-        "power_sensor_label":           "Sensore potenza",
-        "power_sensor_virtual":         "Virtuale (somma dei carichi)",
-        "delay_immediate_label":        "Ritardo distacco immediato",
-        "delay_delayed_label":          "Ritardo distacco ritardato",
-        "wait_stops_label":             "Attesa tra i distacchi",
-        "wait_starts_label":            "Attesa tra le riattivazioni",
-        "wait_before_start_label":      "Attesa prima della riattivazione",
-        "notify_label":                 "Entità notifica",
-        "notify_none":                  "Non configurata",
-        "timing_section":               "Temporizzazioni",
-        "auto_restart_label":           "Riavvio automatico",
-        "unit_seconds":                 "s",
-        "unit_minutes":                 "min",
-        # Timers card
-        "timers_title":                 "Timer attivi",
-        "timer_over_immediate":         "Armamento distacco immediato",
-        "timer_over_delayed":           "Armamento distacco ritardato",
-        "timer_stop_cooldown":          "Attesa tra i distacchi",
-        "timer_under_threshold":        "Conto alla rovescia riattivazione",
-        "timer_start_cooldown":         "Attesa tra le riattivazioni",
-        "timer_idle":                   "Inattivo",
-        "timer_sec_remaining":          "{s}s rimanenti",
-        "timer_min_remaining":          "{m}m {s}s rimanenti",
-    },
-    "de": {
-        "view_title":                   "Übersicht",
-        "system_status":                "Power Control",
-        "current_power":                "Aktuelle Leistung",
-        "suspended_power":              "Suspendierte Leistung",
-        "gauge_title":                  "Netzlast",
-        "thresholds_title":             "Konfigurierte Schwellwerte",
-        "threshold_immediate":          "Sofortschwelle",
-        "threshold_delayed":            "Verzögerungsschwelle",
-        "history_title":                "Leistungsverlauf (letzte Stunde)",
-        "loads_title":                  "Verwaltete Verbraucher",
-        "section_status":               "Status",
-        "switch_label":                 "Schalter",
-        "suspended_label":              "Suspendierte Leistung",
-        "priority_high":                "Hohe Priorität",
-        "priority_low":                 "Niedrige Priorität",
-        "priority_n":                   "Priorität {n}",
-        # Settings card
-        "settings_title":               "Konfiguration",
-        "power_sensor_label":           "Leistungssensor",
-        "power_sensor_virtual":         "Virtuell (Summe der Lasten)",
-        "delay_immediate_label":        "Sofortverzögerung",
-        "delay_delayed_label":          "Verzögerung (verzögert)",
-        "wait_stops_label":             "Wartezeit zwischen Abschaltungen",
-        "wait_starts_label":            "Wartezeit zwischen Einschaltungen",
-        "wait_before_start_label":      "Wartezeit vor erster Einschaltung",
-        "notify_label":                 "Benachrichtigungsentität",
-        "notify_none":                  "Nicht konfiguriert",
-        "timing_section":               "Zeiteinstellungen",
-        "auto_restart_label":           "Automatischer Neustart",
-        "unit_seconds":                 "s",
-        "unit_minutes":                 "min",
-        # Timers card
-        "timers_title":                 "Aktive Timer",
-        "timer_over_immediate":         "Sofortauslösung aktiv",
-        "timer_over_delayed":           "Verzögerungsauslösung aktiv",
-        "timer_stop_cooldown":          "Wartezeit zwischen Abschaltungen",
-        "timer_under_threshold":        "Countdown Wiedereinschaltung",
-        "timer_start_cooldown":         "Wartezeit zwischen Einschaltungen",
-        "timer_idle":                   "Inaktiv",
-        "timer_sec_remaining":          "{s}s verbleibend",
-        "timer_min_remaining":          "{m}m {s}s verbleibend",
-    },
-    "fr": {
-        "view_title":                   "Vue d'ensemble",
-        "system_status":                "Power Control",
-        "current_power":                "Puissance actuelle",
-        "suspended_power":              "Puissance suspendue",
-        "gauge_title":                  "Charge réseau",
-        "thresholds_title":             "Seuils configurés",
-        "threshold_immediate":          "Seuil immédiat",
-        "threshold_delayed":            "Seuil différé",
-        "history_title":                "Évolution de la puissance (dernière heure)",
-        "loads_title":                  "Charges gérées",
-        "section_status":               "État",
-        "switch_label":                 "Interrupteur",
-        "suspended_label":              "Puissance suspendue",
-        "priority_high":                "Priorité haute",
-        "priority_low":                 "Priorité basse",
-        "priority_n":                   "Priorité {n}",
-        # Settings card
-        "settings_title":               "Configuration",
-        "power_sensor_label":           "Capteur de puissance",
-        "power_sensor_virtual":         "Virtuel (somme des charges)",
-        "delay_immediate_label":        "Délai déclenchement immédiat",
-        "delay_delayed_label":          "Délai déclenchement différé",
-        "wait_stops_label":             "Attente entre coupures",
-        "wait_starts_label":            "Attente entre réactivations",
-        "wait_before_start_label":      "Attente avant première réactivation",
-        "notify_label":                 "Entité de notification",
-        "notify_none":                  "Non configuré",
-        "timing_section":               "Temporisation",
-        "auto_restart_label":           "Redémarrage automatique",
-        "unit_seconds":                 "s",
-        "unit_minutes":                 "min",
-        # Timers card
-        "timers_title":                 "Minuteries actives",
-        "timer_over_immediate":         "Armement déclenchement immédiat",
-        "timer_over_delayed":           "Armement déclenchement différé",
-        "timer_stop_cooldown":          "Attente entre coupures",
-        "timer_under_threshold":        "Compte à rebours réactivation",
-        "timer_start_cooldown":         "Attente entre réactivations",
-        "timer_idle":                   "Inactif",
-        "timer_sec_remaining":          "{s}s restantes",
-        "timer_min_remaining":          "{m}m {s}s restantes",
-    },
-    "es": {
-        "view_title":                   "Resumen",
-        "system_status":                "Power Control",
-        "current_power":                "Potencia actual",
-        "suspended_power":              "Potencia suspendida",
-        "gauge_title":                  "Carga de red",
-        "thresholds_title":             "Umbrales configurados",
-        "threshold_immediate":          "Umbral inmediato",
-        "threshold_delayed":            "Umbral diferido",
-        "history_title":                "Evolución de potencia (última hora)",
-        "loads_title":                  "Cargas gestionadas",
-        "section_status":               "Estado",
-        "switch_label":                 "Interruptor",
-        "suspended_label":              "Potencia suspendida",
-        "priority_high":                "Alta prioridad",
-        "priority_low":                 "Baja prioridad",
-        "priority_n":                   "Prioridad {n}",
-        # Settings card
-        "settings_title":               "Configuración",
-        "power_sensor_label":           "Sensor de potencia",
-        "power_sensor_virtual":         "Virtual (suma de cargas)",
-        "delay_immediate_label":        "Retardo disparo inmediato",
-        "delay_delayed_label":          "Retardo disparo diferido",
-        "wait_stops_label":             "Espera entre cortes",
-        "wait_starts_label":            "Espera entre reactivaciones",
-        "wait_before_start_label":      "Espera antes de primera reactivación",
-        "notify_label":                 "Entidad de notificación",
-        "notify_none":                  "No configurado",
-        "timing_section":               "Temporización",
-        "auto_restart_label":           "Reinicio automático",
-        "unit_seconds":                 "s",
-        "unit_minutes":                 "min",
-        # Timers card
-        "timers_title":                 "Temporizadores activos",
-        "timer_over_immediate":         "Armado disparo inmediato",
-        "timer_over_delayed":           "Armado disparo diferido",
-        "timer_stop_cooldown":          "Espera entre cortes",
-        "timer_under_threshold":        "Cuenta atrás reactivación",
-        "timer_start_cooldown":         "Espera entre reactivaciones",
-        "timer_idle":                   "Inactivo",
-        "timer_sec_remaining":          "{s}s restantes",
-        "timer_min_remaining":          "{m}m {s}s restantes",
-    },
-}
+
+def _load_strings(lang: str) -> dict[str, str]:
+    """Load dashboard strings for *lang* from the translation JSON, falling back to English."""
+    if lang not in _STRINGS_CACHE:
+        path = _TRANSLATIONS_DIR / f"{lang}.json"
+        if not path.exists():
+            path = _TRANSLATIONS_DIR / "en.json"
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            _STRINGS_CACHE[lang] = data.get("dashboard", {})
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("[%s] Could not load translations for '%s': %s", DOMAIN, lang, err)
+            _STRINGS_CACHE[lang] = {}
+
+    strings = _STRINGS_CACHE[lang]
+    # If a key is missing from the requested language, fall back to English
+    if lang != "en" and not strings:
+        return _load_strings("en")
+    return strings
+
 
 
 def _t(lang: str, key: str, **kwargs: Any) -> str:
     """Return translated string for key, falling back to English."""
-    strings = _STRINGS.get(lang) or _STRINGS["en"]
-    # fall back to English for individual missing keys
-    text = strings.get(key) or _STRINGS["en"].get(key, key)
+    strings = _load_strings(lang)
+    en_strings = _load_strings("en")
+    text = strings.get(key) or en_strings.get(key, key)
     return text.format(**kwargs) if kwargs else text
 
 
@@ -410,8 +215,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     """Build the full Lovelace dashboard config dict for this entry."""
     # Resolve language: use HA language, fall back to "en"
     raw_lang = getattr(hass.config, "language", "en") or "en"
-    lang = raw_lang.split("-")[0].lower()   # "pt-BR" → "pt", use "en" if not in table
-    if lang not in _STRINGS:
+    lang = raw_lang.split("-")[0].lower()   # "pt-BR" → "pt"
+    if not (_TRANSLATIONS_DIR / f"{lang}.json").exists():
         lang = "en"
 
     data = entry.data
@@ -607,6 +412,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
                                 {"from": threshold_delayed, "color": "#dc3545"},
                             ],
                         },
+                        # ── Timer card ────────────────────────────────────────
+                        _build_timer_card(lang),
                     ],
                 },
                 # ── History graph ─────────────────────────────────────────────
@@ -636,8 +443,6 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
                 },
                 # ── Configuration card ────────────────────────────────────────
                 settings_card,
-                # ── Timer card ────────────────────────────────────────────────
-                _build_timer_card(lang),
                 # ── Per-load cards ────────────────────────────────────────────
                 {
                     "type": "vertical-stack",
