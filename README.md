@@ -1,5 +1,9 @@
 # HA Power Control
 
+<p align="center">
+  <img src="custom_components/power_control/logo.png" alt="HA Power Control Logo" width="200"/>
+</p>
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
