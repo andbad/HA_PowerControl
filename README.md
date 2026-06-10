@@ -4,9 +4,11 @@
   <img src="logo.png" alt="HA Power Control Logo" width="200"/>
 </p>
 
+<a href="https://www.buymeacoffee.com/andthebad" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
+![GitHub Release](https://img.shields.io/github/v/release/andbad/HA_PowerControl)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/y/andbad/HA_PowerControl)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
 
 Integrazione per Home Assistant che previene il distacco del contatore gestendo automaticamente i carichi elettrici in base alla potenza assorbita.
 

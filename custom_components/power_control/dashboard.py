@@ -144,7 +144,7 @@ def _timer_bar_html(
         f"<div style='margin:6px 0'>"
         f"<div style='display:flex;align-items:center;justify-content:space-between;"
         f"font-size:0.85em;margin-bottom:3px'>"
-        f"<span>{icon} {label}</span>"
+        f"<span>{icon} {label}: </span>"
         f"{{% set rem = state_attr('{entity}','{attr_remaining}') %}}"
         f"<span style='color:var(--secondary-text-color);font-size:0.9em'>"
         f"{{% if rem is none %}}—"
@@ -238,7 +238,7 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     loads: list[dict] = data.get(CONF_LOADS, [])
     threshold_delayed = data.get(CONF_THRESHOLD_DELAYED, 3000)
     threshold_immediate = data.get(CONF_THRESHOLD_IMMEDIATE, 3300)
-    gauge_max = max(int(threshold_delayed * 1.5), 6000)
+    gauge_max = int(threshold_immediate * 1.15)
 
     global_sensor: str = data.get(CONF_GLOBAL_POWER_SENSOR, "")
     delay_imm_sec: int = int(data.get(CONF_DELAY_IMMEDIATE_SEC, 10))
@@ -423,8 +423,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
                             "needle": True,
                             "segments": [
                                 {"from": 0, "color": "#28a745"},
-                                {"from": int(threshold_delayed * 0.8), "color": "#ffc107"},
-                                {"from": threshold_delayed, "color": "#dc3545"},
+                                {"from": int(threshold_delayed), "color": "#ffc107"},
+                                {"from": int(threshold_immediate), "color": "#dc3545"},
                             ],
                         },
                         # ── Timer card ────────────────────────────────────────
