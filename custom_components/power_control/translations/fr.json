@@ -55,6 +55,10 @@
         "data": {
           "confirm": "Confirmer et créer l'intégration"
         }
+      },
+      "migrate_cleanup": {
+        "title": "Migration terminée",
+        "description": "La configuration a été importée avec succès.\n\n**Étapes de nettoyage manuelles :**\n\n1. **Ancien package YAML** : vous pouvez supprimer `pc.yaml` du dossier `/config/packages/`.\n2. **Ancien tableau de bord** : supprimez manuellement l'ancien tableau de bord Lovelace via **Paramètres → Tableaux de bord**.\n\nL'ancien package a été **désactivé** automatiquement (`input_boolean.attiva_power_control` mis sur off)."
       }
     },
     "error": {

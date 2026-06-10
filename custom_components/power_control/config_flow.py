@@ -199,6 +199,7 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
         self._num_loads: int = 0
         self._current_load_index: int = 0
         self._create_dashboard: bool = True
+        self._from_migration: bool = False
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -244,6 +245,7 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
             if user_input.get("confirm", True):
                 self._data[CONF_NUM_LOADS] = self._num_loads
                 self._data[CONF_LOADS] = self._loads
+                self._from_migration = True
                 return await self.async_step_dashboard()
             return await self.async_step_global()
 
@@ -332,15 +334,16 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
         """Ask whether to create the Lovelace dashboard and in which language."""
         if user_input is not None:
             self._create_dashboard = user_input.get(_CONF_CREATE_DASHBOARD, True)
+            self._data = {
+                **self._data,
+                _CONF_CREATE_DASHBOARD: self._create_dashboard,
+                CONF_DASHBOARD_LANGUAGE: user_input.get(CONF_DASHBOARD_LANGUAGE, "en"),
+            }
+            if self._from_migration:
+                return await self.async_step_migrate_cleanup()
             return self.async_create_entry(
                 title=self._data[CONF_INSTANCE_NAME],
-                data={
-                    **self._data,
-                    _CONF_CREATE_DASHBOARD: self._create_dashboard,
-                    CONF_DASHBOARD_LANGUAGE: user_input.get(
-                        CONF_DASHBOARD_LANGUAGE, "en"
-                    ),
-                },
+                data=self._data,
             )
 
         # Pre-select the user's browser language if supported, else "en"
@@ -361,6 +364,28 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
                     )),
                 }
             ),
+        )
+
+    async def async_step_migrate_cleanup(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Inform the user about manual cleanup steps and disable old package."""
+        if user_input is not None:
+            # Disable old package to avoid conflicts
+            if self.hass.states.get("input_boolean.attiva_power_control") is not None:
+                await self.hass.services.async_call(
+                    "input_boolean",
+                    "turn_off",
+                    {"entity_id": "input_boolean.attiva_power_control"},
+                )
+            return self.async_create_entry(
+                title=self._data[CONF_INSTANCE_NAME],
+                data=self._data,
+            )
+
+        return self.async_show_form(
+            step_id="migrate_cleanup",
+            data_schema=vol.Schema({}),
         )
 
     @staticmethod

@@ -55,6 +55,10 @@
         "data": {
           "confirm": "Confirmar y crear integración"
         }
+      },
+      "migrate_cleanup": {
+        "title": "Migración completada",
+        "description": "La configuración se ha importado correctamente.\n\n**Pasos de limpieza manual:**\n\n1. **Paquete YAML antiguo**: puede eliminar `pc.yaml` de la carpeta `/config/packages/`.\n2. **Panel antiguo**: elimine manualmente el antiguo panel de Lovelace en **Configuración → Paneles**.\n\nEl paquete antiguo ha sido **desactivado** automáticamente (`input_boolean.attiva_power_control` puesto en off)."
       }
     },
     "error": {

@@ -55,6 +55,10 @@
         "data": {
           "confirm": "Confirm and create integration"
         }
+      },
+      "migrate_cleanup": {
+        "title": "Migration complete",
+        "description": "The configuration has been imported successfully.\n\n**Manual cleanup steps:**\n\n1. **Old YAML package**: you can now safely delete `pc.yaml` (or the file containing the old Power Control package) from your `/config/packages/` folder.\n2. **Old dashboard**: remove the old Lovelace dashboard manually from **Settings → Dashboards**.\n\nThe old package has been **disabled** automatically (`input_boolean.attiva_power_control` set to off) to prevent conflicts with the new integration."
       }
     },
     "error": {

@@ -55,6 +55,10 @@
         "data": {
           "confirm": "Conferma e crea integrazione"
         }
+      },
+      "migrate_cleanup": {
+        "title": "Migrazione completata",
+        "description": "La configurazione è stata importata con successo.\n\n**Operazioni manuali da completare:**\n\n1. **Vecchio package YAML**: puoi eliminare il file `pc.yaml` (o il file che conteneva il vecchio package Power Control) dalla cartella `/config/packages/`.\n2. **Vecchia dashboard**: rimuovi manualmente la vecchia dashboard Lovelace da **Impostazioni → Dashboard**.\n\nIl vecchio package è stato **disabilitato** automaticamente (`input_boolean.attiva_power_control` impostato su off) per evitare conflitti con la nuova integrazione."
       }
     },
     "error": {

@@ -55,6 +55,10 @@
         "data": {
           "confirm": "Bestätigen und Integration erstellen"
         }
+      },
+      "migrate_cleanup": {
+        "title": "Migration abgeschlossen",
+        "description": "Die Konfiguration wurde erfolgreich importiert.\n\n**Manuelle Bereinigungsschritte:**\n\n1. **Altes YAML-Paket**: Sie können `pc.yaml` aus dem Ordner `/config/packages/` sicher löschen.\n2. **Altes Dashboard**: Entfernen Sie das alte Lovelace-Dashboard manuell unter **Einstellungen → Dashboards**.\n\nDas alte Paket wurde automatisch **deaktiviert** (`input_boolean.attiva_power_control` auf off gesetzt)."
       }
     },
     "error": {
