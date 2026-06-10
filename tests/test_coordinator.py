@@ -314,7 +314,7 @@ class TestStartLogic:
         mock_hass.services.async_call.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_restore_skips_auto_restart_false_and_clears_suspended(
+    async def test_restore_skips_auto_restart_false_preserves_suspended(
         self, mock_hass, mock_config_entry
     ):
         coord = make_coordinator(mock_hass, mock_config_entry)
@@ -325,8 +325,8 @@ class TestStartLogic:
         await coord.async_check_and_start(current_power=500.0)
 
         mock_hass.services.async_call.assert_not_called()
-        # suspended_power must be cleared so it no longer blocks headroom
-        assert coord.loads[2].suspended_power == 0.0
+        # suspended_power must NOT be cleared — auto_restart=False means keep it suspended
+        assert coord.loads[2].suspended_power == 1500.0
 
     @pytest.mark.asyncio
     async def test_restore_skips_keep_off_restores_next(

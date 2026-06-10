@@ -576,7 +576,9 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
           AND at least one load is suspended
           AND the condition has held for wait_before_start_min minutes
         """
-        total_suspended = sum(l.suspended_power for l in self._loads)
+        total_suspended = sum(
+            l.suspended_power for l in self._loads if l.auto_restart
+        )
 
         if total_suspended == 0:
             # Nothing to restore
@@ -660,8 +662,6 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                     "[%s] Load %d '%s': skip restore — auto_restart disabled",
                     DOMAIN, i, load.name,
                 )
-                # Clear suspended_power so it doesn't block the headroom calculation
-                load.suspended_power = 0.0
                 continue
 
             # Check headroom: would re-enabling this load keep us under threshold?
