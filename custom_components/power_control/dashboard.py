@@ -55,16 +55,19 @@ def _load_strings(lang: str) -> dict[str, str]:
             path = _TRANSLATIONS_DIR / "en.json"
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-            _STRINGS_CACHE[lang] = data.get("dashboard", {})
+            strings = data.get("dashboard", {})
+            if strings:
+                _STRINGS_CACHE[lang] = strings
+            else:
+                _LOGGER.warning(
+                    "[%s] Translation file %s has no 'dashboard' section", DOMAIN, path
+                )
+                return _load_strings("en") if lang != "en" else {}
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("[%s] Could not load translations for '%s': %s", DOMAIN, lang, err)
-            _STRINGS_CACHE[lang] = {}
+            return _load_strings("en") if lang != "en" else {}
 
-    strings = _STRINGS_CACHE[lang]
-    # If a key is missing from the requested language, fall back to English
-    if lang != "en" and not strings:
-        return _load_strings("en")
-    return strings
+    return _STRINGS_CACHE.get(lang, {})
 
 
 
@@ -219,6 +222,10 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     lang = raw_lang.split("-")[0].lower()   # "pt-BR" → "pt"
     if not (_TRANSLATIONS_DIR / f"{lang}.json").exists():
         lang = "en"
+    _LOGGER.debug(
+        "[%s] Building dashboard with lang=%s, gauge_title=%r",
+        DOMAIN, lang, _t(lang, "gauge_title"),
+    )
 
     data = entry.data
     loads: list[dict] = data.get(CONF_LOADS, [])
