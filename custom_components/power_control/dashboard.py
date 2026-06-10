@@ -39,6 +39,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL_PATH = "power-control"
+DASHBOARD_VERSION = 2  # increment to force regeneration on next HA start
 
 _TRANSLATIONS_DIR = pathlib.Path(__file__).parent / "translations"
 
@@ -465,7 +466,24 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     title = entry.data.get(CONF_INSTANCE_NAME, "Power Control")
 
-    if DASHBOARD_URL_PATH not in dashboards:
+    # Check stored version: if outdated, force regeneration
+    existing_store = dashboards.get(DASHBOARD_URL_PATH) if dashboards else None
+    if existing_store is not None:
+        try:
+            stored_config = await existing_store.async_load()
+            stored_version = (stored_config or {}).get("version", 0)
+        except Exception:  # noqa: BLE001
+            stored_version = 0
+        if stored_version < DASHBOARD_VERSION:
+            _LOGGER.info(
+                "[%s] Dashboard version %s < %s — regenerating",
+                DOMAIN, stored_version, DASHBOARD_VERSION,
+            )
+            # Remove from dashboards dict so the creation branch runs
+            dashboards.pop(DASHBOARD_URL_PATH, None)
+            dashboards = _get_lovelace_dashboards(hass)
+
+    if DASHBOARD_URL_PATH not in (dashboards or {}):
         try:
             collection = lv_dashboard.DashboardsCollection(hass)
             await collection.async_load()
@@ -511,6 +529,7 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return False
 
     config = _build_dashboard_config(hass, entry)
+    config["version"] = DASHBOARD_VERSION
     await dashboard_store.async_save(config)
 
     # Force the dashboard store to load its own data immediately.
