@@ -1,7 +1,7 @@
 # HA Power Control
 
 <p align="center">
-  <img src="custom_components/power_control/logo.png" alt="HA Power Control Logo" width="200"/>
+  <img src="logo.png" alt="HA Power Control Logo" width="200"/>
 </p>
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
