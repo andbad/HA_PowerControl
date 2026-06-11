@@ -172,6 +172,8 @@ def _register_services(hass: HomeAssistant) -> None:
             coord.config_entry,
             data={**coord.config_entry.data, CONF_LOADS: loads},
         )
+        coord.rebuild_loads()
+        await coord.async_request_refresh()
         _LOGGER.info("[%s] Service: moved load %d %s (now at %d)", DOMAIN, index, direction, swap)
 
     hass.services.async_register(DOMAIN, "enable", handle_enable)

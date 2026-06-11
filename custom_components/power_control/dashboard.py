@@ -130,13 +130,15 @@ def _timer_row(label: str, icon: str, attr_remaining: str) -> str:
     """Return a single Jinja2 text line for a timer row."""
     entity = "sensor.power_control_potenza_attuale"
     return (
-        f"{{% set rem = state_attr(\'{entity}\',\'{attr_remaining}\') %}}"
-        f"{icon} {label}: "
+        f"{{% set rem = state_attr('{entity}','{attr_remaining}') %}}"
+        f"\n{icon} {label}: "
         f"{{% if rem is none %}}—"
-        f"{{% elif rem >= 60 %}}{{% set m = (rem // 60)|int %}}{{% set s = (rem % 60)|int %}}"
+        f"{{% elif rem >= 60 %}}"
+        f"{{% set m = (rem // 60)|int %}}"
+        f"{{% set s = (rem % 60)|int %}}"
         f"{{{{ m }}}}m {{{{ s }}}}s"
         f"{{% else %}}{{{{ rem }}}}s"
-        f"{{% endif %}}"
+        f"{{% endif %}}\n"
     )
 
 
