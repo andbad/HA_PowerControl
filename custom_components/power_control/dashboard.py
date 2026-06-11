@@ -40,7 +40,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL_PATH = "power-control"
-DASHBOARD_VERSION = 7  # increment to force regeneration on next HA start
+DASHBOARD_VERSION = 8  # increment to force regeneration on next HA start
 
 _TRANSLATIONS_DIR = pathlib.Path(__file__).parent / "translations"
 
