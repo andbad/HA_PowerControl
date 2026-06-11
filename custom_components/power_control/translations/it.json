@@ -144,7 +144,8 @@
     "timer_start_cooldown": "Attesa tra le riattivazioni",
     "timer_idle": "Inattivo",
     "timer_sec_remaining": "{s}s rimanenti",
-    "timer_min_remaining": "{m}m {s}s rimanenti"
+    "timer_min_remaining": "{m}m {s}s rimanenti",
+    "reorder_title": "Ordine priorità carichi"
   },
   "selector": {
     "dashboard_language": {

@@ -57,3 +57,28 @@ force_start_load:
           min: 0
           max: 19
           mode: box
+
+move_load:
+  name: Sposta carico
+  description: >-
+    Sposta un carico su o giù nella lista delle priorità,
+    scambiandolo con il carico adiacente.
+  fields:
+    load_index:
+      name: Indice carico
+      description: Indice del carico da spostare (0 = massima priorità).
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 19
+          mode: box
+    direction:
+      name: Direzione
+      description: "up = aumenta priorità, down = diminuisce priorità."
+      required: true
+      selector:
+        select:
+          options:
+            - up
+            - down

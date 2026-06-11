@@ -144,7 +144,8 @@
     "timer_start_cooldown": "Cooldown between restarts",
     "timer_idle": "Idle",
     "timer_sec_remaining": "{s}s remaining",
-    "timer_min_remaining": "{m}m {s}s remaining"
+    "timer_min_remaining": "{m}m {s}s remaining",
+    "reorder_title": "Load priority order"
   },
   "selector": {
     "dashboard_language": {

@@ -144,7 +144,8 @@
     "timer_start_cooldown": "Espera entre reactivaciones",
     "timer_idle": "Inactivo",
     "timer_sec_remaining": "{s}s restantes",
-    "timer_min_remaining": "{m}m {s}s restantes"
+    "timer_min_remaining": "{m}m {s}s restantes",
+    "reorder_title": "Orden de prioridad de cargas"
   },
   "selector": {
     "dashboard_language": {

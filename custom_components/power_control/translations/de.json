@@ -144,7 +144,8 @@
     "timer_start_cooldown": "Wartezeit zwischen Einschaltungen",
     "timer_idle": "Inaktiv",
     "timer_sec_remaining": "{s}s verbleibend",
-    "timer_min_remaining": "{m}m {s}s verbleibend"
+    "timer_min_remaining": "{m}m {s}s verbleibend",
+    "reorder_title": "Prioritätsreihenfolge der Lasten"
   },
   "selector": {
     "dashboard_language": {

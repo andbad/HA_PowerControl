@@ -40,7 +40,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL_PATH = "power-control"
-DASHBOARD_VERSION = 2  # increment to force regeneration on next HA start
+DASHBOARD_VERSION = 3  # increment to force regeneration on next HA start
 
 _TRANSLATIONS_DIR = pathlib.Path(__file__).parent / "translations"
 
@@ -126,91 +126,98 @@ def _fmt_remaining(lang: str, remaining_sec: int | None) -> str:
     return _t(lang, "timer_sec_remaining", s=remaining_sec)
 
 
-def _timer_bar_html(
-    label: str,
-    icon: str,
-    attr_remaining: str,
-    attr_pct: str,
-    bar_color_active: str = "#3b82f6",
-    bar_color_idle: str = "#374151",
-) -> str:
-    """Return HTML for a single timer row with progress bar.
-
-    The Jinja2 inside markdown cards is evaluated by HA at render time,
-    so we can reference state_attr() directly.
-    """
+def _timer_row(label: str, icon: str, attr_remaining: str) -> str:
+    """Return a single Jinja2 text line for a timer row."""
     entity = "sensor.power_control_potenza_attuale"
     return (
-        f"<div style='margin:6px 0'>"
-        f"<div style='display:flex;align-items:center;justify-content:space-between;"
-        f"font-size:0.85em;margin-bottom:3px'>"
-        f"<span>{icon} {label}: </span>"
-        f"{{% set rem = state_attr('{entity}','{attr_remaining}') %}}"
-        f"<span style='color:var(--secondary-text-color);font-size:0.9em'>"
+        f"{{% set rem = state_attr(\'{entity}\',\'{attr_remaining}\') %}}"
+        f"{icon} {label}: "
         f"{{% if rem is none %}}—"
         f"{{% elif rem >= 60 %}}{{% set m = (rem // 60)|int %}}{{% set s = (rem % 60)|int %}}"
         f"{{{{ m }}}}m {{{{ s }}}}s"
         f"{{% else %}}{{{{ rem }}}}s"
         f"{{% endif %}}"
-        f"</span>"
-        f"</div>"
-        f"{{% set pct = state_attr('{entity}','{attr_pct}') or 0 %}}"
-        f"{{% set active = state_attr('{entity}','{attr_remaining}') is not none %}}"
-        f"<div style='background:#1f2937;border-radius:4px;height:6px;overflow:hidden'>"
-        f"<div style='height:6px;border-radius:4px;transition:width 1s ease;"
-        f"background:{{% if active %}}{bar_color_active}{{% else %}}{bar_color_idle}{{% endif %}};"
-        f"width:{{{{ pct }}}}%'></div>"
-        f"</div>"
-        f"</div>"
     )
 
 
 def _build_timer_card(lang: str) -> dict:
-    """Build the timers card using a markdown card with inline progress bars."""
+    """Build the timers card using a markdown card with plain Jinja2 text rows."""
     rows = [
-        _timer_bar_html(
-            _t(lang, "timer_over_immediate"),
-            "⚡",
-            "over_immediate_remaining_sec",
-            "over_immediate_pct",
-            bar_color_active="#ef4444",   # red — danger
-        ),
-        _timer_bar_html(
-            _t(lang, "timer_over_delayed"),
-            "🕐",
-            "over_delayed_remaining_sec",
-            "over_delayed_pct",
-            bar_color_active="#f97316",   # orange — warning
-        ),
-        _timer_bar_html(
-            _t(lang, "timer_stop_cooldown"),
-            "⏸",
-            "stop_cooldown_remaining_sec",
-            "stop_cooldown_pct",
-            bar_color_active="#8b5cf6",   # purple — cooldown
-        ),
-        _timer_bar_html(
-            _t(lang, "timer_under_threshold"),
-            "🔄",
-            "under_threshold_remaining_sec",
-            "under_threshold_pct",
-            bar_color_active="#22c55e",   # green — restart
-        ),
-        _timer_bar_html(
-            _t(lang, "timer_start_cooldown"),
-            "⏱",
-            "start_cooldown_remaining_sec",
-            "start_cooldown_pct",
-            bar_color_active="#06b6d4",   # cyan — between restarts
-        ),
+        _timer_row(_t(lang, "timer_over_immediate"),  "⚡", "over_immediate_remaining_sec"),
+        _timer_row(_t(lang, "timer_over_delayed"),    "🕐", "over_delayed_remaining_sec"),
+        _timer_row(_t(lang, "timer_stop_cooldown"),   "⏸", "stop_cooldown_remaining_sec"),
+        _timer_row(_t(lang, "timer_under_threshold"), "🔄", "under_threshold_remaining_sec"),
+        _timer_row(_t(lang, "timer_start_cooldown"),  "⏱", "start_cooldown_remaining_sec"),
     ]
-
-    content = "\n".join(rows)
 
     return {
         "type": "markdown",
         "title": _t(lang, "timers_title"),
-        "content": content,
+        "content": "\n".join(rows),
+    }
+
+
+
+def _build_reorder_card(lang: str, loads: list[dict]) -> dict:
+    """Build a grid card with up/down buttons to reorder loads."""
+    cards = []
+    n = len(loads)
+    for i, load in enumerate(loads):
+        name = load.get(LOAD_NAME, f"Carico {i + 1}")
+        priority = _priority_label(lang, i, n)
+
+        # Label button (non-interactive, shows name + priority)
+        cards.append({
+            "type": "button",
+            "name": name,
+            "label": priority,
+            "show_state": False,
+            "tap_action": {"action": "none"},
+            "icon": "mdi:drag-vertical",
+        })
+
+        # ▲ Move up (disabled for first load)
+        up_action: dict = (
+            {"action": "none"}
+            if i == 0
+            else {
+                "action": "perform-action",
+                "perform_action": "power_control.move_load",
+                "data": {"load_index": i, "direction": "up"},
+            }
+        )
+        cards.append({
+            "type": "button",
+            "name": "▲",
+            "show_state": False,
+            "icon": "mdi:chevron-up",
+            "tap_action": up_action,
+        })
+
+        # ▼ Move down (disabled for last load)
+        down_action: dict = (
+            {"action": "none"}
+            if i == n - 1
+            else {
+                "action": "perform-action",
+                "perform_action": "power_control.move_load",
+                "data": {"load_index": i, "direction": "down"},
+            }
+        )
+        cards.append({
+            "type": "button",
+            "name": "▼",
+            "show_state": False,
+            "icon": "mdi:chevron-down",
+            "tap_action": down_action,
+        })
+
+    return {
+        "type": "grid",
+        "title": _t(lang, "reorder_title"),
+        "columns": 3,
+        "square": False,
+        "cards": cards,
     }
 
 
@@ -458,6 +465,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
                 },
                 # ── Configuration card ────────────────────────────────────────
                 settings_card,
+                # ── Reorder card ──────────────────────────────────────────────
+                _build_reorder_card(lang, loads),
                 # ── Per-load cards ────────────────────────────────────────────
                 {
                     "type": "vertical-stack",

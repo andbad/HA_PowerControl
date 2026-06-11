@@ -150,11 +150,36 @@ def _register_services(hass: HomeAssistant) -> None:
         await coord.async_request_refresh()
         _LOGGER.info("[%s] Service: force-started load %d '%s'", DOMAIN, index, load.name)
 
+
+    _MOVE_LOAD_SCHEMA = vol.Schema({
+        vol.Required("load_index"): vol.All(int, vol.Range(min=0, max=19)),
+        vol.Required("direction"): vol.In(["up", "down"]),
+    })
+
+    async def handle_move_load(call: ServiceCall) -> None:
+        coord = _get_coordinator(call)
+        if not coord:
+            return
+        index: int = call.data["load_index"]
+        direction: str = call.data["direction"]
+        loads: list = list(coord.config_entry.data.get(CONF_LOADS, []))
+        swap = index - 1 if direction == "up" else index + 1
+        if swap < 0 or swap >= len(loads):
+            _LOGGER.warning("[%s] move_load: index %d cannot move %s", DOMAIN, index, direction)
+            return
+        loads[index], loads[swap] = loads[swap], loads[index]
+        hass.config_entries.async_update_entry(
+            coord.config_entry,
+            data={**coord.config_entry.data, CONF_LOADS: loads},
+        )
+        _LOGGER.info("[%s] Service: moved load %d %s (now at %d)", DOMAIN, index, direction, swap)
+
     hass.services.async_register(DOMAIN, "enable", handle_enable)
     hass.services.async_register(DOMAIN, "disable", handle_disable)
     hass.services.async_register(DOMAIN, "reset_load", handle_reset_load, schema=_LOAD_INDEX_SCHEMA)
     hass.services.async_register(DOMAIN, "force_stop_load", handle_force_stop_load, schema=_LOAD_INDEX_SCHEMA)
     hass.services.async_register(DOMAIN, "force_start_load", handle_force_start_load, schema=_LOAD_INDEX_SCHEMA)
+    hass.services.async_register(DOMAIN, "move_load", handle_move_load, schema=_MOVE_LOAD_SCHEMA)
 
     _LOGGER.debug("[%s] Services registered", DOMAIN)
 
@@ -180,7 +205,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Remove services only when last entry is unloaded
     if not hass.data.get(DOMAIN):
-        for service in ["enable", "disable", "reset_load", "force_stop_load", "force_start_load"]:
+        for service in ["enable", "disable", "reset_load", "force_stop_load", "force_start_load", "move_load"]:
             hass.services.async_remove(DOMAIN, service)
         _LOGGER.debug("[%s] Services unregistered", DOMAIN)
         # Remove dashboard (only once, when the last entry is gone)
