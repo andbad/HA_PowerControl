@@ -175,7 +175,7 @@ def _build_reorder_card(lang: str, loads: list[dict]) -> dict:
             "show_state": False,
             "show_icon": False,
             "tap_action": {"action": "none"},
-            "icon": "mdi:drag-vertical",
+            "icon": "",
         })
 
         # ▲ Move up (disabled for first load)
