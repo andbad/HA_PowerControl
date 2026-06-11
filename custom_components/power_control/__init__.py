@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 import homeassistant.helpers.config_validation as cv
 
 from .const import DOMAIN, CONF_NOTIFY_ENTITY, CONF_NOTIFY_SERVICE, CONF_LOADS
-from .dashboard import async_create_dashboard, async_remove_dashboard
+from .dashboard import async_create_dashboard, async_remove_dashboard, async_rebuild_dashboard
 from .coordinator import PowerControlCoordinator
 from .notify import async_notify
 
@@ -174,6 +174,7 @@ def _register_services(hass: HomeAssistant) -> None:
         )
         coord.rebuild_loads()
         await coord.async_request_refresh()
+        await async_rebuild_dashboard(hass, coord.config_entry)
         _LOGGER.info("[%s] Service: moved load %d %s (now at %d)", DOMAIN, index, direction, swap)
 
     hass.services.async_register(DOMAIN, "enable", handle_enable)
