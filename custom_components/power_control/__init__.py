@@ -10,7 +10,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN, CONF_NOTIFY_ENTITY, CONF_NOTIFY_SERVICE
+from .const import DOMAIN, CONF_NOTIFY_ENTITY, CONF_NOTIFY_SERVICE, CONF_LOADS
 from .dashboard import async_create_dashboard, async_remove_dashboard
 from .coordinator import PowerControlCoordinator
 from .notify import async_notify
