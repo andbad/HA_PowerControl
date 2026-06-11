@@ -40,7 +40,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL_PATH = "power-control"
-DASHBOARD_VERSION = 4  # increment to force regeneration on next HA start
+DASHBOARD_VERSION = 7  # increment to force regeneration on next HA start
 
 _TRANSLATIONS_DIR = pathlib.Path(__file__).parent / "translations"
 
@@ -172,8 +172,8 @@ def _build_reorder_card(lang: str, loads: list[dict]) -> dict:
         cards.append({
             "type": "button",
             "name": name,
-            "label": priority,
             "show_state": False,
+            "show_icon": False,
             "tap_action": {"action": "none"},
             "icon": "mdi:drag-vertical",
         })
@@ -190,7 +190,7 @@ def _build_reorder_card(lang: str, loads: list[dict]) -> dict:
         )
         cards.append({
             "type": "button",
-            "name": "▲",
+            "name": " ",
             "show_state": False,
             "icon": "mdi:chevron-up",
             "tap_action": up_action,
@@ -208,7 +208,7 @@ def _build_reorder_card(lang: str, loads: list[dict]) -> dict:
         )
         cards.append({
             "type": "button",
-            "name": "▼",
+            "name": " ",
             "show_state": False,
             "icon": "mdi:chevron-down",
             "tap_action": down_action,
