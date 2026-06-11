@@ -40,7 +40,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL_PATH = "power-control"
-DASHBOARD_VERSION = 3  # increment to force regeneration on next HA start
+DASHBOARD_VERSION = 4  # increment to force regeneration on next HA start
 
 _TRANSLATIONS_DIR = pathlib.Path(__file__).parent / "translations"
 
@@ -549,6 +549,11 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         DOMAIN, DASHBOARD_URL_PATH, len(entry.data.get(CONF_LOADS, [])),
     )
     return True
+
+
+async def async_rebuild_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Rebuild and save the dashboard immediately (e.g. after a reorder)."""
+    await _do_create_dashboard(hass, entry)
 
 
 async def async_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> None:
