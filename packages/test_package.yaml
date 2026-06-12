@@ -1,0 +1,740 @@
+################################################################
+############# POWER CONTROL - PACKAGE DI TEST #################
+################################################################
+# Autore: andbad                                               #
+# Scopo: simulare 5 carichi virtuali e verificare la logica   #
+#        di distacco/riattivazione del custom component.      #
+#                                                              #
+# Prerequisiti:                                                #
+#   - Custom component power_control installato e configurato  #
+#     con i 5 carichi qui definiti                             #
+#   - Soglia immediata: 4000W                                  #
+#   - Soglia ritardata: 3300W                                  #
+#   - Delay immediato: 10s                                     #
+#   - Delay ritardato: 1 min                                   #
+#   - Attesa tra stop: 5s                                      #
+#   - Attesa tra start: 1 min                                  #
+#   - Attesa prima di start: 1 min                             #
+#                                                              #
+# Installazione: copiare in /config/packages/test_pc.yaml     #
+# I log di test appaiono nel logger homeassistant.components.pc_test
+################################################################
+
+################################################################
+# INPUT_NUMBER — potenza simulata per ciascun carico
+################################################################
+input_number:
+  test_pc_potenza_1:
+    name: "[TEST PC] Potenza Carico 1"
+    min: 0
+    max: 5000
+    step: 50
+    unit_of_measurement: W
+
+  test_pc_potenza_2:
+    name: "[TEST PC] Potenza Carico 2"
+    min: 0
+    max: 5000
+    step: 50
+    unit_of_measurement: W
+
+  test_pc_potenza_3:
+    name: "[TEST PC] Potenza Carico 3"
+    min: 0
+    max: 5000
+    step: 50
+    unit_of_measurement: W
+
+  test_pc_potenza_4:
+    name: "[TEST PC] Potenza Carico 4"
+    min: 0
+    max: 5000
+    step: 50
+    unit_of_measurement: W
+
+  test_pc_potenza_5:
+    name: "[TEST PC] Potenza Carico 5"
+    min: 0
+    max: 5000
+    step: 50
+    unit_of_measurement: W
+
+################################################################
+# INPUT_BOOLEAN — switch virtuali dei carichi
+################################################################
+input_boolean:
+  test_pc_switch_1:
+    name: "[TEST PC] Switch Carico 1"
+    icon: mdi:toggle-switch
+
+  test_pc_switch_2:
+    name: "[TEST PC] Switch Carico 2"
+    icon: mdi:toggle-switch
+
+  test_pc_switch_3:
+    name: "[TEST PC] Switch Carico 3"
+    icon: mdi:toggle-switch
+
+  test_pc_switch_4:
+    name: "[TEST PC] Switch Carico 4"
+    icon: mdi:toggle-switch
+
+  test_pc_switch_5:
+    name: "[TEST PC] Switch Carico 5"
+    icon: mdi:toggle-switch
+
+################################################################
+# TEMPLATE — sensori di potenza e switch virtuali
+# Il sensore azzera la potenza quando lo switch è off,
+# simulando il comportamento di un dispositivo reale.
+################################################################
+template:
+  - sensor:
+    - name: test_pc_sensor_potenza_1
+      unit_of_measurement: W
+      device_class: power
+      state_class: measurement
+      state: >
+        {% if is_state('input_boolean.test_pc_switch_1', 'on') %}
+          {{ states('input_number.test_pc_potenza_1') | int(0) }}
+        {% else %}0{% endif %}
+
+    - name: test_pc_sensor_potenza_2
+      unit_of_measurement: W
+      device_class: power
+      state_class: measurement
+      state: >
+        {% if is_state('input_boolean.test_pc_switch_2', 'on') %}
+          {{ states('input_number.test_pc_potenza_2') | int(0) }}
+        {% else %}0{% endif %}
+
+    - name: test_pc_sensor_potenza_3
+      unit_of_measurement: W
+      device_class: power
+      state_class: measurement
+      state: >
+        {% if is_state('input_boolean.test_pc_switch_3', 'on') %}
+          {{ states('input_number.test_pc_potenza_3') | int(0) }}
+        {% else %}0{% endif %}
+
+    - name: test_pc_sensor_potenza_4
+      unit_of_measurement: W
+      device_class: power
+      state_class: measurement
+      state: >
+        {% if is_state('input_boolean.test_pc_switch_4', 'on') %}
+          {{ states('input_number.test_pc_potenza_4') | int(0) }}
+        {% else %}0{% endif %}
+
+    - name: test_pc_sensor_potenza_5
+      unit_of_measurement: W
+      device_class: power
+      state_class: measurement
+      state: >
+        {% if is_state('input_boolean.test_pc_switch_5', 'on') %}
+          {{ states('input_number.test_pc_potenza_5') | int(0) }}
+        {% else %}0{% endif %}
+
+  - switch:
+    - name: test_pc_switch_virtuale_1
+      unique_id: test_pc_switch_virtuale_1
+      state: "{{ is_state('input_boolean.test_pc_switch_1', 'on') }}"
+      turn_on:
+        service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.test_pc_switch_1
+      turn_off:
+        service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.test_pc_switch_1
+
+    - name: test_pc_switch_virtuale_2
+      unique_id: test_pc_switch_virtuale_2
+      state: "{{ is_state('input_boolean.test_pc_switch_2', 'on') }}"
+      turn_on:
+        service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.test_pc_switch_2
+      turn_off:
+        service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.test_pc_switch_2
+
+    - name: test_pc_switch_virtuale_3
+      unique_id: test_pc_switch_virtuale_3
+      state: "{{ is_state('input_boolean.test_pc_switch_3', 'on') }}"
+      turn_on:
+        service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.test_pc_switch_3
+      turn_off:
+        service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.test_pc_switch_3
+
+    - name: test_pc_switch_virtuale_4
+      unique_id: test_pc_switch_virtuale_4
+      state: "{{ is_state('input_boolean.test_pc_switch_4', 'on') }}"
+      turn_on:
+        service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.test_pc_switch_4
+      turn_off:
+        service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.test_pc_switch_4
+
+    - name: test_pc_switch_virtuale_5
+      unique_id: test_pc_switch_virtuale_5
+      state: "{{ is_state('input_boolean.test_pc_switch_5', 'on') }}"
+      turn_on:
+        service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.test_pc_switch_5
+      turn_off:
+        service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.test_pc_switch_5
+
+################################################################
+# MACRO DI LOG — usata da tutte le automazioni
+# Scrive PASS/FAIL nel logger homeassistant.components.pc_test
+################################################################
+# Nota: HA non supporta macro YAML riutilizzabili tra automazioni;
+# ogni automazione include il proprio blocco system_log.write.
+
+################################################################
+# HELPERS per i test
+################################################################
+# Entità di riferimento (adattare agli entity_id reali del componente):
+#   sensor.power_control_potenza_attuale   → potenza totale vista dal coordinator
+#   sensor.power_control_carico_1_sospesa  → suspended_power carico 1
+#   ... (stessa convenzione per i carichi 2-5)
+#
+# I test verificano lo stato di queste entità dopo un delay
+# sufficiente a far reagire il coordinator.
+
+automation:
+
+  ################################################################
+  # RESET — porta tutti i carichi allo stato iniziale pulito
+  # Da eseguire PRIMA di ogni test.
+  ################################################################
+  - id: test_pc_reset
+    alias: "[TEST PC] Reset stato iniziale"
+    mode: single
+    trigger: []
+    action:
+      - service: input_number.set_value
+        data: { value: 1000 }
+        target: { entity_id: input_number.test_pc_potenza_1 }
+      - service: input_number.set_value
+        data: { value: 1000 }
+        target: { entity_id: input_number.test_pc_potenza_2 }
+      - service: input_number.set_value
+        data: { value: 1000 }
+        target: { entity_id: input_number.test_pc_potenza_3 }
+      - service: input_number.set_value
+        data: { value: 1000 }
+        target: { entity_id: input_number.test_pc_potenza_4 }
+      - service: input_number.set_value
+        data: { value: 1000 }
+        target: { entity_id: input_number.test_pc_potenza_5 }
+      - service: input_boolean.turn_on
+        target:
+          entity_id:
+            - input_boolean.test_pc_switch_1
+            - input_boolean.test_pc_switch_2
+            - input_boolean.test_pc_switch_3
+            - input_boolean.test_pc_switch_4
+            - input_boolean.test_pc_switch_5
+      - delay: { seconds: 3 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST PC] Reset completato — tutti i carichi ON a 1000W ciascuno (totale 5000W atteso)"
+
+  ################################################################
+  # TEST 1 — Distacco immediato
+  # Setup: carichi 1-4 a 800W, carico 5 a 1200W → totale 4400W
+  # Soglia immediata: 4000W, delay: 10s
+  # Atteso: carico 5 spento entro ~15s, suspended_power=1200
+  ################################################################
+  - id: test_pc_01_distacco_immediato
+    alias: "[TEST PC] Test 1 — Distacco immediato"
+    mode: single
+    trigger: []
+    action:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 1] INIZIO — Distacco immediato. Imposto 4x800W + 1x1200W = 4400W (soglia imm 4000W)"
+      - service: input_number.set_value
+        data: { value: 800 }
+        target: { entity_id: input_number.test_pc_potenza_1 }
+      - service: input_number.set_value
+        data: { value: 800 }
+        target: { entity_id: input_number.test_pc_potenza_2 }
+      - service: input_number.set_value
+        data: { value: 800 }
+        target: { entity_id: input_number.test_pc_potenza_3 }
+      - service: input_number.set_value
+        data: { value: 800 }
+        target: { entity_id: input_number.test_pc_potenza_4 }
+      - service: input_number.set_value
+        data: { value: 1200 }
+        target: { entity_id: input_number.test_pc_potenza_5 }
+      # Attendo delay immediato (10s) + margine reazione coordinator (10s)
+      - delay: { seconds: 25 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 1] VERIFICA —
+            Switch 5: {{ states('switch.test_pc_switch_virtuale_5') }}
+            (atteso: off) →
+            {% if is_state('switch.test_pc_switch_virtuale_5', 'off') %}PASS{% else %}FAIL — carico 5 non spento{% endif %} |
+            Switch 1-4: {{ states('switch.test_pc_switch_virtuale_1') }}/{{ states('switch.test_pc_switch_virtuale_2') }}/{{ states('switch.test_pc_switch_virtuale_3') }}/{{ states('switch.test_pc_switch_virtuale_4') }}
+            (attesi: on) →
+            {% if is_state('switch.test_pc_switch_virtuale_1','on') and is_state('switch.test_pc_switch_virtuale_2','on') and is_state('switch.test_pc_switch_virtuale_3','on') and is_state('switch.test_pc_switch_virtuale_4','on') %}PASS{% else %}FAIL — un carico ad alta priorità è stato spento erroneamente{% endif %}
+
+  ################################################################
+  # TEST 2 — Distacco ritardato
+  # Setup: tutti i carichi a 700W → totale 3500W
+  # Soglia ritardata: 3300W, delay: 1 min
+  # Atteso: nessun distacco nei primi 30s; Carico 5 spento dopo ~70s
+  ################################################################
+  - id: test_pc_02_distacco_ritardato
+    alias: "[TEST PC] Test 2 — Distacco ritardato"
+    mode: single
+    trigger: []
+    action:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 2] INIZIO — Distacco ritardato. Imposto 5x700W = 3500W (soglia del 3300W, delay 1 min)"
+      - service: input_number.set_value
+        data: { value: 700 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+            - input_number.test_pc_potenza_5
+      # Controllo intermedio a 30s: nessun distacco deve essere avvenuto
+      - delay: { seconds: 30 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 2] VERIFICA INTERMEDIA (30s) —
+            Switch 5: {{ states('switch.test_pc_switch_virtuale_5') }}
+            (atteso: on, distacco non ancora avvenuto) →
+            {% if is_state('switch.test_pc_switch_virtuale_5', 'on') %}PASS{% else %}FAIL — distacco prematuro{% endif %}
+      # Attendo il resto del delay ritardato + margine
+      - delay: { seconds: 50 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 2] VERIFICA FINALE (80s) —
+            Switch 5: {{ states('switch.test_pc_switch_virtuale_5') }}
+            (atteso: off) →
+            {% if is_state('switch.test_pc_switch_virtuale_5', 'off') %}PASS{% else %}FAIL — carico 5 non spento dopo delay{% endif %}
+
+  ################################################################
+  # TEST 3 — Riattivazione automatica
+  # Setup: parto da test 1 (carico 5 sospeso), poi abbasso la
+  # potenza totale sotto la soglia ritardata.
+  # Atteso: dopo wait_before_start (1 min), carico 5 riattivato.
+  ################################################################
+  - id: test_pc_03_riattivazione_automatica
+    alias: "[TEST PC] Test 3 — Riattivazione automatica"
+    mode: single
+    trigger: []
+    action:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 3] INIZIO — Riattivazione. Prerequisito: carico 5 sospeso. Abbasso carichi 1-4 a 500W ciascuno."
+      # Carico 5 deve essere già sospeso (eseguire dopo test 1)
+      - service: input_number.set_value
+        data: { value: 500 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+      # Potenza attiva = 4x500W = 2000W + suspended carico 5 ~1200W = 3200W < 3300W → headroom ok
+      # Attendo wait_before_start (1 min) + margine
+      - delay: { minutes: 1, seconds: 20 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 3] VERIFICA —
+            Switch 5: {{ states('switch.test_pc_switch_virtuale_5') }}
+            (atteso: on) →
+            {% if is_state('switch.test_pc_switch_virtuale_5', 'on') %}PASS{% else %}FAIL — carico 5 non riattivato{% endif %}
+
+  ################################################################
+  # TEST 4 — Auto-restart disabilitato
+  # Setup: carico 5 con auto_restart=False già configurato nel
+  # componente. Supero la soglia → carico 5 sospeso.
+  # Poi abbasso la potenza sotto soglia.
+  # Atteso: carico 5 NON riattivato; suspended_power conservata.
+  # Nota: auto_restart deve essere impostato nella config del
+  # componente prima di eseguire questo test.
+  ################################################################
+  - id: test_pc_04_auto_restart_disabilitato
+    alias: "[TEST PC] Test 4 — Auto-restart disabilitato"
+    mode: single
+    trigger: []
+    action:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 4] INIZIO — Auto-restart off su carico 5. Supero soglia immediata, poi rientro."
+      # Supero soglia immediata
+      - service: input_number.set_value
+        data: { value: 900 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+      - service: input_number.set_value
+        data: { value: 1200 }
+        target: { entity_id: input_number.test_pc_potenza_5 }
+      # Attendo distacco (10s delay + margine)
+      - delay: { seconds: 25 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 4] VERIFICA DISTACCO —
+            Switch 5: {{ states('switch.test_pc_switch_virtuale_5') }}
+            (atteso: off) →
+            {% if is_state('switch.test_pc_switch_virtuale_5', 'off') %}PASS{% else %}FAIL — carico 5 non spento{% endif %}
+      # Abbasso sotto soglia
+      - service: input_number.set_value
+        data: { value: 500 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+      # Attendo il tempo di riattivazione
+      - delay: { minutes: 1, seconds: 20 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 4] VERIFICA NO-RIATTIVAZIONE —
+            Switch 5: {{ states('switch.test_pc_switch_virtuale_5') }}
+            (atteso: off — auto_restart disabilitato) →
+            {% if is_state('switch.test_pc_switch_virtuale_5', 'off') %}PASS{% else %}FAIL — carico 5 riattivato erroneamente{% endif %}
+
+  ################################################################
+  # TEST 5 — Riaccensione manuale durante sospensione
+  # Setup: carico 5 sospeso (da test precedente o reset+distacco).
+  # L'utente accende manualmente lo switch del carico 5.
+  # Atteso: entro 5s il watchdog azzera la suspended_power.
+  # Verifica tramite sensor.power_control_carico_5 (stato sospesa).
+  ################################################################
+  - id: test_pc_05_riaccensione_manuale
+    alias: "[TEST PC] Test 5 — Riaccensione manuale"
+    mode: single
+    trigger: []
+    action:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 5] INIZIO — Riaccensione manuale carico 5 (prerequisito: carico 5 sospeso)."
+      # Simula riaccensione manuale da parte dell'utente
+      - service: input_boolean.turn_on
+        target: { entity_id: input_boolean.test_pc_switch_5 }
+      # Attendo watchdog (5s trigger + margine)
+      - delay: { seconds: 15 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 5] VERIFICA —
+            Switch 5 on: {% if is_state('switch.test_pc_switch_virtuale_5', 'on') %}PASS{% else %}FAIL{% endif %} |
+            Sensor sospesa carico 5: {{ state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w') | default('n/d') }}W
+            (atteso: 0) →
+            {% set s = state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w') | int(-1) %}
+            {% if s == 0 %}PASS{% else %}FAIL — suspended_power non azzerata (valore: {{ s }}W){% endif %}
+
+  ################################################################
+  # TEST 6 — Distacco a cascata
+  # Setup: carichi 1-5 tutti a 1000W → totale 5000W
+  # Soglia immediata 4000W: serve spegnere almeno 2 carichi.
+  # Atteso: carico 5 spento, poi se ancora sopra soglia anche 4.
+  ################################################################
+  - id: test_pc_06_distacco_cascata
+    alias: "[TEST PC] Test 6 — Distacco a cascata"
+    mode: single
+    trigger: []
+    action:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 6] INIZIO — Distacco cascata. 5x1000W=5000W, soglia imm 4000W. Atteso: spenti almeno 2 carichi."
+      - service: input_number.set_value
+        data: { value: 1000 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+            - input_number.test_pc_potenza_5
+      # Attendo distacco + attesa tra stop (5s) + secondo distacco + margine
+      - delay: { seconds: 40 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 6] VERIFICA —
+            Switch 5: {{ states('switch.test_pc_switch_virtuale_5') }}
+            Switch 4: {{ states('switch.test_pc_switch_virtuale_4') }}
+            (attesi: off) →
+            {% if is_state('switch.test_pc_switch_virtuale_5','off') and is_state('switch.test_pc_switch_virtuale_4','off') %}PASS
+            {% elif is_state('switch.test_pc_switch_virtuale_5','off') %}FAIL — solo carico 5 spento, potenza ancora oltre soglia
+            {% else %}FAIL — nessun carico spento{% endif %} |
+            Switch 1-3 (attesi on): {{ states('switch.test_pc_switch_virtuale_1') }}/{{ states('switch.test_pc_switch_virtuale_2') }}/{{ states('switch.test_pc_switch_virtuale_3') }} →
+            {% if is_state('switch.test_pc_switch_virtuale_1','on') and is_state('switch.test_pc_switch_virtuale_2','on') and is_state('switch.test_pc_switch_virtuale_3','on') %}PASS{% else %}FAIL — spento più del necessario{% endif %}
+
+  ################################################################
+  # TEST 7 — Riattivazione parziale
+  # Setup: carichi 4 e 5 sospesi (da test 6). Potenza carichi 1-3
+  # abbassata a 600W ciascuno → totale attivo 1800W.
+  # Headroom = 3300-1800 = 1500W.
+  # Carico 5 aveva 1000W sospesi → rientra (1800+1000=2800 < 3300).
+  # Carico 4 aveva 1000W sospesi → 2800+1000=3800 > 3300 → non riattivato.
+  # Atteso: carico 5 riattivato, carico 4 ancora sospeso.
+  ################################################################
+  - id: test_pc_07_riattivazione_parziale
+    alias: "[TEST PC] Test 7 — Riattivazione parziale"
+    mode: single
+    trigger: []
+    action:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 7] INIZIO — Riattivazione parziale. Carichi 4+5 sospesi, abbasso 1-3 a 600W. Atteso: solo carico 5 riattivato."
+      - service: input_number.set_value
+        data: { value: 600 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+      - delay: { minutes: 1, seconds: 20 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 7] VERIFICA —
+            Switch 5 (atteso on): {{ states('switch.test_pc_switch_virtuale_5') }} →
+            {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL — carico 5 non riattivato{% endif %} |
+            Switch 4 (atteso off — headroom insufficiente): {{ states('switch.test_pc_switch_virtuale_4') }} →
+            {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL — carico 4 riattivato erroneamente{% endif %}
+
+  ################################################################
+  # TEST 8 — Carico già spento al momento del distacco
+  # Setup: carico 5 spento manualmente prima che scatti il
+  # distacco. Potenza supera soglia immediata.
+  # Atteso: il sistema salta il carico 5 (già off, potenza 0)
+  # e spegne il carico 4.
+  ################################################################
+  - id: test_pc_08_carico_gia_spento
+    alias: "[TEST PC] Test 8 — Carico già spento al distacco"
+    mode: single
+    trigger: []
+    action:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 8] INIZIO — Carico 5 già spento. Supero soglia. Atteso: distacco su carico 4, non su 5."
+      # Spengo carico 5 manualmente (potenza 0, switch off)
+      - service: input_boolean.turn_off
+        target: { entity_id: input_boolean.test_pc_switch_5 }
+      - service: input_number.set_value
+        data: { value: 0 }
+        target: { entity_id: input_number.test_pc_potenza_5 }
+      # Carichi 1-4 a 1100W → totale 4400W > soglia imm 4000W
+      - service: input_number.set_value
+        data: { value: 1100 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+      - delay: { seconds: 25 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 8] VERIFICA —
+            Switch 4 (atteso off — distacco su carico a priorità più bassa disponibile):
+            {{ states('switch.test_pc_switch_virtuale_4') }} →
+            {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL{% endif %} |
+            Switch 5 (atteso off — già spento manualmente, suspended_power deve essere 0):
+            {{ states('switch.test_pc_switch_virtuale_5') }} →
+            {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %}
+
+  ################################################################
+  # TEST 9 — Sforamento durante la riattivazione
+  # Setup: carico 5 sospeso. Inizio riattivazione (abbasso potenza).
+  # Prima che scatti il timer, aumento improvvisamente la potenza
+  # di un carico non controllato (simulato con potenza carico 1).
+  # Atteso: il sistema blocca la riattivazione e torna in distacco.
+  ################################################################
+  - id: test_pc_09_sforamento_durante_riattivazione
+    alias: "[TEST PC] Test 9 — Sforamento durante riattivazione"
+    mode: single
+    trigger: []
+    action:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 9] INIZIO — Sforamento durante riattivazione. Carico 5 sospeso, abbasso, poi risupero soglia prima del timer."
+      # Abbasso sotto soglia (carico 5 sospeso da test precedente)
+      - service: input_number.set_value
+        data: { value: 500 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+      # Attendo 30s (metà del timer riattivazione da 1 min)
+      - delay: { seconds: 30 }
+      # Risupero soglia con carico 1 (simula picco non controllato)
+      - service: input_number.set_value
+        data: { value: 3500 }
+        target: { entity_id: input_number.test_pc_potenza_1 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 9] Picco inserito su carico 1 (3500W) — il coordinator deve bloccare la riattivazione."
+      # Attendo che il coordinator reagisca e verifico che la riattivazione non sia avvenuta
+      - delay: { minutes: 1, seconds: 10 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 9] VERIFICA —
+            Switch 5 (atteso off — riattivazione bloccata dal picco):
+            {{ states('switch.test_pc_switch_virtuale_5') }} →
+            {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — carico 5 riattivato nonostante il picco{% endif %}
+
+  ################################################################
+  # TEST 10 — Mix auto-restart, riaccensione manuale, riattivazione
+  # Setup:
+  #   - Carico 3: auto_restart=False (configurato nel componente)
+  #   - Carico 4: sospeso, poi riacceso manualmente durante attesa
+  #   - Carico 5: sospeso, auto_restart=True
+  # Supero soglia → carichi 3, 4, 5 sospesi.
+  # Riaccendo manualmente carico 4 durante l'attesa.
+  # Abbasso potenza → attendo riattivazione.
+  # Atteso:
+  #   - Carico 3: rimane off (auto_restart=False)
+  #   - Carico 4: suspended_power azzerata dal watchdog (riacceso manualmente)
+  #   - Carico 5: riattivato automaticamente dal coordinator
+  ################################################################
+  - id: test_pc_10_mix_riattivazione
+    alias: "[TEST PC] Test 10 — Mix auto-restart, manuale, automatico"
+    mode: single
+    trigger: []
+    action:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 10] INIZIO — Mix: carico 3 no-restart, carico 4 riacceso manuale, carico 5 auto-restart."
+      # Supero soglia immediata con carichi 1-5 a 900W → 4500W
+      - service: input_number.set_value
+        data: { value: 900 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+            - input_number.test_pc_potenza_5
+      # Attendo distacco a cascata su carichi 5, 4, 3
+      - delay: { seconds: 50 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 10] VERIFICA DISTACCO —
+            Carico 3 off: {% if is_state('switch.test_pc_switch_virtuale_3','off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 4 off: {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 off: {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %}
+      # Riaccendo manualmente carico 4
+      - service: input_boolean.turn_on
+        target: { entity_id: input_boolean.test_pc_switch_4 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 10] Riacceso manualmente carico 4. Attendo watchdog (15s) poi abbasso potenza."
+      - delay: { seconds: 15 }
+      # Abbasso potenza carichi attivi sotto soglia
+      - service: input_number.set_value
+        data: { value: 400 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_4
+      # Attendo riattivazione automatica
+      - delay: { minutes: 1, seconds: 20 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 10] VERIFICA FINALE —
+            Carico 3 (atteso off — auto_restart=False):
+            {{ states('switch.test_pc_switch_virtuale_3') }} →
+            {% if is_state('switch.test_pc_switch_virtuale_3','off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
+            Carico 4 (atteso on — riacceso manualmente, watchdog deve aver azzerato suspended):
+            {{ states('switch.test_pc_switch_virtuale_4') }} →
+            {% if is_state('switch.test_pc_switch_virtuale_4','on') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 (atteso on — auto_restart=True):
+            {{ states('switch.test_pc_switch_virtuale_5') }} →
+            {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL — non riattivato{% endif %}

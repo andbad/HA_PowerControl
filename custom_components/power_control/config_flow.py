@@ -346,9 +346,17 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
                 data=self._data,
             )
 
-        # Pre-select the user's browser language if supported, else "en"
-        raw_lang = (self.context.get("language") or "en").split("-")[0].lower()
-        default_lang = raw_lang if raw_lang in _SUPPORTED_LANGUAGES else "en"
+        # Pre-select language: prefer context language (set by frontend),
+        # fall back to HA system language, then "en"
+        ctx_lang = (self.context.get("language") or "").split("-")[0].lower()
+        sys_lang = (self.hass.config.language or "").split("-")[0].lower()
+        for candidate in (ctx_lang, sys_lang):
+            if candidate in _SUPPORTED_LANGUAGES:
+                default_lang = candidate
+                break
+        else:
+            default_lang = "en"
+        _LOGGER.debug("[%s] Dashboard lang — ctx=%r sys=%r → %s", DOMAIN, ctx_lang, sys_lang, default_lang)
 
         return self.async_show_form(
             step_id="dashboard",
