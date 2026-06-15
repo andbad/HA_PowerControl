@@ -214,8 +214,8 @@ script:
             - input_number.test_pc_potenza_3
             - input_number.test_pc_potenza_4
             - input_number.test_pc_potenza_5
-      # Attendo stabilizzazione coordinator
-      - delay: { seconds: 5 }
+      # Attendo stabilizzazione coordinator (almeno un ciclo da 10s)
+      - delay: { seconds: 15 }
       - service: system_log.write
         data:
           logger: homeassistant.components.pc_test
@@ -347,9 +347,9 @@ script:
         data:
           logger: homeassistant.components.pc_test
           level: debug
-          message: "[TEST 4] INIZIO — Carico 3 auto_restart=False. 5x1000W=5000W. Attendo distacco cascata."
+          message: "[TEST 4] INIZIO — Carico 3 auto_restart=False. 5x1400W=7000W. Attendo distacco cascata."
       - service: input_number.set_value
-        data: { value: 1000 }
+        data: { value: 1400 }
         target:
           entity_id:
             - input_number.test_pc_potenza_1
@@ -358,7 +358,7 @@ script:
             - input_number.test_pc_potenza_4
             - input_number.test_pc_potenza_5
       # Attendo distacco cascata su carichi 5, 4, 3 (10s delay + 3x5s tra stop + margine)
-      - delay: { seconds: 50 }
+      - delay: { seconds: 60 }
       - service: system_log.write
         data:
           logger: homeassistant.components.pc_test
@@ -440,7 +440,7 @@ script:
             - input_number.test_pc_potenza_4
             - input_number.test_pc_potenza_5
       # 10s delay + 5s tra stop + secondo stop + margine
-      - delay: { seconds: 40 }
+      - delay: { seconds: 50 }
       - service: system_log.write
         data:
           logger: homeassistant.components.pc_test
@@ -583,9 +583,9 @@ script:
         data:
           logger: homeassistant.components.pc_test
           level: debug
-          message: "[TEST 10] INIZIO — 5x900W=4500W. Cascata su carichi 5, 4, 3."
+          message: "[TEST 10] INIZIO — 5x1100W=5500W. Cascata su carichi 5, 4, 3."
       - service: input_number.set_value
-        data: { value: 900 }
+        data: { value: 1100 }
         target:
           entity_id:
             - input_number.test_pc_potenza_1
@@ -593,7 +593,7 @@ script:
             - input_number.test_pc_potenza_3
             - input_number.test_pc_potenza_4
             - input_number.test_pc_potenza_5
-      - delay: { seconds: 50 }
+      - delay: { seconds: 60 }
       - service: system_log.write
         data:
           logger: homeassistant.components.pc_test

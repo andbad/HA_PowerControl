@@ -404,11 +404,11 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         now = datetime.now()
 
         # ── Track how long we have been over each threshold ──────────────────
-        if current_power > threshold_immediate:
+        if current_power >= threshold_immediate:
             if self._over_immediate_since is None:
                 self._over_immediate_since = now
                 _LOGGER.debug(
-                    "[%s] Immediate threshold exceeded (%.0f > %.0f W) — timer started",
+                    "[%s] Immediate threshold exceeded (%.0f >= %.0f W) — timer started",
                     DOMAIN, current_power, threshold_immediate,
                 )
         else:
@@ -416,7 +416,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 _LOGGER.debug("[%s] Immediate threshold cleared — timer reset", DOMAIN)
             self._over_immediate_since = None
 
-        if current_power > threshold_delayed:
+        if current_power >= threshold_delayed:
             if self._over_delayed_since is None:
                 self._over_delayed_since = now
                 _LOGGER.debug(

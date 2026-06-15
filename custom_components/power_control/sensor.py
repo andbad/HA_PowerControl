@@ -164,10 +164,14 @@ class PowerControlSensor(
 
     @property
     def extra_state_attributes(self) -> dict:
-        """Expose timer state on the current_power sensor for dashboard use."""
+        """Expose timer state and per-load suspended power on the current_power sensor."""
         if self.entity_description.key != "current_power":
             return {}
-        return self.coordinator.timer_state
+        attrs = dict(self.coordinator.timer_state)
+        if self.coordinator.data is not None:
+            for i, load in enumerate(self.coordinator.data.loads):
+                attrs[f"load_{i}_suspended_w"] = load.suspended_power
+        return attrs
 
 
 # ── Per-load sensor entity ────────────────────────────────────────────────────
