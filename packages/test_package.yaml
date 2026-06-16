@@ -376,7 +376,7 @@ script:
             - input_number.test_pc_potenza_1
             - input_number.test_pc_potenza_2
       # Attendo riattivazione
-      - delay: { minutes: 1, seconds: 20 }
+      - delay: { minutes: 3 }
       - service: system_log.write
         data:
           logger: homeassistant.components.pc_test
@@ -467,7 +467,7 @@ script:
         data:
           logger: homeassistant.components.pc_test
           level: debug
-          message: "[TEST 7] INIZIO — Carichi 4+5 sospesi, abbasso 1-3 a 600W. Atteso: solo carico 5 riattivato."
+          message: "[TEST 7] INIZIO — Carichi 4+5 sospesi, abbasso 1-3 a 600W. Atteso: carico 4 riattivato (priorità maggiore), carico 5 off (headroom esaurito)."
       - service: input_number.set_value
         data: { value: 600 }
         target:
@@ -482,8 +482,8 @@ script:
           level: debug
           message: >
             [TEST 7] VERIFICA —
-            Carico 5 on (headroom sufficiente): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL{% endif %} |
-            Carico 4 off (headroom insufficiente): {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %}
+            Carico 4 on (priorità maggiore, headroom sufficiente): {% if is_state('switch.test_pc_switch_virtuale_4','on') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 off (headroom insufficiente dopo carico 4): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %}
 
   ################################################################
   # TEST 8 — Carico già spento al momento del distacco
@@ -583,9 +583,9 @@ script:
         data:
           logger: homeassistant.components.pc_test
           level: debug
-          message: "[TEST 10] INIZIO — 5x1100W=5500W. Cascata su carichi 5, 4, 3."
+          message: "[TEST 10] INIZIO — 5x1200W=6000W. Cascata su carichi 5, 4, 3."
       - service: input_number.set_value
-        data: { value: 1100 }
+        data: { value: 1200 }
         target:
           entity_id:
             - input_number.test_pc_potenza_1
@@ -655,6 +655,11 @@ automation:
       - service: script.turn_on
         target: { entity_id: script.test_pc_01_distacco_immediato }
       - wait_template: "{{ is_state('script.test_pc_01_distacco_immediato', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
         timeout: { minutes: 2 }
 
       - service: script.turn_on

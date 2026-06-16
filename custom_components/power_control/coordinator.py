@@ -565,7 +565,12 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         )
         now = datetime.now()
 
-        headroom_ok = (current_power + total_suspended) < threshold_delayed
+        # headroom_ok if at least one suspended load can be restored without exceeding threshold
+        headroom_ok = any(
+            (current_power + l.suspended_power) < threshold_delayed
+            for l in self._loads
+            if l.auto_restart and l.suspended_power > 0
+        )
 
         if headroom_ok:
             if self._under_threshold_since is None:
