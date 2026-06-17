@@ -8,7 +8,7 @@
 ![GitHub Release](https://img.shields.io/github/v/release/andbad/HA_PowerControl)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/andbad/HA_PowerControl)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 Home Assistant integration that prevents main power meter trips by automatically managing electrical loads based on power consumption.
 
