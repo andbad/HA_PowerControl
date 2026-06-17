@@ -593,7 +593,7 @@ script:
             - input_number.test_pc_potenza_3
             - input_number.test_pc_potenza_4
             - input_number.test_pc_potenza_5
-      - delay: { seconds: 60 }
+      - delay: { seconds: 80 }
       - service: system_log.write
         data:
           logger: homeassistant.components.pc_test
@@ -644,7 +644,7 @@ script:
           level: debug
           message: "[TEST 11] INIZIO — Disabilito PC, porto 5x1000W=5000W. Nessun distacco atteso."
       - service: switch.turn_off
-        target: { entity_id: switch.power_control_enabled }
+        target: { entity_id: switch.power_control_attivo }
       - delay: { seconds: 5 }
       - service: input_number.set_value
         data: { value: 1000 }
@@ -666,7 +666,7 @@ script:
             Carico 5 on (PC disabilitato, nessun distacco): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL — distaccato con PC disabilitato{% endif %}
       # Riabilito PC
       - service: switch.turn_on
-        target: { entity_id: switch.power_control_enabled }
+        target: { entity_id: switch.power_control_attivo }
 
   ################################################################
   # TEST 12 — force_stop_load service
@@ -684,7 +684,7 @@ script:
           message: "[TEST 12] INIZIO — Potenza sotto soglia, forzo distacco carico 5."
       - service: power_control.force_stop_load
         data: { load_index: 4 }
-      - delay: { seconds: 5 }
+      - delay: { seconds: 10 }
       - service: system_log.write
         data:
           logger: homeassistant.components.pc_test
