@@ -629,6 +629,240 @@ script:
             Carico 4 on (manuale + watchdog): {% if is_state('switch.test_pc_switch_virtuale_4','on') %}PASS{% else %}FAIL{% endif %} |
             Carico 5 on (auto-restart): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL{% endif %}
 
+  ################################################################
+  # TEST 11 — Power Control disabilitato
+  # Disabilita PC, porta potenza sopra soglia imm, verifica che
+  # nessun carico venga distaccato.
+  ################################################################
+  test_pc_11_pc_disabilitato:
+    alias: "[TEST PC] Test 11 — PC disabilitato"
+    mode: single
+    sequence:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 11] INIZIO — Disabilito PC, porto 5x1000W=5000W. Nessun distacco atteso."
+      - service: switch.turn_off
+        target: { entity_id: switch.power_control_enabled }
+      - delay: { seconds: 5 }
+      - service: input_number.set_value
+        data: { value: 1000 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+            - input_number.test_pc_potenza_5
+      # Attendo più del delay immediato (10s) per verificare che non distacchi
+      - delay: { seconds: 30 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 11] VERIFICA —
+            Carico 5 on (PC disabilitato, nessun distacco): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL — distaccato con PC disabilitato{% endif %}
+      # Riabilito PC
+      - service: switch.turn_on
+        target: { entity_id: switch.power_control_enabled }
+
+  ################################################################
+  # TEST 12 — force_stop_load service
+  # PC attivo, potenza sotto soglia. Forza distacco carico 5.
+  # Verifica: switch off e suspended_power > 0.
+  ################################################################
+  test_pc_12_force_stop:
+    alias: "[TEST PC] Test 12 — force_stop_load"
+    mode: single
+    sequence:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 12] INIZIO — Potenza sotto soglia, forzo distacco carico 5."
+      - service: power_control.force_stop_load
+        data: { load_index: 4 }
+      - delay: { seconds: 5 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 12] VERIFICA —
+            Carico 5 off: {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %} |
+            Suspended > 0: {% if state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) > 0 %}PASS{% else %}FAIL{% endif %}
+
+  ################################################################
+  # TEST 13 — force_start_load service
+  # Carico 5 sospeso (da test 12). Forza riattivazione.
+  # Verifica: switch on e suspended = 0.
+  ################################################################
+  test_pc_13_force_start:
+    alias: "[TEST PC] Test 13 — force_start_load"
+    mode: single
+    sequence:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 13] INIZIO — Carico 5 sospeso, forzo riattivazione."
+      - service: power_control.force_start_load
+        data: { load_index: 4 }
+      - delay: { seconds: 5 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 13] VERIFICA —
+            Carico 5 on: {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL{% endif %} |
+            Suspended = 0: {% if state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
+
+  ################################################################
+  # TEST 14 — reset_load service
+  # Carico 5 forzato off (da force_stop). Chiama reset_load.
+  # Verifica: switch rimane off, suspended = 0.
+  ################################################################
+  test_pc_14_reset_load:
+    alias: "[TEST PC] Test 14 — reset_load"
+    mode: single
+    sequence:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 14] INIZIO — Forzo stop carico 5, poi reset_load. Suspended deve azzerarsi."
+      - service: power_control.force_stop_load
+        data: { load_index: 4 }
+      - delay: { seconds: 5 }
+      - service: power_control.reset_load
+        data: { load_index: 4 }
+      - delay: { seconds: 5 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 14] VERIFICA —
+            Carico 5 off (switch invariato): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %} |
+            Suspended = 0: {% if state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
+
+  ################################################################
+  # TEST 15 — Carico unavailable
+  # Rende unavailable il sensore carico 5, poi supera soglia.
+  # Verifica: carico 4 distaccato (skip carico 5 unavailable).
+  ################################################################
+  test_pc_15_unavailable:
+    alias: "[TEST PC] Test 15 — Carico unavailable"
+    mode: single
+    sequence:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 15] INIZIO — Spengo switch 5 (simula unavailable), 4x1200W=4800W."
+      - service: switch.turn_off
+        target: { entity_id: switch.test_pc_switch_virtuale_5 }
+      - service: input_number.set_value
+        data: { value: 1200 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+      - delay: { seconds: 30 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 15] VERIFICA —
+            Carico 4 off (distaccato normalmente): {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 off e suspended=0 (skippato, già spento): {% if is_state('switch.test_pc_switch_virtuale_5','off') and state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
+
+  ################################################################
+  # TEST 16 — Doppio picco (no restart prematuro)
+  # Carico 5 sospeso. Potenza scende, poi risale sopra soglia,
+  # poi riscende. Il timer deve ripartire da zero al secondo calo.
+  # Verifica a 30s dal secondo calo: carico 5 ancora off.
+  ################################################################
+  test_pc_16_doppio_picco:
+    alias: "[TEST PC] Test 16 — Doppio picco"
+    mode: single
+    sequence:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 16] INIZIO — Distacco carico 5, poi doppio picco. Riattivazione non deve scattare prima."
+      - service: power_control.force_stop_load
+        data: { load_index: 4 }
+      - delay: { seconds: 5 }
+      # Scendo sotto soglia — timer riattivazione parte
+      - service: input_number.set_value
+        data: { value: 600 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+      - delay: { seconds: 25 }
+      # Picco: risalgo sopra soglia — timer deve resetarsi
+      - service: input_number.set_value
+        data: { value: 900 }
+        target: { entity_id: input_number.test_pc_potenza_1 }
+      - delay: { seconds: 10 }
+      # Riscendo sotto soglia — timer riparte da zero
+      - service: input_number.set_value
+        data: { value: 600 }
+        target: { entity_id: input_number.test_pc_potenza_1 }
+      - delay: { seconds: 30 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 16] VERIFICA —
+            Carico 5 off a 30s dal secondo calo (timer non ancora scaduto): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — riattivato prematuramente{% endif %}
+
+  ################################################################
+  # TEST 17 — Riattivazione bloccata da potenza alta
+  # Carico 5 sospeso (600W). Potenza attiva = 2800W.
+  # 2800 + 600 = 3400 > 3300 → nessuna riattivazione.
+  ################################################################
+  test_pc_17_no_restart_potenza_alta:
+    alias: "[TEST PC] Test 17 — Riattivazione bloccata potenza alta"
+    mode: single
+    sequence:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 17] INIZIO — Carico 5 sospeso 600W, attivi 1-4 a 700W (2800W). Nessuna riattivazione attesa."
+      - service: power_control.force_stop_load
+        data: { load_index: 4 }
+      - service: input_number.set_value
+        data: { value: 700 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+      # Attendo più del tempo_start (1 min)
+      - delay: { minutes: 1, seconds: 20 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 17] VERIFICA —
+            Carico 5 off (headroom insufficiente, nessuna riattivazione): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %}
+
 ################################################################
 # AUTOMAZIONE — esegue tutti gli script in sequenza
 # Ogni script viene atteso fino al completamento prima di
@@ -731,6 +965,71 @@ automation:
         target: { entity_id: script.test_pc_10_mix_riattivazione }
       - wait_template: "{{ is_state('script.test_pc_10_mix_riattivazione', 'off') }}"
         timeout: { minutes: 5 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_11_pc_disabilitato }
+      - wait_template: "{{ is_state('script.test_pc_11_pc_disabilitato', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_12_force_stop }
+      - wait_template: "{{ is_state('script.test_pc_12_force_stop', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_13_force_start }
+      - wait_template: "{{ is_state('script.test_pc_13_force_start', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_14_reset_load }
+      - wait_template: "{{ is_state('script.test_pc_14_reset_load', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_15_unavailable }
+      - wait_template: "{{ is_state('script.test_pc_15_unavailable', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_16_doppio_picco }
+      - wait_template: "{{ is_state('script.test_pc_16_doppio_picco', 'off') }}"
+        timeout: { minutes: 3 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_17_no_restart_potenza_alta }
+      - wait_template: "{{ is_state('script.test_pc_17_no_restart_potenza_alta', 'off') }}"
+        timeout: { minutes: 3 }
 
       - service: system_log.write
         data:
