@@ -365,6 +365,20 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 self._loads[index].name,
             )
 
+    def publish_current_state(self) -> None:
+        """Push current in-memory state to listeners without re-running
+        _async_update_data (which would re-read switch states from HA and
+        could race with a state change that hasn't propagated yet)."""
+        total_suspended = sum(l.suspended_power for l in self._loads)
+        self.async_set_updated_data(
+            PowerControlData(
+                current_power=self._read_global_power(),
+                total_suspended_power=total_suspended,
+                loads=list(self._loads),
+                enabled=self.enabled,
+            )
+        )
+
     def rebuild_loads(self) -> None:
         """Rebuild load list after an options flow update.
 

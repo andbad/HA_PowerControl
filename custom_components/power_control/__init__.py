@@ -113,19 +113,14 @@ def _register_services(hass: HomeAssistant) -> None:
         await hass.services.async_call(
             "switch", "turn_off", {"entity_id": load.switch}, blocking=True
         )
-        load.switch_state = "off"
         load.suspended_power = max(power, 1.0)   # at least 1 W so it's marked suspended
-        _LOGGER.info(
-            "[%s] force_stop_load: load %d suspended_power set to %.1f W (power read: %.1f W)",
-            DOMAIN, index, load.suspended_power, power,
-        )
         notify_entity: str = coord.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
         await async_notify(
             hass, notify_entity,
             title="Distacco manuale",
             message=f"{load.name} distaccato manualmente.",
         )
-        await coord.async_request_refresh()
+        coord.publish_current_state()
         _LOGGER.info("[%s] Service: force-stopped load %d '%s'", DOMAIN, index, load.name)
 
     async def handle_force_start_load(call: ServiceCall) -> None:
@@ -152,7 +147,7 @@ def _register_services(hass: HomeAssistant) -> None:
             title="Riattivazione manuale",
             message=f"{load.name} riattivato manualmente.",
         )
-        await coord.async_request_refresh()
+        coord.publish_current_state()
         _LOGGER.info("[%s] Service: force-started load %d '%s'", DOMAIN, index, load.name)
 
 
