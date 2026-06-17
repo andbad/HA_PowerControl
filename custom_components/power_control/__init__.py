@@ -110,11 +110,11 @@ def _register_services(hass: HomeAssistant) -> None:
                 power = float(ps.state)
             except ValueError:
                 pass
-        load.suspended_power = max(power, 1.0)   # at least 1 W so it's marked suspended
         await hass.services.async_call(
             "switch", "turn_off", {"entity_id": load.switch}, blocking=True
         )
-        load.switch_state = "off"  # avoid stale state in watchdog before next refresh
+        load.switch_state = "off"
+        load.suspended_power = max(power, 1.0)   # at least 1 W so it's marked suspended
         notify_entity: str = coord.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
         await async_notify(
             hass, notify_entity,
