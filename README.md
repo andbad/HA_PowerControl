@@ -1,3 +1,6 @@
+# DEPRECATO
+Lascio come archivio ma il package è sostituito dall'integrazione nel branch main.
+
 # HA_PowerControl
 Il package seguente, unito allo script python "update_entities.py" mira ad evitare il distacco del contatore a causa della troppa potenza assorbita dai vari elettrodomestici (carichi).
 Requisito hardware fondamentale è la presenza di switch sui carichi da controllare e di un sensore che misura la potenza dei singoli carichi. 
