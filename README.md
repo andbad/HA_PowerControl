@@ -89,6 +89,12 @@ Choose how many loads to manage (1–20). Loads are sorted by priority: **Load 1
 
 ---
 
+### Migration from an Old YAML Package
+During the installation process, the integration detects whether the previous YAML package is installed. If so, it asks if you want to import the configuration (thresholds, delays, sensors, switches, etc.). At the end of the process, it also disables the old package to avoid conflicts with the new integration.
+The YAML file and dashboard must be deleted manually.
+
+---
+
 ## Created Entities
 
 All entities are grouped under a single **Power Control** device.
