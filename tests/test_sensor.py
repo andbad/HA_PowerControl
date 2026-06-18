@@ -92,6 +92,8 @@ class TestPerLoadSensors:
         assert state is not None
         attrs = state.attributes
         assert "load_index" in attrs
+        assert "name" in attrs
+        assert "switch" in attrs
         assert "current_power_w" in attrs
         assert "switch_state" in attrs
         assert "auto_restart" in attrs

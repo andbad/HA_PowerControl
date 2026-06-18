@@ -222,6 +222,8 @@ class PowerControlLoadSensor(
         load = loads[self._load_index]
         return {
             "load_index": self._load_index,
+            "name": load.name,
+            "switch": load.switch,
             "current_power_w": load.current_power,
             "switch_state": load.switch_state,
             "auto_restart": load.auto_restart,
