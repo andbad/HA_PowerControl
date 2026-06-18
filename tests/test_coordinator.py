@@ -133,6 +133,22 @@ class TestBuildLoads:
         coord.rebuild_loads()
         assert len(coord.loads) == 1
 
+    def test_rebuild_preserves_suspended_power_after_reorder(self, mock_hass, mock_config_entry):
+        """move_load swaps two entries in config; suspended_power must follow
+        the load (by switch), not stay attached to the old index."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.loads[0].suspended_power = 1800.0  # Lavatrice suspended
+        loads_cfg = list(mock_config_entry.data["loads"])
+        loads_cfg[0], loads_cfg[1] = loads_cfg[1], loads_cfg[0]  # swap index 0/1
+        mock_config_entry.data = {**mock_config_entry.data, "loads": loads_cfg}
+        coord.rebuild_loads()
+        names = [l.name for l in coord.loads]
+        assert names == ["Lavastoviglie", "Lavatrice", "Condizionatore"]
+        lavatrice = next(l for l in coord.loads if l.name == "Lavatrice")
+        lavastoviglie = next(l for l in coord.loads if l.name == "Lavastoviglie")
+        assert lavatrice.suspended_power == 1800.0
+        assert lavastoviglie.suspended_power == 0.0
+
 
 # ── Stop logic ────────────────────────────────────────────────────────────────
 

@@ -380,15 +380,21 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         )
 
     def rebuild_loads(self) -> None:
-        """Rebuild load list after an options flow update.
+        """Rebuild load list after an options flow update or reorder.
 
-        Preserves suspended_power for loads that still exist (matched by index).
+        Preserves suspended_power and keep_off for loads that still exist,
+        matched by switch entity_id (not by index) so that reordering loads
+        (move_load) does not lose or scramble their suspended state.
         """
-        old_suspended = [l.suspended_power for l in self._loads]
+        old_state = {
+            l.switch: (l.suspended_power, l.keep_off)
+            for l in self._loads
+            if l.switch
+        }
         self._loads = self._build_loads()
-        for i, load in enumerate(self._loads):
-            if i < len(old_suspended):
-                load.suspended_power = old_suspended[i]
+        for load in self._loads:
+            if load.switch in old_state:
+                load.suspended_power, load.keep_off = old_state[load.switch]
         _LOGGER.debug("[%s] Load list rebuilt (%d loads)", DOMAIN, len(self._loads))
 
     # ──────────────────────────────────────────────────────────────────────────

@@ -331,7 +331,7 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             {
                 "type": "attribute",
                 "entity": "sensor.power_control_soglia_distacco_immediato",
-                "attribute": "unit_of_measurement",  # placeholder — real value injected via secondary_info workaround below
+                "attribute": "_pc_blank",  # non-existent attribute -> empty value, only suffix shown
                 "name": _t(lang, "delay_immediate_label"),
                 "icon": "mdi:timer-outline",
                 "secondary_info": "none",
@@ -340,7 +340,7 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             {
                 "type": "attribute",
                 "entity": "sensor.power_control_soglia_distacco_ritardato",
-                "attribute": "unit_of_measurement",
+                "attribute": "_pc_blank",
                 "name": _t(lang, "delay_delayed_label"),
                 "icon": "mdi:timer-sand",
                 "secondary_info": "none",
@@ -349,7 +349,7 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             {
                 "type": "attribute",
                 "entity": "sensor.power_control_soglia_distacco_immediato",
-                "attribute": "unit_of_measurement",
+                "attribute": "_pc_blank",
                 "name": _t(lang, "wait_stops_label"),
                 "icon": "mdi:pause",
                 "secondary_info": "none",
@@ -358,7 +358,7 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             {
                 "type": "attribute",
                 "entity": "sensor.power_control_soglia_distacco_ritardato",
-                "attribute": "unit_of_measurement",
+                "attribute": "_pc_blank",
                 "name": _t(lang, "wait_before_start_label"),
                 "icon": "mdi:clock-start",
                 "secondary_info": "none",
@@ -367,7 +367,7 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             {
                 "type": "attribute",
                 "entity": "sensor.power_control_soglia_distacco_ritardato",
-                "attribute": "unit_of_measurement",
+                "attribute": "_pc_blank",
                 "name": _t(lang, "wait_starts_label"),
                 "icon": "mdi:play-circle-outline",
                 "secondary_info": "none",
@@ -378,7 +378,7 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             {
                 "type": "attribute",
                 "entity": "sensor.power_control_potenza_attuale",
-                "attribute": "unit_of_measurement",
+                "attribute": "_pc_blank",
                 "name": _t(lang, "notify_label"),
                 "icon": "mdi:bell-outline",
                 "secondary_info": "none",
