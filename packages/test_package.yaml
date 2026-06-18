@@ -135,34 +135,36 @@ template:
         {% else %}0{% endif %}
 
     # ── Risoluzione priorità → switch (indipendente dal riordino carichi) ──
-    # Ogni sensore "load_*_potenza_sospesa" di power_control espone l'attributo
-    # load_index (0=priorità massima) e switch (entity_id reale del carico).
+    # Il sensore aggregato power_control_potenza_attuale espone load_{i}_switch
+    # (entity_id reale del carico in posizione i, 0=priorità massima).
     # Questi sensori risolvono "qual è lo switch del carico in posizione N"
     # così i test funzionano qualunque sia l'ordine impostato in dashboard.
     - name: test_pc_priority_1_switch
-      state: >
-        {% set m = states.sensor | selectattr('attributes.load_index', 'defined') | selectattr('attributes.load_index', 'eq', 0) | list %}
-        {{ m[0].attributes.switch if m else 'none' }}
+      state: "{{ state_attr('sensor.power_control_potenza_attuale','load_0_switch') or 'none' }}"
 
     - name: test_pc_priority_2_switch
-      state: >
-        {% set m = states.sensor | selectattr('attributes.load_index', 'defined') | selectattr('attributes.load_index', 'eq', 1) | list %}
-        {{ m[0].attributes.switch if m else 'none' }}
+      state: "{{ state_attr('sensor.power_control_potenza_attuale','load_1_switch') or 'none' }}"
 
     - name: test_pc_priority_3_switch
-      state: >
-        {% set m = states.sensor | selectattr('attributes.load_index', 'defined') | selectattr('attributes.load_index', 'eq', 2) | list %}
-        {{ m[0].attributes.switch if m else 'none' }}
+      state: "{{ state_attr('sensor.power_control_potenza_attuale','load_2_switch') or 'none' }}"
 
     - name: test_pc_priority_4_switch
-      state: >
-        {% set m = states.sensor | selectattr('attributes.load_index', 'defined') | selectattr('attributes.load_index', 'eq', 3) | list %}
-        {{ m[0].attributes.switch if m else 'none' }}
+      state: "{{ state_attr('sensor.power_control_potenza_attuale','load_3_switch') or 'none' }}"
 
     - name: test_pc_priority_5_switch
+      state: "{{ state_attr('sensor.power_control_potenza_attuale','load_4_switch') or 'none' }}"
+
+    # Risolve lo switch del carico configurato con auto_restart=False
+    # (usato nei TEST 4/7/10), indipendentemente da priorità o nome.
+    - name: test_pc_no_autorestart_switch
       state: >
-        {% set m = states.sensor | selectattr('attributes.load_index', 'defined') | selectattr('attributes.load_index', 'eq', 4) | list %}
-        {{ m[0].attributes.switch if m else 'none' }}
+        {% set ns = namespace(found='none') %}
+        {% for i in range(0, 5) %}
+          {% if state_attr('sensor.power_control_potenza_attuale', 'load_' ~ i ~ '_auto_restart') == false %}
+            {% set ns.found = state_attr('sensor.power_control_potenza_attuale', 'load_' ~ i ~ '_switch') or 'none' %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.found }}
 
   - switch:
     - name: test_pc_switch_virtuale_1
@@ -395,7 +397,7 @@ script:
           level: debug
           message: >
             [TEST 4] VERIFICA DISTACCO —
-            Carico 3 off: {% if is_state(states('sensor.test_pc_priority_3_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 3 off: {% if is_state(states('sensor.test_pc_no_autorestart_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
             Carico 4 off: {% if is_state(states('sensor.test_pc_priority_4_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
             Carico 5 off: {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL{% endif %}
       # Abbasso sotto soglia
@@ -413,7 +415,7 @@ script:
           level: debug
           message: >
             [TEST 4] VERIFICA RIATTIVAZIONE —
-            Carico 3 off (auto_restart=False): {% if is_state(states('sensor.test_pc_priority_3_switch'),'off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
+            Carico 3 off (auto_restart=False): {% if is_state(states('sensor.test_pc_no_autorestart_switch'),'off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
             Carico 4 on: {% if is_state(states('sensor.test_pc_priority_4_switch'),'on') %}PASS{% else %}FAIL{% endif %} |
             Carico 5 on: {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL{% endif %}
 

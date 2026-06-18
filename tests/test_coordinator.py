@@ -362,6 +362,37 @@ class TestStartLogic:
         assert call_args.args[2]["entity_id"] == "switch.lavastoviglie"
 
     @pytest.mark.asyncio
+    async def test_restore_after_reorder_follows_load_not_position(
+        self, mock_hass, mock_config_entry
+    ):
+        """After move_load swaps two entries, restore must target the
+        physically-correct switch for each load's new priority position."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        # Suspend Lavastoviglie (index 1) and Condizionatore (index 2, auto_restart=False)
+        coord.loads[1].suspended_power = 500.0
+        coord.loads[2].suspended_power = 1500.0
+
+        # Swap index 0 (Lavatrice) and index 1 (Lavastoviglie) — simulates
+        # the user moving a load up/down in the dashboard.
+        loads_cfg = list(mock_config_entry.data["loads"])
+        loads_cfg[0], loads_cfg[1] = loads_cfg[1], loads_cfg[0]
+        mock_config_entry.data = {**mock_config_entry.data, "loads": loads_cfg}
+        coord.rebuild_loads()
+
+        # New order: index0=Lavastoviglie(suspended 500), index1=Lavatrice(0),
+        # index2=Condizionatore(suspended 1500, auto_restart=False)
+        assert [l.name for l in coord.loads] == ["Lavastoviglie", "Lavatrice", "Condizionatore"]
+        assert coord.loads[0].suspended_power == 500.0
+        assert coord.loads[2].suspended_power == 1500.0
+
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+        await coord.async_check_and_start(current_power=500.0)
+
+        # Highest priority suspended load is now Lavastoviglie (index 0)
+        call_args = mock_hass.services.async_call.call_args
+        assert call_args.args[2]["entity_id"] == "switch.lavastoviglie"
+
+    @pytest.mark.asyncio
     async def test_timer_resets_after_restore(self, mock_hass, mock_config_entry):
         coord = make_coordinator(mock_hass, mock_config_entry)
         coord.loads[0].suspended_power = 800.0

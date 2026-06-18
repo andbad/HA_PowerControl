@@ -171,6 +171,8 @@ class PowerControlSensor(
         if self.coordinator.data is not None:
             for i, load in enumerate(self.coordinator.data.loads):
                 attrs[f"load_{i}_suspended_w"] = load.suspended_power
+                attrs[f"load_{i}_switch"] = load.switch
+                attrs[f"load_{i}_auto_restart"] = load.auto_restart
         return attrs
 
 
