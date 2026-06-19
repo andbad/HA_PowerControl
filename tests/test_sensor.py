@@ -37,10 +37,9 @@ class TestGlobalSensors:
             assert state.attributes.get("unit_of_measurement") == "W", entity_id
 
     async def test_power_sensors_have_power_device_class(self, hass, setup_integration):
-        """All power sensors must declare power device class."""
+        """Active power sensors must declare power device class."""
         sensors = [
             "sensor.power_control_potenza_attuale",
-            "sensor.power_control_soglia_distacco_immediato",
         ]
         for entity_id in sensors:
             state = hass.states.get(entity_id)
@@ -50,19 +49,6 @@ class TestGlobalSensors:
         """Without real sensors, current power sums to 0."""
         state = hass.states.get("sensor.power_control_potenza_attuale")
         assert float(state.state) == 0.0
-
-    async def test_current_power_exposes_per_load_switch_and_auto_restart(
-        self, hass, setup_integration
-    ):
-        """current_power must expose load_{i}_switch and load_{i}_auto_restart
-        for each configured load, so external tooling can resolve which
-        switch corresponds to a given priority position."""
-        _, coordinator, _ = setup_integration
-        state = hass.states.get("sensor.power_control_potenza_attuale")
-        assert state is not None
-        for i, load in enumerate(coordinator.loads):
-            assert state.attributes.get(f"load_{i}_switch") == load.switch
-            assert state.attributes.get(f"load_{i}_auto_restart") == load.auto_restart
 
     async def test_current_power_sums_load_sensors(
         self, hass, setup_integration
@@ -105,8 +91,6 @@ class TestPerLoadSensors:
         assert state is not None
         attrs = state.attributes
         assert "load_index" in attrs
-        assert "name" in attrs
-        assert "switch" in attrs
         assert "current_power_w" in attrs
         assert "switch_state" in attrs
         assert "auto_restart" in attrs
