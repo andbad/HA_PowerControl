@@ -58,39 +58,7 @@ force_start_load:
           max: 19
           mode: box
 
-set_thresholds:
-  name: Imposta soglie dinamiche
-  description: >-
-    Sovrascrive le soglie di intervento a runtime, senza modificare la
-    configurazione persistente. Al riavvio di HA i valori tornano a quelli
-    configurati. Omettere un campo per non modificare quella soglia.
-    Per resettare entrambe le soglie ai valori di configurazione, chiamare
-    il service senza parametri.
-  fields:
-    immediate_threshold:
-      name: Soglia immediata (W)
-      description: >-
-        Nuova soglia di distacco immediato in Watt.
-        Omettere per non modificare.
-      required: false
-      selector:
-        number:
-          min: 0
-          max: 15000
-          unit_of_measurement: W
-          mode: box
-    delayed_threshold:
-      name: Soglia ritardata (W)
-      description: >-
-        Nuova soglia di distacco ritardato in Watt.
-        Omettere per non modificare.
-      required: false
-      selector:
-        number:
-          min: 0
-          max: 15000
-          unit_of_measurement: W
-          mode: box
+move_load:
   name: Sposta carico
   description: >-
     Sposta un carico su o giù nella lista delle priorità,
@@ -114,3 +82,31 @@ set_thresholds:
           options:
             - up
             - down
+
+set_thresholds:
+  name: Set dynamic thresholds
+  description: >-
+    Overrides the intervention thresholds at runtime without changing the
+    persistent configuration. Overrides are lost on HA restart.
+    Call with no fields to reset both thresholds to the configured values.
+  fields:
+    immediate_threshold:
+      name: Immediate threshold (W)
+      description: New immediate shedding threshold in Watts. Omit to leave unchanged.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 15000
+          unit_of_measurement: W
+          mode: box
+    delayed_threshold:
+      name: Delayed threshold (W)
+      description: New delayed shedding threshold in Watts. Omit to leave unchanged.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 15000
+          unit_of_measurement: W
+          mode: box
