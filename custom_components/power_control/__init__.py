@@ -24,6 +24,13 @@ _LOAD_INDEX_SCHEMA = vol.Schema(
     {vol.Required("load_index"): vol.All(int, vol.Range(min=0, max=19))}
 )
 
+_SET_THRESHOLDS_SCHEMA = vol.Schema(
+    {
+        vol.Optional("immediate_threshold"): vol.All(vol.Coerce(float), vol.Range(min=0)),
+        vol.Optional("delayed_threshold"): vol.All(vol.Coerce(float), vol.Range(min=0)),
+    }
+)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Power Control from a config entry."""
@@ -177,12 +184,21 @@ def _register_services(hass: HomeAssistant) -> None:
         await async_rebuild_dashboard(hass, coord.config_entry)
         _LOGGER.info("[%s] Service: moved load %d %s (now at %d)", DOMAIN, index, direction, swap)
 
+    async def handle_set_thresholds(call: ServiceCall) -> None:
+        coord = _get_coordinator(call)
+        if not coord:
+            return
+        imm = call.data.get("immediate_threshold")
+        dly = call.data.get("delayed_threshold")
+        coord.set_thresholds(imm, dly)
+
     hass.services.async_register(DOMAIN, "enable", handle_enable)
     hass.services.async_register(DOMAIN, "disable", handle_disable)
     hass.services.async_register(DOMAIN, "reset_load", handle_reset_load, schema=_LOAD_INDEX_SCHEMA)
     hass.services.async_register(DOMAIN, "force_stop_load", handle_force_stop_load, schema=_LOAD_INDEX_SCHEMA)
     hass.services.async_register(DOMAIN, "force_start_load", handle_force_start_load, schema=_LOAD_INDEX_SCHEMA)
     hass.services.async_register(DOMAIN, "move_load", handle_move_load, schema=_MOVE_LOAD_SCHEMA)
+    hass.services.async_register(DOMAIN, "set_thresholds", handle_set_thresholds, schema=_SET_THRESHOLDS_SCHEMA)
 
     _LOGGER.debug("[%s] Services registered", DOMAIN)
 
@@ -208,7 +224,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Remove services only when last entry is unloaded
     if not hass.data.get(DOMAIN):
-        for service in ["enable", "disable", "reset_load", "force_stop_load", "force_start_load", "move_load"]:
+        for service in ["enable", "disable", "reset_load", "force_stop_load", "force_start_load", "move_load", "set_thresholds"]:
             hass.services.async_remove(DOMAIN, service)
         _LOGGER.debug("[%s] Services unregistered", DOMAIN)
         # Remove dashboard (only once, when the last entry is gone)

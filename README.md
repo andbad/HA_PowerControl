@@ -133,6 +133,68 @@ The `load_index` corresponds to the position of the load in the wizard (0 = firs
 
 ---
 
+## `set_thresholds` service
+
+The `power_control.set_thresholds` service lets you override the intervention thresholds at runtime without changing the persistent configuration. This is useful when you want to adapt thresholds dynamically based on the active power source (grid, solar, solar EPS mode, time of day, etc.).
+
+**Fields**
+
+| Field | Required | Description |
+|---|---|---|
+| `immediate_threshold` | no | Immediate shedding threshold in Watts |
+| `delayed_threshold` | no | Delayed shedding threshold in Watts |
+
+Both fields are optional. Omit one to leave that threshold unchanged. Call the service with no fields to reset both thresholds to the values set in the configuration.
+
+> **Note:** overrides are stored in memory only. They are lost when Home Assistant restarts.
+
+**Example — switch to solar profile:**
+```yaml
+service: power_control.set_thresholds
+data:
+  immediate_threshold: 5000
+  delayed_threshold: 4500
+` `` 
+
+**Example — reset to configured values:**
+` ``yaml
+service: power_control.set_thresholds
+data: {}
+` ``
+
+**Example — full automation based on power source:**
+` ``yaml
+automation:
+  - alias: "PowerControl — adapt thresholds to power source"
+    trigger:
+      - platform: state
+        entity_id: sensor.power_source
+    action:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: sensor.power_source
+                state: "solar"
+            sequence:
+              - service: power_control.set_thresholds
+                data:
+                  immediate_threshold: 5000
+                  delayed_threshold: 4500
+          - conditions:
+              - condition: state
+                entity_id: sensor.power_source
+                state: "solar_eps"
+            sequence:
+              - service: power_control.set_thresholds
+                data:
+                  immediate_threshold: 2000
+                  delayed_threshold: 1800
+        default:
+          - service: power_control.set_thresholds
+            data: {}
+` ``
+---
+
 ## Dashboard
 
 The Lovelace dashboard is automatically created at the end of the configuration wizard if the **"Create dashboard"** option is enabled. No manual file importing is required.

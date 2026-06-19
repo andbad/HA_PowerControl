@@ -104,6 +104,9 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         self._last_stop_at: datetime | None = None
         self._last_start_at: datetime | None = None
 
+        # Runtime threshold overrides (set via service, None = use config)
+        self._threshold_override: tuple[float, float] | None = None
+
     # ──────────────────────────────────────────────────────────────────────────
     # Setup helpers
     # ──────────────────────────────────────────────────────────────────────────
@@ -301,15 +304,33 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
     def thresholds(self) -> tuple[float, float]:
         """Return (immediate_W, delayed_W).
 
-        Options flow saves into config_entry.options; fall back to data for
-        backwards compatibility and initial setup.
+        If a runtime override is set via set_thresholds service, use that.
+        Otherwise fall back to options flow, then config entry data.
         """
+        if self._threshold_override is not None:
+            return self._threshold_override
         opts = self.config_entry.options
         source = opts if (opts is not None and len(opts) > 0) else self.config_entry.data
         return (
             float(source.get(CONF_THRESHOLD_IMMEDIATE, 3000)),
             float(source.get(CONF_THRESHOLD_DELAYED, 2700)),
         )
+
+    def set_thresholds(self, immediate_w: float | None, delayed_w: float | None) -> None:
+        """Override thresholds at runtime. Pass None to both to reset to config values."""
+        if immediate_w is None and delayed_w is None:
+            self._threshold_override = None
+            _LOGGER.info("[%s] Threshold override cleared — using config values", DOMAIN)
+        else:
+            imm, dly = self.thresholds  # current effective values as fallback
+            self._threshold_override = (
+                float(immediate_w) if immediate_w is not None else imm,
+                float(delayed_w) if delayed_w is not None else dly,
+            )
+            _LOGGER.info(
+                "[%s] Threshold override set: immediate=%.0f W, delayed=%.0f W",
+                DOMAIN, self._threshold_override[0], self._threshold_override[1],
+            )
 
     def _get_conf(self, key: str, default):
         """Read config key from options first, then data (options flow override support)."""
@@ -380,21 +401,15 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         )
 
     def rebuild_loads(self) -> None:
-        """Rebuild load list after an options flow update or reorder.
+        """Rebuild load list after an options flow update.
 
-        Preserves suspended_power and keep_off for loads that still exist,
-        matched by switch entity_id (not by index) so that reordering loads
-        (move_load) does not lose or scramble their suspended state.
+        Preserves suspended_power for loads that still exist (matched by index).
         """
-        old_state = {
-            l.switch: (l.suspended_power, l.keep_off)
-            for l in self._loads
-            if l.switch
-        }
+        old_suspended = [l.suspended_power for l in self._loads]
         self._loads = self._build_loads()
-        for load in self._loads:
-            if load.switch in old_state:
-                load.suspended_power, load.keep_off = old_state[load.switch]
+        for i, load in enumerate(self._loads):
+            if i < len(old_suspended):
+                load.suspended_power = old_suspended[i]
         _LOGGER.debug("[%s] Load list rebuilt (%d loads)", DOMAIN, len(self._loads))
 
     # ──────────────────────────────────────────────────────────────────────────
