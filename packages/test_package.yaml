@@ -15,7 +15,16 @@
 #   - Attesa tra stop:   5s                                    #
 #   - Attesa tra start:  1 min                                 #
 #   - Attesa prima start:1 min                                 #
-#   - Carico 3: auto_restart=False (per test 4 e 10)          #
+#   - Carico 3 (test_pc_switch_virtuale_3): auto_restart=False #
+#                                                              #
+# ORDINE CARICHI RICHIESTO (priorità 1→5 in dashboard):       #
+#   Priorità 1 → Carico 1 (switch_virtuale_1)                 #
+#   Priorità 2 → Carico 2 (switch_virtuale_2)                 #
+#   Priorità 3 → Carico 3 (switch_virtuale_3, no auto_restart)#
+#   Priorità 4 → Carico 4 (switch_virtuale_4)                 #
+#   Priorità 5 → Carico 5 (switch_virtuale_5)                 #
+# Se i carichi sono stati riordinati, riportarli a questo     #
+# ordine prima di lanciare la suite.                          #
 #                                                              #
 # Installazione: copiare in /config/packages/test_pc.yaml     #
 # Log: Settings → System → Logs, filtrare per "pc_test"       #
@@ -133,38 +142,6 @@ template:
         {% if is_state('input_boolean.test_pc_switch_5', 'on') %}
           {{ states('input_number.test_pc_potenza_5') | int(0) }}
         {% else %}0{% endif %}
-
-    # ── Risoluzione priorità → switch (indipendente dal riordino carichi) ──
-    # Il sensore aggregato power_control_potenza_attuale espone load_{i}_switch
-    # (entity_id reale del carico in posizione i, 0=priorità massima).
-    # Questi sensori risolvono "qual è lo switch del carico in posizione N"
-    # così i test funzionano qualunque sia l'ordine impostato in dashboard.
-    - name: test_pc_priority_1_switch
-      state: "{{ state_attr('sensor.power_control_potenza_attuale','load_0_switch') or 'none' }}"
-
-    - name: test_pc_priority_2_switch
-      state: "{{ state_attr('sensor.power_control_potenza_attuale','load_1_switch') or 'none' }}"
-
-    - name: test_pc_priority_3_switch
-      state: "{{ state_attr('sensor.power_control_potenza_attuale','load_2_switch') or 'none' }}"
-
-    - name: test_pc_priority_4_switch
-      state: "{{ state_attr('sensor.power_control_potenza_attuale','load_3_switch') or 'none' }}"
-
-    - name: test_pc_priority_5_switch
-      state: "{{ state_attr('sensor.power_control_potenza_attuale','load_4_switch') or 'none' }}"
-
-    # Risolve lo switch del carico configurato con auto_restart=False
-    # (usato nei TEST 4/7/10), indipendentemente da priorità o nome.
-    - name: test_pc_no_autorestart_switch
-      state: >
-        {% set ns = namespace(found='none') %}
-        {% for i in range(0, 5) %}
-          {% if state_attr('sensor.power_control_potenza_attuale', 'load_' ~ i ~ '_auto_restart') == false %}
-            {% set ns.found = state_attr('sensor.power_control_potenza_attuale', 'load_' ~ i ~ '_switch') or 'none' %}
-          {% endif %}
-        {% endfor %}
-        {{ ns.found }}
 
   - switch:
     - name: test_pc_switch_virtuale_1
@@ -287,8 +264,8 @@ script:
           level: debug
           message: >
             [TEST 1] VERIFICA —
-            Carico 5 off: {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
-            Carichi 1-4 on: {% if is_state(states('sensor.test_pc_priority_1_switch'),'on') and is_state(states('sensor.test_pc_priority_2_switch'),'on') and is_state(states('sensor.test_pc_priority_3_switch'),'on') and is_state(states('sensor.test_pc_priority_4_switch'),'on') %}PASS{% else %}FAIL — spento un carico ad alta priorità{% endif %}
+            Carico 5 off: {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %} |
+            Carichi 1-4 on: {% if is_state('switch.test_pc_switch_virtuale_1','on') and is_state('switch.test_pc_switch_virtuale_2','on') and is_state('switch.test_pc_switch_virtuale_3','on') and is_state('switch.test_pc_switch_virtuale_4','on') %}PASS{% else %}FAIL — spento un carico ad alta priorità{% endif %}
 
   ################################################################
   # TEST 2 — Distacco ritardato
@@ -321,7 +298,7 @@ script:
           level: debug
           message: >
             [TEST 2] VERIFICA INTERMEDIA (30s) —
-            Carico 5 ancora on (distacco non prematuro): {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL — distacco prematuro{% endif %}
+            Carico 5 ancora on (distacco non prematuro): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL — distacco prematuro{% endif %}
       - delay: { seconds: 50 }
       - service: system_log.write
         data:
@@ -329,7 +306,7 @@ script:
           level: debug
           message: >
             [TEST 2] VERIFICA FINALE (80s) —
-            Carico 5 off: {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL — non spento dopo delay{% endif %}
+            Carico 5 off: {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — non spento dopo delay{% endif %}
 
   ################################################################
   # TEST 3 — Riattivazione automatica
@@ -362,7 +339,7 @@ script:
           level: debug
           message: >
             [TEST 3] VERIFICA —
-            Carico 5 on: {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL — non riattivato{% endif %}
+            Carico 5 on: {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL — non riattivato{% endif %}
 
   ################################################################
   # TEST 4 — Auto-restart disabilitato
@@ -397,9 +374,9 @@ script:
           level: debug
           message: >
             [TEST 4] VERIFICA DISTACCO —
-            Carico 3 off: {% if is_state(states('sensor.test_pc_no_autorestart_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
-            Carico 4 off: {% if is_state(states('sensor.test_pc_priority_4_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
-            Carico 5 off: {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL{% endif %}
+            Carico 3 off: {% if is_state('switch.test_pc_switch_virtuale_3','off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 4 off: {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 off: {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %}
       # Abbasso sotto soglia
       - service: input_number.set_value
         data: { value: 400 }
@@ -415,9 +392,9 @@ script:
           level: debug
           message: >
             [TEST 4] VERIFICA RIATTIVAZIONE —
-            Carico 3 off (auto_restart=False): {% if is_state(states('sensor.test_pc_no_autorestart_switch'),'off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
-            Carico 4 on: {% if is_state(states('sensor.test_pc_priority_3_switch'),'on') %}PASS{% else %}FAIL{% endif %} |
-            Carico 5 on: {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL{% endif %}
+            Carico 3 off (auto_restart=False): {% if is_state('switch.test_pc_switch_virtuale_3','off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
+            Carico 4 on: {% if is_state('switch.test_pc_switch_virtuale_3','on') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 on: {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
   # TEST 5 — Riaccensione manuale durante sospensione
@@ -443,7 +420,7 @@ script:
           level: debug
           message: >
             [TEST 5] VERIFICA —
-            Switch 5 on: {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL{% endif %} |
+            Switch 5 on: {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL{% endif %} |
             Suspended carico 5 azzerata: {% set s = state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w') | int(-1) %}{% if s == 0 %}PASS{% else %}FAIL (valore: {{ s }}W){% endif %}
 
   ################################################################
@@ -479,9 +456,9 @@ script:
           level: debug
           message: >
             [TEST 6] VERIFICA —
-            Carico 5 off: {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
-            Carico 4 off: {% if is_state(states('sensor.test_pc_priority_4_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
-            Carichi 1-3 on: {% if is_state(states('sensor.test_pc_priority_1_switch'),'on') and is_state(states('sensor.test_pc_priority_2_switch'),'on') and is_state(states('sensor.test_pc_priority_3_switch'),'on') %}PASS{% else %}FAIL — spento più del necessario{% endif %}
+            Carico 5 off: {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 4 off: {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL{% endif %} |
+            Carichi 1-3 on: {% if is_state('switch.test_pc_switch_virtuale_1','on') and is_state('switch.test_pc_switch_virtuale_2','on') and is_state('switch.test_pc_switch_virtuale_3','on') %}PASS{% else %}FAIL — spento più del necessario{% endif %}
 
   ################################################################
   # TEST 7 — Riattivazione parziale
@@ -514,8 +491,8 @@ script:
           level: debug
           message: >
             [TEST 7] VERIFICA —
-            Carico 4 off (auto_restart=False, skippato): {% if is_state(states('sensor.test_pc_no_autorestart_switch'),'off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
-            Carico 5 on (unico con auto_restart=True, headroom ok): {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL{% endif %}
+            Carico 4 off (auto_restart=False, skippato): {% if is_state('switch.test_pc_switch_virtuale_3','off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
+            Carico 5 on (unico con auto_restart=True, headroom ok): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
   # TEST 8 — Carico già spento al momento del distacco
@@ -552,8 +529,8 @@ script:
           level: debug
           message: >
             [TEST 8] VERIFICA —
-            Carico 4 off (distacco sul primo disponibile): {% if is_state(states('sensor.test_pc_priority_4_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
-            Carico 5 off e suspended=0 (ignorato, già spento): {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL{% endif %}
+            Carico 4 off (distacco sul primo disponibile): {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 off e suspended=0 (ignorato, già spento): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
   # TEST 9 — Sforamento durante riattivazione
@@ -595,7 +572,7 @@ script:
           level: debug
           message: >
             [TEST 9] VERIFICA —
-            Carico 5 off (riattivazione bloccata): {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL — riattivato nonostante il picco{% endif %}
+            Carico 5 off (riattivazione bloccata): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — riattivato nonostante il picco{% endif %}
 
   ################################################################
   # TEST 10 — Mix auto-restart, riaccensione manuale, automatica
@@ -632,9 +609,9 @@ script:
           level: debug
           message: >
             [TEST 10] VERIFICA DISTACCO —
-            Carico 3 off: {% if is_state(states('sensor.test_pc_priority_3_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
-            Carico 4 off: {% if is_state(states('sensor.test_pc_priority_4_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
-            Carico 5 off: {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL{% endif %}
+            Carico 3 off: {% if is_state('switch.test_pc_switch_virtuale_3','off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 4 off: {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 off: {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %}
       - service: input_boolean.turn_on
         target: { entity_id: input_boolean.test_pc_switch_4 }
       - service: system_log.write
@@ -657,9 +634,9 @@ script:
           level: debug
           message: >
             [TEST 10] VERIFICA FINALE —
-            Carico 3 off (auto_restart=False): {% if is_state(states('sensor.test_pc_no_autorestart_switch'),'off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
-            Carico 4 on (manuale + watchdog): {% if is_state(states('sensor.test_pc_priority_3_switch'),'on') %}PASS{% else %}FAIL{% endif %} |
-            Carico 5 on (auto-restart): {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL{% endif %}
+            Carico 3 off (auto_restart=False): {% if is_state('switch.test_pc_switch_virtuale_3','off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
+            Carico 4 on (manuale + watchdog): {% if is_state('switch.test_pc_switch_virtuale_3','on') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 on (auto-restart): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
   # TEST 11 — Power Control disabilitato
@@ -695,7 +672,7 @@ script:
           level: debug
           message: >
             [TEST 11] VERIFICA —
-            Carico 5 on (PC disabilitato, nessun distacco): {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL — distaccato con PC disabilitato{% endif %}
+            Carico 5 on (PC disabilitato, nessun distacco): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL — distaccato con PC disabilitato{% endif %}
       # Riabilito PC
       - service: switch.turn_on
         target: { entity_id: switch.power_control_attivo }
@@ -723,7 +700,7 @@ script:
           level: debug
           message: >
             [TEST 12] VERIFICA —
-            Carico 5 off: {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 off: {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %} |
             Suspended > 0: {% if state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) > 0 %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
@@ -749,7 +726,7 @@ script:
           level: debug
           message: >
             [TEST 13] VERIFICA —
-            Carico 5 on: {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 on: {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL{% endif %} |
             Suspended = 0: {% if state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
@@ -778,7 +755,7 @@ script:
           level: debug
           message: >
             [TEST 14] VERIFICA —
-            Carico 5 off (switch invariato): {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 off (switch invariato): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %} |
             Suspended = 0: {% if state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
@@ -796,7 +773,7 @@ script:
           level: debug
           message: "[TEST 15] INIZIO — Spengo switch 5 (simula unavailable), 4x1200W=4800W."
       - service: switch.turn_off
-        target: { entity_id: "{{ states('sensor.test_pc_priority_5_switch') }}" }
+        target: { entity_id: "{{ 'switch.test_pc_switch_virtuale_5' }}" }
       - service: input_number.set_value
         data: { value: 1200 }
         target:
@@ -812,8 +789,8 @@ script:
           level: debug
           message: >
             [TEST 15] VERIFICA —
-            Carico 4 off (distaccato normalmente): {% if is_state(states('sensor.test_pc_priority_4_switch'),'off') %}PASS{% else %}FAIL{% endif %} |
-            Carico 5 off e suspended=0 (skippato, già spento): {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') and state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
+            Carico 4 off (distaccato normalmente): {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 off e suspended=0 (skippato, già spento): {% if is_state('switch.test_pc_switch_virtuale_5','off') and state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
   # TEST 16 — Doppio picco (no restart prematuro)
@@ -859,7 +836,7 @@ script:
           level: debug
           message: >
             [TEST 16] VERIFICA —
-            Carico 5 off a 30s dal secondo calo (timer non ancora scaduto): {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL — riattivato prematuramente{% endif %}
+            Carico 5 off a 30s dal secondo calo (timer non ancora scaduto): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — riattivato prematuramente{% endif %}
 
   ################################################################
   # TEST 17 — Riattivazione bloccata da potenza alta
@@ -893,7 +870,7 @@ script:
           level: debug
           message: >
             [TEST 17] VERIFICA —
-            Carico 5 off (headroom insufficiente, nessuna riattivazione): {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %}
+            Carico 5 off (headroom insufficiente, nessuna riattivazione): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %}
 
 ################################################################
 # AUTOMAZIONE — esegue tutti gli script in sequenza
