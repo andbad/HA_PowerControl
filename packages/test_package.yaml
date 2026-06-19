@@ -416,7 +416,7 @@ script:
           message: >
             [TEST 4] VERIFICA RIATTIVAZIONE —
             Carico 3 off (auto_restart=False): {% if is_state(states('sensor.test_pc_no_autorestart_switch'),'off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
-            Carico 4 on: {% if is_state(states('sensor.test_pc_priority_4_switch'),'on') %}PASS{% else %}FAIL{% endif %} |
+            Carico 4 on: {% if is_state(states('sensor.test_pc_priority_3_switch'),'on') %}PASS{% else %}FAIL{% endif %} |
             Carico 5 on: {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
@@ -488,8 +488,8 @@ script:
   # Prerequisito: carichi 4 e 5 sospesi (da test 6), 1-3 a 1000W
   # Abbasso 1-3 a 600W → totale attivo 1800W
   # Headroom = 3300 - 1800 = 1500W
-  # Carico 5: 1000W sospesi → 1800+1000=2800 < 3300 → riattivato
-  # Carico 4: 1000W sospesi → 2800+1000=3800 > 3300 → non riattivato
+  # Carico con priorità 4 ha auto_restart=False → skippato dal coordinator
+  # Carico con priorità 5: 1000W sospesi → 1800+1000=2800 < 3300 → riattivato
   ################################################################
   test_pc_07_riattivazione_parziale:
     alias: "[TEST PC] Test 7 — Riattivazione parziale"
@@ -499,7 +499,7 @@ script:
         data:
           logger: homeassistant.components.pc_test
           level: debug
-          message: "[TEST 7] INIZIO — Carichi 4+5 sospesi, abbasso 1-3 a 600W. Atteso: carico 4 riattivato (priorità maggiore), carico 5 off (headroom esaurito)."
+          message: "[TEST 7] INIZIO — Carichi 4+5 sospesi, abbasso 1-3 a 600W. Atteso: carico 4 off (auto_restart=False, skippato), carico 5 on (headroom sufficiente)."
       - service: input_number.set_value
         data: { value: 600 }
         target:
@@ -514,8 +514,8 @@ script:
           level: debug
           message: >
             [TEST 7] VERIFICA —
-            Carico 4 on (priorità maggiore, headroom sufficiente): {% if is_state(states('sensor.test_pc_priority_4_switch'),'on') %}PASS{% else %}FAIL{% endif %} |
-            Carico 5 off (headroom insufficiente dopo carico 4): {% if is_state(states('sensor.test_pc_priority_5_switch'),'off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %}
+            Carico 4 off (auto_restart=False, skippato): {% if is_state(states('sensor.test_pc_no_autorestart_switch'),'off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
+            Carico 5 on (unico con auto_restart=True, headroom ok): {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
   # TEST 8 — Carico già spento al momento del distacco
@@ -657,7 +657,7 @@ script:
           level: debug
           message: >
             [TEST 10] VERIFICA FINALE —
-            Carico 3 off (auto_restart=False): {% if is_state(states('sensor.test_pc_priority_3_switch'),'off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
+            Carico 3 off (auto_restart=False): {% if is_state(states('sensor.test_pc_no_autorestart_switch'),'off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
             Carico 4 on (manuale + watchdog): {% if is_state(states('sensor.test_pc_priority_4_switch'),'on') %}PASS{% else %}FAIL{% endif %} |
             Carico 5 on (auto-restart): {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL{% endif %}
 
