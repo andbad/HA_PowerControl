@@ -154,16 +154,16 @@ service: power_control.set_thresholds
 data:
   immediate_threshold: 5000
   delayed_threshold: 4500
-` `` 
+```
 
 **Example — reset to configured values:**
-` ``yaml
+```yaml
 service: power_control.set_thresholds
 data: {}
-` ``
+```
 
 **Example — full automation based on power source:**
-` ``yaml
+```yaml
 automation:
   - alias: "PowerControl — adapt thresholds to power source"
     trigger:
@@ -192,7 +192,8 @@ automation:
         default:
           - service: power_control.set_thresholds
             data: {}
-` ``
+```
+
 ---
 
 ## Dashboard
