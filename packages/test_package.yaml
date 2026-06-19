@@ -658,7 +658,7 @@ script:
           message: >
             [TEST 10] VERIFICA FINALE —
             Carico 3 off (auto_restart=False): {% if is_state(states('sensor.test_pc_no_autorestart_switch'),'off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %} |
-            Carico 4 on (manuale + watchdog): {% if is_state(states('sensor.test_pc_priority_4_switch'),'on') %}PASS{% else %}FAIL{% endif %} |
+            Carico 4 on (manuale + watchdog): {% if is_state(states('sensor.test_pc_priority_3_switch'),'on') %}PASS{% else %}FAIL{% endif %} |
             Carico 5 on (auto-restart): {% if is_state(states('sensor.test_pc_priority_5_switch'),'on') %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
