@@ -41,7 +41,7 @@ class PowerControlSensorDescription(SensorEntityDescription):
 GLOBAL_SENSOR_DESCRIPTIONS: tuple[PowerControlSensorDescription, ...] = (
     PowerControlSensorDescription(
         key="current_power",
-        name="Potenza attuale",
+        name="Current power",
         native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
@@ -50,7 +50,7 @@ GLOBAL_SENSOR_DESCRIPTIONS: tuple[PowerControlSensorDescription, ...] = (
     ),
     PowerControlSensorDescription(
         key="suspended_power",
-        name="Potenza sospesa",
+        name="Suspended power",
         native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
@@ -59,7 +59,7 @@ GLOBAL_SENSOR_DESCRIPTIONS: tuple[PowerControlSensorDescription, ...] = (
     ),
     PowerControlSensorDescription(
         key="threshold_immediate",
-        name="Soglia distacco immediato",
+        name="Immediate threshold",
         native_unit_of_measurement=UnitOfPower.WATT,
         icon="mdi:flash-alert",
         # Static value from config — does not change unless reconfigured
@@ -69,7 +69,7 @@ GLOBAL_SENSOR_DESCRIPTIONS: tuple[PowerControlSensorDescription, ...] = (
     ),
     PowerControlSensorDescription(
         key="threshold_delayed",
-        name="Soglia distacco ritardato",
+        name="Delayed threshold",
         native_unit_of_measurement=UnitOfPower.WATT,
         icon="mdi:flash-outline",
         value_fn=lambda _coord, entry: float(
@@ -194,9 +194,9 @@ class PowerControlLoadSensor(
         self._load_index = load_index
         load = coordinator.loads[load_index]
         load_name = (load.name or "").strip()
-        display_name = load_name if load_name else f"Carico {load_index + 1}"
+        display_name = load_name if load_name else f"Load {load_index + 1}"
         self._attr_unique_id = f"{entry.entry_id}_load_{load_index}_suspended"
-        self._attr_name = f"{display_name} - potenza sospesa"
+        self._attr_name = f"{display_name} - suspended power"
         self._attr_device_info = _device_info(entry)
 
     @property

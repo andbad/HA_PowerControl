@@ -167,7 +167,7 @@ def _load_schema(index: int, defaults: dict = {}) -> vol.Schema:
         {
             vol.Required(
                 LOAD_NAME,
-                default=defaults.get(LOAD_NAME, f"Carico {index + 1}"),
+                default=defaults.get(LOAD_NAME, f"Load {index + 1}"),
             ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
 
             vol.Optional(
@@ -252,7 +252,7 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
             return await self.async_step_global()
 
         load_names = ", ".join(
-            l.get(LOAD_NAME, f"Carico {i+1}")
+            l.get(LOAD_NAME, f"Load {i+1}")
             for i, l in enumerate(self._loads[:5])
         )
         if len(self._loads) > 5:
@@ -457,7 +457,7 @@ class PowerControlOptionsFlow(OptionsFlow):
             elif new_num > len(self._loads):
                 for i in range(len(self._loads), new_num):
                     self._loads.append({
-                        LOAD_NAME: f"Carico {i + 1}",
+                        LOAD_NAME: f"Load {i + 1}",
                         LOAD_POWER_SENSOR: "",
                         LOAD_SWITCH: "",
                         LOAD_AUTO_RESTART: True,
@@ -544,9 +544,9 @@ class PowerControlOptionsFlow(OptionsFlow):
                 continue
 
             load_name = (load_cfg.get(LOAD_NAME) or "").strip()
-            display_name = load_name if load_name else f"Carico {i + 1}"
+            display_name = load_name if load_name else f"Load {i + 1}"
             expected_entity_id = (
-                f"sensor.{slugify(f'power_control {display_name} potenza sospesa')}"
+                f"sensor.{slugify(f'power_control {display_name} suspended power')}"
             )
 
             if current_entity_id != expected_entity_id:

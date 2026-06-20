@@ -10,10 +10,10 @@ class TestGlobalSensors:
     async def test_all_global_sensors_created(self, hass, setup_integration):
         """All four global sensors must exist after setup."""
         sensors = [
-            "sensor.power_control_potenza_attuale",
-            "sensor.power_control_potenza_sospesa",
-            "sensor.power_control_soglia_distacco_immediato",
-            "sensor.power_control_soglia_distacco_ritardato",
+            "sensor.power_control_current_power",
+            "sensor.power_control_suspended_power",
+            "sensor.power_control_immediate_threshold",
+            "sensor.power_control_delayed_threshold",
         ]
         for entity_id in sensors:
             state = hass.states.get(entity_id)
@@ -21,16 +21,16 @@ class TestGlobalSensors:
 
     async def test_threshold_sensors_match_config(self, hass, setup_integration):
         """Threshold sensors must reflect the configured values."""
-        imm = hass.states.get("sensor.power_control_soglia_distacco_immediato")
-        delayed = hass.states.get("sensor.power_control_soglia_distacco_ritardato")
+        imm = hass.states.get("sensor.power_control_immediate_threshold")
+        delayed = hass.states.get("sensor.power_control_delayed_threshold")
         assert float(imm.state) == 3300.0
         assert float(delayed.state) == 3000.0
 
     async def test_power_sensors_have_watt_unit(self, hass, setup_integration):
         """All power sensors must declare W as unit of measurement."""
         sensors = [
-            "sensor.power_control_potenza_attuale",
-            "sensor.power_control_potenza_sospesa",
+            "sensor.power_control_current_power",
+            "sensor.power_control_suspended_power",
         ]
         for entity_id in sensors:
             state = hass.states.get(entity_id)
@@ -39,7 +39,7 @@ class TestGlobalSensors:
     async def test_power_sensors_have_power_device_class(self, hass, setup_integration):
         """Active power sensors must declare power device class."""
         sensors = [
-            "sensor.power_control_potenza_attuale",
+            "sensor.power_control_current_power",
         ]
         for entity_id in sensors:
             state = hass.states.get(entity_id)
@@ -47,7 +47,7 @@ class TestGlobalSensors:
 
     async def test_current_power_zero_with_no_sensors(self, hass, setup_integration):
         """Without real sensors, current power sums to 0."""
-        state = hass.states.get("sensor.power_control_potenza_attuale")
+        state = hass.states.get("sensor.power_control_current_power")
         assert float(state.state) == 0.0
 
     async def test_current_power_sums_load_sensors(
@@ -63,12 +63,12 @@ class TestGlobalSensors:
         await coordinator.async_request_refresh()
         await hass.async_block_till_done()
 
-        state = hass.states.get("sensor.power_control_potenza_attuale")
+        state = hass.states.get("sensor.power_control_current_power")
         assert float(state.state) == 2000.0
 
     async def test_suspended_power_starts_at_zero(self, hass, setup_integration):
         """Suspended power must be 0 at startup (no loads shed yet)."""
-        state = hass.states.get("sensor.power_control_potenza_sospesa")
+        state = hass.states.get("sensor.power_control_suspended_power")
         assert float(state.state) == 0.0
 
 
@@ -78,7 +78,7 @@ class TestPerLoadSensors:
         _, coordinator, _ = setup_integration
         for i, load in enumerate(coordinator.loads):
             # Sensor name is derived from load name
-            entity_id = f"sensor.power_control_{load.name.lower()}_potenza_sospesa"
+            entity_id = f"sensor.power_control_{load.name.lower()}_suspended_power"
             state = hass.states.get(entity_id)
             assert state is not None, f"Missing sensor for load {i}: {entity_id}"
 
@@ -86,7 +86,7 @@ class TestPerLoadSensors:
         """Per-load sensor must expose expected extra attributes."""
         _, coordinator, _ = setup_integration
         load_name = coordinator.loads[0].name.lower()
-        entity_id = f"sensor.power_control_{load_name}_potenza_sospesa"
+        entity_id = f"sensor.power_control_{load_name}_suspended_power"
         state = hass.states.get(entity_id)
         assert state is not None
         attrs = state.attributes
@@ -103,7 +103,7 @@ class TestPerLoadSensors:
         _, coordinator, _ = setup_integration
         for load in coordinator.loads:
             entity_id = (
-                f"sensor.power_control_{load.name.lower()}_potenza_sospesa"
+                f"sensor.power_control_{load.name.lower()}_suspended_power"
             )
             state = hass.states.get(entity_id)
             if state:
@@ -120,7 +120,7 @@ class TestPerLoadSensors:
         await hass.async_block_till_done()
 
         load_name = coordinator.loads[0].name.lower()
-        entity_id = f"sensor.power_control_{load_name}_potenza_sospesa"
+        entity_id = f"sensor.power_control_{load_name}_suspended_power"
         state = hass.states.get(entity_id)
         assert state is not None
         assert float(state.state) == 1800.0

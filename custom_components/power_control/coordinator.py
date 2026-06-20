@@ -121,7 +121,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         raw: list[dict[str, Any]] = self.config_entry.data.get(CONF_LOADS, [])
         return [
             LoadState(
-                name=l.get(LOAD_NAME, f"Carico {i + 1}"),
+                name=l.get(LOAD_NAME, f"Load {i + 1}"),
                 power_sensor=l.get(LOAD_POWER_SENSOR, ""),
                 switch=l.get(LOAD_SWITCH, ""),
                 auto_restart=l.get(LOAD_AUTO_RESTART, True),
@@ -485,7 +485,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         if not trigger_immediate and not trigger_delayed:
             return
 
-        trigger_label = "immediato" if trigger_immediate else "ritardato"
+        trigger_label = "immediate" if trigger_immediate else "delayed"
         active_threshold = threshold_immediate if trigger_immediate else threshold_delayed
 
         _LOGGER.info(
@@ -565,8 +565,8 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             await async_notify(
                 self.hass,
                 notify_entity,
-                title="Limite potenza superato",
-                message=f"{load.name} disattivato.",
+                title="Power limit exceeded",
+                message=f"{load.name} switched off.",
             )
 
             # Record the stop time — the next shed is blocked until
@@ -716,8 +716,8 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             await async_notify(
                 self.hass,
                 notify_entity,
-                title="Limite potenza rientrato",
-                message=f"{load.name} riattivato.",
+                title="Power limit restored",
+                message=f"{load.name} switched on.",
             )
 
             # Reserve this wattage optimistically so the next restore in the same
