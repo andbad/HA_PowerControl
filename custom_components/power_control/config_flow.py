@@ -47,6 +47,7 @@ from .const import (
     LOAD_POWER_SENSOR,
     LOAD_SWITCH,
     LOAD_AUTO_RESTART,
+    LOAD_MIN_OFF_SEC,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -184,6 +185,14 @@ def _load_schema(index: int, defaults: dict = {}) -> vol.Schema:
                 LOAD_AUTO_RESTART,
                 default=defaults.get(LOAD_AUTO_RESTART, True),
             ): BooleanSelector(),
+
+            vol.Optional(
+                LOAD_MIN_OFF_SEC,
+                default=defaults.get(LOAD_MIN_OFF_SEC, 0),
+            ): NumberSelector(NumberSelectorConfig(
+                min=0, max=3600, step=30, unit_of_measurement="s",
+                mode=NumberSelectorMode.BOX,
+            )),
         }
     )
 
@@ -461,6 +470,7 @@ class PowerControlOptionsFlow(OptionsFlow):
                         LOAD_POWER_SENSOR: "",
                         LOAD_SWITCH: "",
                         LOAD_AUTO_RESTART: True,
+                        LOAD_MIN_OFF_SEC: 0,
                     })
             self._num_loads = new_num
             self._current_load_index = 0
