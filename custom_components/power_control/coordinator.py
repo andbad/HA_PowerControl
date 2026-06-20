@@ -107,6 +107,11 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         # Runtime threshold overrides (set via service, None = use config)
         self._threshold_override: tuple[float, float] | None = None
 
+        # Optimistic power reservation: tracks watts committed to loads restored
+        # but whose physical sensor has not yet updated. Added to current_power
+        # in headroom calculations to avoid over-restoring.
+        self._optimistic_power: float = 0.0
+
     # ──────────────────────────────────────────────────────────────────────────
     # Setup helpers
     # ──────────────────────────────────────────────────────────────────────────
@@ -190,6 +195,9 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             current_power = self._read_global_power()
             total_suspended = sum(l.suspended_power for l in self._loads)
 
+            # Fresh sensor read — optimistic reservation from previous cycle is stale
+            self._optimistic_power = 0.0
+
             _LOGGER.debug(
                 "[%s] update — current: %.0f W | suspended: %.0f W | enabled: %s",
                 DOMAIN,
@@ -207,7 +215,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
 
             # Start logic: restore loads when power is back under threshold
             if self.enabled:
-                await self.async_check_and_start(current_power)
+                await self.async_check_and_start(current_power + self._optimistic_power)
 
             return PowerControlData(
                 current_power=current_power,
@@ -693,6 +701,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 "[%s] Restoring load %d '%s' (was %.0f W) — switch: %s",
                 DOMAIN, i, load.name, load.suspended_power, load.switch,
             )
+            restored_watts = load.suspended_power
             load.suspended_power = 0.0
 
             await self.hass.services.async_call(
@@ -710,6 +719,10 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 title="Limite potenza rientrato",
                 message=f"{load.name} riattivato.",
             )
+
+            # Reserve this wattage optimistically so the next restore in the same
+            # cycle (or the next poll before the sensor updates) sees correct headroom.
+            self._optimistic_power += restored_watts
 
             # Reset the under-threshold timer so the next restore waits again
             self._under_threshold_since = None

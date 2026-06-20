@@ -37,6 +37,7 @@ def make_coordinator(hass, config_entry):
     coord._last_stop_at = None
     coord._last_start_at = None
     coord._threshold_override = None
+    coord._optimistic_power = 0.0
     coord.data = None
     coord._loads = coord._build_loads()
     return coord
