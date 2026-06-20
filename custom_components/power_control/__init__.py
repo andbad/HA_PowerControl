@@ -209,6 +209,7 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
     coordinator.rebuild_loads()
     coordinator.setup_global_sensor_listener()
     await coordinator.async_request_refresh()
+    await async_rebuild_dashboard(hass, entry)
     _LOGGER.debug("[%s] Loads rebuilt after options update", DOMAIN)
 
 
