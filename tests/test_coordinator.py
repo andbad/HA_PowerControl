@@ -36,6 +36,7 @@ def make_coordinator(hass, config_entry):
     coord._global_sensor_unsub = None
     coord._last_stop_at = None
     coord._last_start_at = None
+    coord._threshold_override = None
     coord.data = None
     coord._loads = coord._build_loads()
     return coord
