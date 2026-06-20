@@ -41,7 +41,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL_PATH = "power-control"
-DASHBOARD_VERSION = 8  # increment to force regeneration on next HA start
+DASHBOARD_VERSION = 9  # increment to force regeneration on next HA start
 
 _TRANSLATIONS_DIR = pathlib.Path(__file__).parent / "translations"
 
@@ -225,6 +225,26 @@ def _build_reorder_card(lang: str, loads: list[dict]) -> dict:
 
 
 # ── Dashboard content builder ──────────────────────────────────────────────────
+
+def _build_shed_history_card(lang: str, loads: list[dict]) -> dict:
+    """Build a history-graph card tracking suspended_power for each load."""
+    entities = []
+    for i, load in enumerate(loads):
+        name = load.get(LOAD_NAME, f"Load {i + 1}")
+        name_slug = slugify(f"power_control {name} suspended power")
+        entities.append({
+            "entity": f"sensor.{name_slug}",
+            "name": name,
+        })
+    return {
+        "type": "history-graph",
+        "title": _t(lang, "shed_history_title"),
+        "hours_to_show": 3,
+        "refresh_interval": 30,
+        "entities": entities,
+    }
+
+
 
 def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     """Build the full Lovelace dashboard config dict for this entry."""
@@ -466,6 +486,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
                         },
                     ],
                 },
+                # ── Shed history card ─────────────────────────────────────────
+                _build_shed_history_card(lang, loads),
                 # ── Configuration card ────────────────────────────────────────
                 settings_card,
                 # ── Reorder card ──────────────────────────────────────────────

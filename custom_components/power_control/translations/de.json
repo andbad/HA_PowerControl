@@ -145,7 +145,8 @@
     "timer_idle": "Inaktiv",
     "timer_sec_remaining": "{s}s verbleibend",
     "timer_min_remaining": "{m}m {s}s verbleibend",
-    "reorder_title": "Prioritätsreihenfolge der Lasten"
+    "reorder_title": "Prioritätsreihenfolge der Lasten",
+    "shed_history_title": "Abschaltverlauf (letzte 3 Stunden)"
   },
   "selector": {
     "dashboard_language": {

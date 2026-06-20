@@ -145,7 +145,8 @@
     "timer_idle": "Idle",
     "timer_sec_remaining": "{s}s remaining",
     "timer_min_remaining": "{m}m {s}s remaining",
-    "reorder_title": "Load priority order"
+    "reorder_title": "Load priority order",
+    "shed_history_title": "Load shed history (last 3 hours)"
   },
   "selector": {
     "dashboard_language": {

@@ -145,7 +145,8 @@
     "timer_idle": "Inactif",
     "timer_sec_remaining": "{s}s restantes",
     "timer_min_remaining": "{m}m {s}s restantes",
-    "reorder_title": "Ordre de priorité des charges"
+    "reorder_title": "Ordre de priorité des charges",
+    "shed_history_title": "Historique des délestages (3 dernières heures)"
   },
   "selector": {
     "dashboard_language": {
