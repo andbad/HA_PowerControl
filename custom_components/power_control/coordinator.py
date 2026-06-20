@@ -104,6 +104,14 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         self._last_stop_at: datetime | None = None
         self._last_start_at: datetime | None = None
 
+        # Runtime threshold overrides (set via service, None = use config)
+        self._threshold_override: tuple[float, float] | None = None
+
+        # Optimistic power reservation: tracks watts committed to loads restored
+        # but whose physical sensor has not yet updated. Added to current_power
+        # in headroom calculations to avoid over-restoring.
+        self._optimistic_power: float = 0.0
+
     # ──────────────────────────────────────────────────────────────────────────
     # Setup helpers
     # ──────────────────────────────────────────────────────────────────────────
@@ -113,7 +121,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         raw: list[dict[str, Any]] = self.config_entry.data.get(CONF_LOADS, [])
         return [
             LoadState(
-                name=l.get(LOAD_NAME, f"Carico {i + 1}"),
+                name=l.get(LOAD_NAME, f"Load {i + 1}"),
                 power_sensor=l.get(LOAD_POWER_SENSOR, ""),
                 switch=l.get(LOAD_SWITCH, ""),
                 auto_restart=l.get(LOAD_AUTO_RESTART, True),
@@ -187,6 +195,9 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             current_power = self._read_global_power()
             total_suspended = sum(l.suspended_power for l in self._loads)
 
+            # Fresh sensor read — optimistic reservation from previous cycle is stale
+            self._optimistic_power = 0.0
+
             _LOGGER.debug(
                 "[%s] update — current: %.0f W | suspended: %.0f W | enabled: %s",
                 DOMAIN,
@@ -204,7 +215,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
 
             # Start logic: restore loads when power is back under threshold
             if self.enabled:
-                await self.async_check_and_start(current_power)
+                await self.async_check_and_start(current_power + self._optimistic_power)
 
             return PowerControlData(
                 current_power=current_power,
@@ -301,15 +312,33 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
     def thresholds(self) -> tuple[float, float]:
         """Return (immediate_W, delayed_W).
 
-        Options flow saves into config_entry.options; fall back to data for
-        backwards compatibility and initial setup.
+        If a runtime override is set via set_thresholds service, use that.
+        Otherwise fall back to options flow, then config entry data.
         """
+        if self._threshold_override is not None:
+            return self._threshold_override
         opts = self.config_entry.options
         source = opts if (opts is not None and len(opts) > 0) else self.config_entry.data
         return (
             float(source.get(CONF_THRESHOLD_IMMEDIATE, 3000)),
             float(source.get(CONF_THRESHOLD_DELAYED, 2700)),
         )
+
+    def set_thresholds(self, immediate_w: float | None, delayed_w: float | None) -> None:
+        """Override thresholds at runtime. Pass None to both to reset to config values."""
+        if immediate_w is None and delayed_w is None:
+            self._threshold_override = None
+            _LOGGER.info("[%s] Threshold override cleared — using config values", DOMAIN)
+        else:
+            imm, dly = self.thresholds  # current effective values as fallback
+            self._threshold_override = (
+                float(immediate_w) if immediate_w is not None else imm,
+                float(delayed_w) if delayed_w is not None else dly,
+            )
+            _LOGGER.info(
+                "[%s] Threshold override set: immediate=%.0f W, delayed=%.0f W",
+                DOMAIN, self._threshold_override[0], self._threshold_override[1],
+            )
 
     def _get_conf(self, key: str, default):
         """Read config key from options first, then data (options flow override support)."""
@@ -382,13 +411,14 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
     def rebuild_loads(self) -> None:
         """Rebuild load list after an options flow update.
 
-        Preserves suspended_power for loads that still exist (matched by index).
+        Preserves suspended_power for loads that still exist, matched by
+        switch entity_id so that reordering does not lose suspended state.
         """
-        old_suspended = [l.suspended_power for l in self._loads]
+        old_by_switch = {l.switch: l.suspended_power for l in self._loads if l.switch}
         self._loads = self._build_loads()
-        for i, load in enumerate(self._loads):
-            if i < len(old_suspended):
-                load.suspended_power = old_suspended[i]
+        for load in self._loads:
+            if load.switch and load.switch in old_by_switch:
+                load.suspended_power = old_by_switch[load.switch]
         _LOGGER.debug("[%s] Load list rebuilt (%d loads)", DOMAIN, len(self._loads))
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -455,7 +485,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         if not trigger_immediate and not trigger_delayed:
             return
 
-        trigger_label = "immediato" if trigger_immediate else "ritardato"
+        trigger_label = "immediate" if trigger_immediate else "delayed"
         active_threshold = threshold_immediate if trigger_immediate else threshold_delayed
 
         _LOGGER.info(
@@ -535,8 +565,8 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             await async_notify(
                 self.hass,
                 notify_entity,
-                title="Limite potenza superato",
-                message=f"{load.name} disattivato.",
+                title="Power limit exceeded",
+                message=f"{load.name} switched off.",
             )
 
             # Record the stop time — the next shed is blocked until
@@ -671,6 +701,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 "[%s] Restoring load %d '%s' (was %.0f W) — switch: %s",
                 DOMAIN, i, load.name, load.suspended_power, load.switch,
             )
+            restored_watts = load.suspended_power
             load.suspended_power = 0.0
 
             await self.hass.services.async_call(
@@ -685,9 +716,13 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             await async_notify(
                 self.hass,
                 notify_entity,
-                title="Limite potenza rientrato",
-                message=f"{load.name} riattivato.",
+                title="Power limit restored",
+                message=f"{load.name} switched on.",
             )
+
+            # Reserve this wattage optimistically so the next restore in the same
+            # cycle (or the next poll before the sensor updates) sees correct headroom.
+            self._optimistic_power += restored_watts
 
             # Reset the under-threshold timer so the next restore waits again
             self._under_threshold_since = None

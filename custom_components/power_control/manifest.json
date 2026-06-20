@@ -1,7 +1,7 @@
 {
   "domain": "power_control",
   "name": "Power Control",
-  "version": "1.0.0",
+  "version": "4.0.1",
   "documentation": "https://github.com/andbad/HA_PowerControl",
   "issue_tracker": "https://github.com/andbad/HA_PowerControl/issues",
   "codeowners": ["@andbad"],

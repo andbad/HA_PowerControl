@@ -8,7 +8,9 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers import entity_registry as er
 import homeassistant.helpers.config_validation as cv
+from homeassistant.util import slugify
 
 from .const import DOMAIN, CONF_NOTIFY_ENTITY, CONF_NOTIFY_SERVICE, CONF_LOADS
 from .dashboard import async_create_dashboard, async_remove_dashboard, async_rebuild_dashboard
@@ -24,10 +26,79 @@ _LOAD_INDEX_SCHEMA = vol.Schema(
     {vol.Required("load_index"): vol.All(int, vol.Range(min=0, max=19))}
 )
 
+_SET_THRESHOLDS_SCHEMA = vol.Schema(
+    {
+        vol.Optional("immediate_threshold"): vol.All(vol.Coerce(float), vol.Range(min=0)),
+        vol.Optional("delayed_threshold"): vol.All(vol.Coerce(float), vol.Range(min=0)),
+    }
+)
+
+
+_GLOBAL_ENTITY_ID_MAP: dict[str, str] = {
+    "sensor.power_control_potenza_attuale":          "sensor.power_control_current_power",
+    "sensor.power_control_potenza_sospesa":          "sensor.power_control_suspended_power",
+    "sensor.power_control_soglia_distacco_immediato": "sensor.power_control_immediate_threshold",
+    "sensor.power_control_soglia_distacco_ritardato": "sensor.power_control_delayed_threshold",
+}
+
+
+def _migrate_entity_ids(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Rename Italian entity_ids to English for existing installations.
+
+    Called once at setup. Safe to run repeatedly — skips already-migrated
+    entries and logs a warning on conflict without raising.
+    """
+    registry = er.async_get(hass)
+
+    # 1. Global sensors — fixed mapping
+    for old_id, new_id in _GLOBAL_ENTITY_ID_MAP.items():
+        entity_entry = registry.async_get(old_id)
+        if entity_entry is None:
+            continue
+        if registry.async_get(new_id) is not None:
+            _LOGGER.warning(
+                "[%s] Cannot migrate %s → %s: target already exists",
+                DOMAIN, old_id, new_id,
+            )
+            continue
+        try:
+            registry.async_update_entity(old_id, new_entity_id=new_id)
+            _LOGGER.info("[%s] Migrated entity_id: %s → %s", DOMAIN, old_id, new_id)
+        except Exception as exc:  # noqa: BLE001
+            _LOGGER.warning("[%s] Migration failed %s → %s: %s", DOMAIN, old_id, new_id, exc)
+
+    # 2. Per-load suspended_power sensors — derive from current load names
+    loads_cfg = entry.data.get("loads", [])
+    for i, load_cfg in enumerate(loads_cfg):
+        unique_id = f"{entry.entry_id}_load_{i}_suspended"
+        current_entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+        if current_entity_id is None:
+            continue
+
+        load_name = (load_cfg.get("name") or "").strip()
+        display_name = load_name if load_name else f"Load {i + 1}"
+        expected_entity_id = f"sensor.{slugify(f'power_control {display_name} suspended power')}"
+
+        if current_entity_id == expected_entity_id:
+            continue
+        if registry.async_get(expected_entity_id) is not None:
+            _LOGGER.warning(
+                "[%s] Cannot migrate %s → %s: target already exists",
+                DOMAIN, current_entity_id, expected_entity_id,
+            )
+            continue
+        try:
+            registry.async_update_entity(current_entity_id, new_entity_id=expected_entity_id)
+            _LOGGER.info("[%s] Migrated entity_id: %s → %s", DOMAIN, current_entity_id, expected_entity_id)
+        except Exception as exc:  # noqa: BLE001
+            _LOGGER.warning("[%s] Migration failed %s → %s: %s", DOMAIN, current_entity_id, expected_entity_id, exc)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Power Control from a config entry."""
     hass.data.setdefault(DOMAIN, {})
+
+    _migrate_entity_ids(hass, entry)
 
     coordinator = PowerControlCoordinator(hass, entry)
     await coordinator.async_restore_state()
@@ -144,8 +215,8 @@ def _register_services(hass: HomeAssistant) -> None:
         notify_entity: str = coord.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
         await async_notify(
             hass, notify_entity,
-            title="Riattivazione manuale",
-            message=f"{load.name} riattivato manualmente.",
+            title="Manual restart",
+            message=f"{load.name} manually switched on.",
         )
         coord.publish_current_state()
         _LOGGER.info("[%s] Service: force-started load %d '%s'", DOMAIN, index, load.name)
@@ -177,12 +248,21 @@ def _register_services(hass: HomeAssistant) -> None:
         await async_rebuild_dashboard(hass, coord.config_entry)
         _LOGGER.info("[%s] Service: moved load %d %s (now at %d)", DOMAIN, index, direction, swap)
 
+    async def handle_set_thresholds(call: ServiceCall) -> None:
+        coord = _get_coordinator(call)
+        if not coord:
+            return
+        imm = call.data.get("immediate_threshold")
+        dly = call.data.get("delayed_threshold")
+        coord.set_thresholds(imm, dly)
+
     hass.services.async_register(DOMAIN, "enable", handle_enable)
     hass.services.async_register(DOMAIN, "disable", handle_disable)
     hass.services.async_register(DOMAIN, "reset_load", handle_reset_load, schema=_LOAD_INDEX_SCHEMA)
     hass.services.async_register(DOMAIN, "force_stop_load", handle_force_stop_load, schema=_LOAD_INDEX_SCHEMA)
     hass.services.async_register(DOMAIN, "force_start_load", handle_force_start_load, schema=_LOAD_INDEX_SCHEMA)
     hass.services.async_register(DOMAIN, "move_load", handle_move_load, schema=_MOVE_LOAD_SCHEMA)
+    hass.services.async_register(DOMAIN, "set_thresholds", handle_set_thresholds, schema=_SET_THRESHOLDS_SCHEMA)
 
     _LOGGER.debug("[%s] Services registered", DOMAIN)
 
@@ -193,6 +273,7 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
     coordinator.rebuild_loads()
     coordinator.setup_global_sensor_listener()
     await coordinator.async_request_refresh()
+    await async_rebuild_dashboard(hass, entry)
     _LOGGER.debug("[%s] Loads rebuilt after options update", DOMAIN)
 
 
@@ -208,7 +289,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Remove services only when last entry is unloaded
     if not hass.data.get(DOMAIN):
-        for service in ["enable", "disable", "reset_load", "force_stop_load", "force_start_load", "move_load"]:
+        for service in ["enable", "disable", "reset_load", "force_stop_load", "force_start_load", "move_load", "set_thresholds"]:
             hass.services.async_remove(DOMAIN, service)
         _LOGGER.debug("[%s] Services unregistered", DOMAIN)
         # Remove dashboard (only once, when the last entry is gone)

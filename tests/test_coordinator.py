@@ -36,6 +36,8 @@ def make_coordinator(hass, config_entry):
     coord._global_sensor_unsub = None
     coord._last_stop_at = None
     coord._last_start_at = None
+    coord._threshold_override = None
+    coord._optimistic_power = 0.0
     coord.data = None
     coord._loads = coord._build_loads()
     return coord
@@ -132,6 +134,22 @@ class TestBuildLoads:
                                    "loads": [mock_config_entry.data["loads"][0]]}
         coord.rebuild_loads()
         assert len(coord.loads) == 1
+
+    def test_rebuild_preserves_suspended_power_after_reorder(self, mock_hass, mock_config_entry):
+        """move_load swaps two entries in config; suspended_power must follow
+        the load (by switch), not stay attached to the old index."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.loads[0].suspended_power = 1800.0  # Lavatrice suspended
+        loads_cfg = list(mock_config_entry.data["loads"])
+        loads_cfg[0], loads_cfg[1] = loads_cfg[1], loads_cfg[0]  # swap index 0/1
+        mock_config_entry.data = {**mock_config_entry.data, "loads": loads_cfg}
+        coord.rebuild_loads()
+        names = [l.name for l in coord.loads]
+        assert names == ["Lavastoviglie", "Lavatrice", "Condizionatore"]
+        lavatrice = next(l for l in coord.loads if l.name == "Lavatrice")
+        lavastoviglie = next(l for l in coord.loads if l.name == "Lavastoviglie")
+        assert lavatrice.suspended_power == 1800.0
+        assert lavastoviglie.suspended_power == 0.0
 
 
 # ── Stop logic ────────────────────────────────────────────────────────────────
@@ -342,6 +360,37 @@ class TestStartLogic:
 
         await coord.async_check_and_start(current_power=100.0)
 
+        call_args = mock_hass.services.async_call.call_args
+        assert call_args.args[2]["entity_id"] == "switch.lavastoviglie"
+
+    @pytest.mark.asyncio
+    async def test_restore_after_reorder_follows_load_not_position(
+        self, mock_hass, mock_config_entry
+    ):
+        """After move_load swaps two entries, restore must target the
+        physically-correct switch for each load's new priority position."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        # Suspend Lavastoviglie (index 1) and Condizionatore (index 2, auto_restart=False)
+        coord.loads[1].suspended_power = 500.0
+        coord.loads[2].suspended_power = 1500.0
+
+        # Swap index 0 (Lavatrice) and index 1 (Lavastoviglie) — simulates
+        # the user moving a load up/down in the dashboard.
+        loads_cfg = list(mock_config_entry.data["loads"])
+        loads_cfg[0], loads_cfg[1] = loads_cfg[1], loads_cfg[0]
+        mock_config_entry.data = {**mock_config_entry.data, "loads": loads_cfg}
+        coord.rebuild_loads()
+
+        # New order: index0=Lavastoviglie(suspended 500), index1=Lavatrice(0),
+        # index2=Condizionatore(suspended 1500, auto_restart=False)
+        assert [l.name for l in coord.loads] == ["Lavastoviglie", "Lavatrice", "Condizionatore"]
+        assert coord.loads[0].suspended_power == 500.0
+        assert coord.loads[2].suspended_power == 1500.0
+
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+        await coord.async_check_and_start(current_power=500.0)
+
+        # Highest priority suspended load is now Lavastoviglie (index 0)
         call_args = mock_hass.services.async_call.call_args
         assert call_args.args[2]["entity_id"] == "switch.lavastoviglie"
 

@@ -82,3 +82,31 @@ move_load:
           options:
             - up
             - down
+
+set_thresholds:
+  name: Set dynamic thresholds
+  description: >-
+    Overrides the intervention thresholds at runtime without changing the
+    persistent configuration. Overrides are lost on HA restart.
+    Call with no fields to reset both thresholds to the configured values.
+  fields:
+    immediate_threshold:
+      name: Immediate threshold (W)
+      description: New immediate shedding threshold in Watts. Omit to leave unchanged.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 15000
+          unit_of_measurement: W
+          mode: box
+    delayed_threshold:
+      name: Delayed threshold (W)
+      description: New delayed shedding threshold in Watts. Omit to leave unchanged.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 15000
+          unit_of_measurement: W
+          mode: box

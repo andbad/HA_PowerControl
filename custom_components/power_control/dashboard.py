@@ -19,6 +19,7 @@ from homeassistant.components.lovelace.const import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, CoreState, callback
+from homeassistant.util import slugify
 
 from .const import (
     DOMAIN,
@@ -128,7 +129,7 @@ def _fmt_remaining(lang: str, remaining_sec: int | None) -> str:
 
 def _timer_row(label: str, icon: str, attr_remaining: str) -> str:
     """Return a single Jinja2 text line for a timer row."""
-    entity = "sensor.power_control_potenza_attuale"
+    entity = "sensor.power_control_current_power"
     return (
         f"{{% set rem = state_attr('{entity}','{attr_remaining}') %}}"
         f"\n{icon} {label}: "
@@ -165,7 +166,7 @@ def _build_reorder_card(lang: str, loads: list[dict]) -> dict:
     cards = []
     n = len(loads)
     for i, load in enumerate(loads):
-        name = load.get(LOAD_NAME, f"Carico {i + 1}")
+        name = load.get(LOAD_NAME, f"Load {i + 1}")
         priority = _priority_label(lang, i, n)
 
         # Label button (non-interactive, shows name + priority)
@@ -260,12 +261,12 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     # ── Per-load cards ────────────────────────────────────────────────────────
     load_cards = []
     for i, load in enumerate(loads):
-        name = load.get(LOAD_NAME, f"Carico {i + 1}")
-        name_slug = name.lower().replace(" ", "_")
+        name = load.get(LOAD_NAME, f"Load {i + 1}")
+        name_slug = slugify(f"power_control {name} suspended power")
         switch_entity = load.get("switch", "")
         power_sensor = load.get("power_sensor", "")
         auto_restart = load.get("auto_restart", True)
-        suspended_sensor = f"sensor.power_control_{name_slug}_potenza_sospesa"
+        suspended_sensor = f"sensor.{name_slug}"
         priority = _priority_label(lang, i, len(loads))
 
         entities: list[dict] = [{"type": "section", "label": _t(lang, "section_status")}]
@@ -310,19 +311,19 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             # ── Power sensor ───────────────────────────────────────────────
             {"type": "section", "label": _t(lang, "power_sensor_label")},
             {
-                "entity": global_sensor if global_sensor else "sensor.power_control_potenza_attuale",
+                "entity": global_sensor if global_sensor else "sensor.power_control_current_power",
                 "name": _t(lang, "power_sensor_label"),
                 "icon": "mdi:meter-electric" if global_sensor else "mdi:sigma",
             },
             # ── Thresholds ─────────────────────────────────────────────────
             {"type": "section", "label": _t(lang, "thresholds_title")},
             {
-                "entity": "sensor.power_control_soglia_distacco_immediato",
+                "entity": "sensor.power_control_immediate_threshold",
                 "name": _t(lang, "threshold_immediate"),
                 "icon": "mdi:flash-alert",
             },
             {
-                "entity": "sensor.power_control_soglia_distacco_ritardato",
+                "entity": "sensor.power_control_delayed_threshold",
                 "name": _t(lang, "threshold_delayed"),
                 "icon": "mdi:flash-outline",
             },
@@ -330,8 +331,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             {"type": "section", "label": _t(lang, "timing_section")},
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_soglia_distacco_immediato",
-                "attribute": "unit_of_measurement",  # placeholder — real value injected via secondary_info workaround below
+                "entity": "sensor.power_control_immediate_threshold",
+                "attribute": "_pc_blank",  # non-existent attribute -> empty value, only suffix shown
                 "name": _t(lang, "delay_immediate_label"),
                 "icon": "mdi:timer-outline",
                 "secondary_info": "none",
@@ -339,8 +340,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             },
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_soglia_distacco_ritardato",
-                "attribute": "unit_of_measurement",
+                "entity": "sensor.power_control_delayed_threshold",
+                "attribute": "_pc_blank",
                 "name": _t(lang, "delay_delayed_label"),
                 "icon": "mdi:timer-sand",
                 "secondary_info": "none",
@@ -348,8 +349,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             },
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_soglia_distacco_immediato",
-                "attribute": "unit_of_measurement",
+                "entity": "sensor.power_control_immediate_threshold",
+                "attribute": "_pc_blank",
                 "name": _t(lang, "wait_stops_label"),
                 "icon": "mdi:pause",
                 "secondary_info": "none",
@@ -357,8 +358,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             },
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_soglia_distacco_ritardato",
-                "attribute": "unit_of_measurement",
+                "entity": "sensor.power_control_delayed_threshold",
+                "attribute": "_pc_blank",
                 "name": _t(lang, "wait_before_start_label"),
                 "icon": "mdi:clock-start",
                 "secondary_info": "none",
@@ -366,8 +367,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             },
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_soglia_distacco_ritardato",
-                "attribute": "unit_of_measurement",
+                "entity": "sensor.power_control_delayed_threshold",
+                "attribute": "_pc_blank",
                 "name": _t(lang, "wait_starts_label"),
                 "icon": "mdi:play-circle-outline",
                 "secondary_info": "none",
@@ -377,8 +378,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             {"type": "section", "label": _t(lang, "notify_label")},
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_potenza_attuale",
-                "attribute": "unit_of_measurement",
+                "entity": "sensor.power_control_current_power",
+                "attribute": "_pc_blank",
                 "name": _t(lang, "notify_label"),
                 "icon": "mdi:bell-outline",
                 "secondary_info": "none",
@@ -409,13 +410,13 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
                                 },
                                 {
                                     "type": "tile",
-                                    "entity": "sensor.power_control_potenza_attuale",
+                                    "entity": "sensor.power_control_current_power",
                                     "name": _t(lang, "current_power"),
                                     "icon": "mdi:lightning-bolt",
                                 },
                                 {
                                     "type": "tile",
-                                    "entity": "sensor.power_control_potenza_sospesa",
+                                    "entity": "sensor.power_control_suspended_power",
                                     "name": _t(lang, "suspended_power"),
                                     "icon": "mdi:pause-circle-outline",
                                     "color": "orange",
@@ -424,7 +425,7 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
                         },
                         {
                             "type": "gauge",
-                            "entity": "sensor.power_control_potenza_attuale",
+                            "entity": "sensor.power_control_current_power",
                             "name": _t(lang, "gauge_title"),
                             "unit": "W",
                             "min": 0,
@@ -448,19 +449,19 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
                     "refresh_interval": 30,
                     "entities": [
                         {
-                            "entity": "sensor.power_control_potenza_attuale",
+                            "entity": "sensor.power_control_current_power",
                             "name": _t(lang, "current_power"),
                         },
                         {
-                            "entity": "sensor.power_control_potenza_sospesa",
+                            "entity": "sensor.power_control_suspended_power",
                             "name": _t(lang, "suspended_power"),
                         },
                         {
-                            "entity": "sensor.power_control_soglia_distacco_immediato",
+                            "entity": "sensor.power_control_immediate_threshold",
                             "name": _t(lang, "threshold_immediate"),
                         },
                         {
-                            "entity": "sensor.power_control_soglia_distacco_ritardato",
+                            "entity": "sensor.power_control_delayed_threshold",
                             "name": _t(lang, "threshold_delayed"),
                         },
                     ],
