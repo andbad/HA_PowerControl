@@ -181,7 +181,6 @@ class PowerControlLoadSensor(
     _attr_device_class = SensorDeviceClass.POWER
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfPower.WATT
-    _attr_icon = "mdi:power-plug-off"
 
     def __init__(
         self,
@@ -208,6 +207,23 @@ class PowerControlLoadSensor(
         if self._load_index >= len(loads):
             return None
         return loads[self._load_index].suspended_power
+
+    @property
+    def icon(self) -> str:
+        """Return an icon reflecting the load status."""
+        if self.coordinator.data is None:
+            return "mdi:power-plug-outline"
+        loads = self.coordinator.data.loads
+        if self._load_index >= len(loads):
+            return "mdi:power-plug-outline"
+        load = loads[self._load_index]
+        if load.keep_off:
+            return "mdi:cancel"
+        if load.is_suspended:
+            return "mdi:power-plug-off"
+        if load.switch_state in ("unavailable", "unknown"):
+            return "mdi:power-plug-outline"
+        return "mdi:power-plug"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
