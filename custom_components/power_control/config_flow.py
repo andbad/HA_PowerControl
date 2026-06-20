@@ -9,6 +9,8 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers import entity_registry as er
+from homeassistant.util import slugify
 from homeassistant.helpers.selector import (
     EntitySelector,
     EntitySelectorConfig,
@@ -517,5 +519,47 @@ class PowerControlOptionsFlow(OptionsFlow):
             self._data.get(CONF_THRESHOLD_DELAYED, 0),
         )
 
+        # Sync suspended_power sensor entity_ids to current load names
+        self._sync_suspended_sensor_entity_ids()
+
         # Return empty options — all data lives in .data, not .options
         return self.async_create_entry(title="", data={})
+
+    def _sync_suspended_sensor_entity_ids(self) -> None:
+        """Rename suspended_power sensor entity_ids to match current load names.
+
+        When a load is renamed, the unique_id stays stable but _attr_name changes.
+        HA keeps the old entity_id until explicitly updated. This method aligns
+        entity_ids with the current load names so the auto-generated dashboard
+        finds the correct entities after reconfigure.
+        """
+        registry = er.async_get(self.hass)
+        entry_id = self.config_entry.entry_id
+        loads_cfg = self._data.get(CONF_LOADS, [])
+
+        for i, load_cfg in enumerate(loads_cfg):
+            unique_id = f"{entry_id}_load_{i}_suspended"
+            current_entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+            if current_entity_id is None:
+                continue
+
+            load_name = (load_cfg.get(LOAD_NAME) or "").strip()
+            display_name = load_name if load_name else f"Carico {i + 1}"
+            expected_entity_id = (
+                f"sensor.{slugify(f'power_control {display_name} potenza sospesa')}"
+            )
+
+            if current_entity_id != expected_entity_id:
+                try:
+                    registry.async_update_entity(
+                        current_entity_id, new_entity_id=expected_entity_id
+                    )
+                    _LOGGER.debug(
+                        "[%s] Renamed sensor entity_id: %s → %s",
+                        DOMAIN, current_entity_id, expected_entity_id,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    _LOGGER.warning(
+                        "[%s] Could not rename sensor entity_id %s → %s: %s",
+                        DOMAIN, current_entity_id, expected_entity_id, exc,
+                    )
