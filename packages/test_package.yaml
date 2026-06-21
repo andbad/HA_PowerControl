@@ -863,225 +863,6 @@ script:
             [TEST 17] VERIFICA —
             Carico 5 off (headroom insufficiente, nessuna riattivazione): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — riattivato erroneamente{% endif %}
 
-################################################################
-# AUTOMAZIONE — esegue tutti gli script in sequenza
-# Ogni script viene atteso fino al completamento prima di
-# passare al successivo.
-# Avvio manuale da Developer Tools > Automazioni.
-################################################################
-automation:
-  - id: test_pc_esegui_tutti
-    alias: "[TEST PC] Esegui tutti i test in sequenza"
-    mode: single
-    trigger: []
-    action:
-      - service: system_log.write
-        data:
-          logger: homeassistant.components.pc_test
-          level: debug
-          message: "========== [TEST PC] INIZIO SUITE =========="
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_01_distacco_immediato }
-      - wait_template: "{{ is_state('script.test_pc_01_distacco_immediato', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_02_distacco_ritardato }
-      - wait_template: "{{ is_state('script.test_pc_02_distacco_ritardato', 'off') }}"
-        timeout: { minutes: 3 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_03_riattivazione_automatica }
-      - wait_template: "{{ is_state('script.test_pc_03_riattivazione_automatica', 'off') }}"
-        timeout: { minutes: 3 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_04_auto_restart_disabilitato }
-      - wait_template: "{{ is_state('script.test_pc_04_auto_restart_disabilitato', 'off') }}"
-        timeout: { minutes: 5 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_05_riaccensione_manuale }
-      - wait_template: "{{ is_state('script.test_pc_05_riaccensione_manuale', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_06_distacco_cascata }
-      - wait_template: "{{ is_state('script.test_pc_06_distacco_cascata', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_07_riattivazione_parziale }
-      - wait_template: "{{ is_state('script.test_pc_07_riattivazione_parziale', 'off') }}"
-        timeout: { minutes: 3 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_08_carico_gia_spento }
-      - wait_template: "{{ is_state('script.test_pc_08_carico_gia_spento', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_09_sforamento_durante_riattivazione }
-      - wait_template: "{{ is_state('script.test_pc_09_sforamento_durante_riattivazione', 'off') }}"
-        timeout: { minutes: 5 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_10_mix_riattivazione }
-      - wait_template: "{{ is_state('script.test_pc_10_mix_riattivazione', 'off') }}"
-        timeout: { minutes: 5 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_11_pc_disabilitato }
-      - wait_template: "{{ is_state('script.test_pc_11_pc_disabilitato', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_12_force_stop }
-      - wait_template: "{{ is_state('script.test_pc_12_force_stop', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_13_force_start }
-      - wait_template: "{{ is_state('script.test_pc_13_force_start', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_14_reset_load }
-      - wait_template: "{{ is_state('script.test_pc_14_reset_load', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_15_unavailable }
-      - wait_template: "{{ is_state('script.test_pc_15_unavailable', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_16_doppio_picco }
-      - wait_template: "{{ is_state('script.test_pc_16_doppio_picco', 'off') }}"
-        timeout: { minutes: 3 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_17_no_restart_potenza_alta }
-      - wait_template: "{{ is_state('script.test_pc_17_no_restart_potenza_alta', 'off') }}"
-        timeout: { minutes: 3 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_18_set_thresholds_override }
-      - wait_template: "{{ is_state('script.test_pc_18_set_thresholds_override', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_19_set_thresholds_reset }
-      - wait_template: "{{ is_state('script.test_pc_19_set_thresholds_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_20_anti_flap }
-      - wait_template: "{{ is_state('script.test_pc_20_anti_flap', 'off') }}"
-        timeout: { minutes: 5 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_21_min_off_sec }
-      - wait_template: "{{ is_state('script.test_pc_21_min_off_sec', 'off') }}"
-        timeout: { minutes: 4 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_reset }
-      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
-        timeout: { minutes: 2 }
-
-      - service: script.turn_on
-        target: { entity_id: script.test_pc_22_move_load }
-      - wait_template: "{{ is_state('script.test_pc_22_move_load', 'off') }}"
-        timeout: { minutes: 3 }
-
-      - service: system_log.write
-        data:
-          logger: homeassistant.components.pc_test
-          level: debug
-          message: "========== [TEST PC] FINE SUITE — controlla i log per i risultati PASS/FAIL =========="
-
   ################################################################
   # TEST 18 — set_thresholds: override soglia immediata
   # Abbasso soglia immediata a 2500W via servizio.
@@ -1325,3 +1106,222 @@ automation:
           logger: homeassistant.components.pc_test
           level: debug
           message: "[TEST 22] Ordine ripristinato."
+
+################################################################
+# AUTOMAZIONE — esegue tutti gli script in sequenza
+# Ogni script viene atteso fino al completamento prima di
+# passare al successivo.
+# Avvio manuale da Developer Tools > Automazioni.
+################################################################
+automation:
+  - id: test_pc_esegui_tutti
+    alias: "[TEST PC] Esegui tutti i test in sequenza"
+    mode: single
+    trigger: []
+    action:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "========== [TEST PC] INIZIO SUITE =========="
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_01_distacco_immediato }
+      - wait_template: "{{ is_state('script.test_pc_01_distacco_immediato', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_02_distacco_ritardato }
+      - wait_template: "{{ is_state('script.test_pc_02_distacco_ritardato', 'off') }}"
+        timeout: { minutes: 3 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_03_riattivazione_automatica }
+      - wait_template: "{{ is_state('script.test_pc_03_riattivazione_automatica', 'off') }}"
+        timeout: { minutes: 3 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_04_auto_restart_disabilitato }
+      - wait_template: "{{ is_state('script.test_pc_04_auto_restart_disabilitato', 'off') }}"
+        timeout: { minutes: 5 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_05_riaccensione_manuale }
+      - wait_template: "{{ is_state('script.test_pc_05_riaccensione_manuale', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_06_distacco_cascata }
+      - wait_template: "{{ is_state('script.test_pc_06_distacco_cascata', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_07_riattivazione_parziale }
+      - wait_template: "{{ is_state('script.test_pc_07_riattivazione_parziale', 'off') }}"
+        timeout: { minutes: 3 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_08_carico_gia_spento }
+      - wait_template: "{{ is_state('script.test_pc_08_carico_gia_spento', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_09_sforamento_durante_riattivazione }
+      - wait_template: "{{ is_state('script.test_pc_09_sforamento_durante_riattivazione', 'off') }}"
+        timeout: { minutes: 5 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_10_mix_riattivazione }
+      - wait_template: "{{ is_state('script.test_pc_10_mix_riattivazione', 'off') }}"
+        timeout: { minutes: 5 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_11_pc_disabilitato }
+      - wait_template: "{{ is_state('script.test_pc_11_pc_disabilitato', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_12_force_stop }
+      - wait_template: "{{ is_state('script.test_pc_12_force_stop', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_13_force_start }
+      - wait_template: "{{ is_state('script.test_pc_13_force_start', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_14_reset_load }
+      - wait_template: "{{ is_state('script.test_pc_14_reset_load', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_15_unavailable }
+      - wait_template: "{{ is_state('script.test_pc_15_unavailable', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_16_doppio_picco }
+      - wait_template: "{{ is_state('script.test_pc_16_doppio_picco', 'off') }}"
+        timeout: { minutes: 3 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_17_no_restart_potenza_alta }
+      - wait_template: "{{ is_state('script.test_pc_17_no_restart_potenza_alta', 'off') }}"
+        timeout: { minutes: 3 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_18_set_thresholds_override }
+      - wait_template: "{{ is_state('script.test_pc_18_set_thresholds_override', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_19_set_thresholds_reset }
+      - wait_template: "{{ is_state('script.test_pc_19_set_thresholds_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_20_anti_flap }
+      - wait_template: "{{ is_state('script.test_pc_20_anti_flap', 'off') }}"
+        timeout: { minutes: 5 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_21_min_off_sec }
+      - wait_template: "{{ is_state('script.test_pc_21_min_off_sec', 'off') }}"
+        timeout: { minutes: 4 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_22_move_load }
+      - wait_template: "{{ is_state('script.test_pc_22_move_load', 'off') }}"
+        timeout: { minutes: 3 }
+
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "========== [TEST PC] FINE SUITE — controlla i log per i risultati PASS/FAIL =========="
