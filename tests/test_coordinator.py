@@ -1034,3 +1034,63 @@ class TestBugFixes:
         coord._watchdog_manual_restart()
         assert coord._loads[0].suspended_power == 0.0
         assert list(coord._loads[0].shed_timestamps) == []
+
+
+class TestN5N6Regressions:
+    """Regression tests for N5 (restore order) and N6 (temp skip timer)."""
+
+    @pytest.mark.asyncio
+    async def test_restore_skips_when_registry_empty(self, mock_hass, mock_config_entry):
+        """N5: async_restore_state is a no-op if entities not yet registered."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._loads[0].suspended_power = 0.0
+        # entity registry returns None for unknown unique_id → should not raise
+        await coord.async_restore_state()
+        assert coord._loads[0].suspended_power == 0.0
+
+    @pytest.mark.asyncio
+    async def test_under_threshold_timer_preserved_during_min_off_sec_cooldown(
+        self, mock_hass, mock_config_entry
+    ):
+        """N6: _under_threshold_since must not reset when the only skip is min_off_sec."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        load = coord._loads[0]
+        load.power_sensor = "sensor.p1"
+        load.switch = "switch.s1"
+        load.suspended_power = 1500.0
+        load.switch_state = "off"
+        load.auto_restart = True
+        load.keep_off = False
+        load.min_off_sec = 300  # still in cooldown
+        load.shed_timestamps = deque([datetime.now().timestamp()], maxlen=7)
+        sentinel = datetime.now() - timedelta(minutes=10)
+        coord._under_threshold_since = sentinel
+        coord._call_switch = AsyncMock(return_value=True)
+
+        await coord._restore_one_load(current_power=500.0, threshold_delayed=3000.0)
+
+        # Timer must be preserved — cooldown skip is temporary
+        assert coord._under_threshold_since == sentinel
+
+    @pytest.mark.asyncio
+    async def test_under_threshold_timer_cleared_when_all_permanent(
+        self, mock_hass, mock_config_entry
+    ):
+        """N6: _under_threshold_since resets when all skips are permanent (keep_off)."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        load = coord._loads[0]
+        load.power_sensor = "sensor.p1"
+        load.switch = "switch.s1"
+        load.suspended_power = 1500.0
+        load.switch_state = "off"
+        load.auto_restart = True
+        load.keep_off = True  # permanent block
+        load.min_off_sec = 0
+        sentinel = datetime.now() - timedelta(minutes=10)
+        coord._under_threshold_since = sentinel
+
+        await coord._restore_one_load(current_power=500.0, threshold_delayed=3000.0)
+
+        assert coord._under_threshold_since is None

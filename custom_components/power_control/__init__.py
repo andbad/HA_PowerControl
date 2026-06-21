@@ -101,7 +101,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _migrate_entity_ids(hass, entry)
 
     coordinator = PowerControlCoordinator(hass, entry)
-    await coordinator.async_restore_state()
     await coordinator.async_config_entry_first_refresh()
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
@@ -110,6 +109,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator.setup_global_sensor_listener()
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Restore suspended_power from sensor state — must happen after platforms are
+    # set up so the entity registry contains the per-load sensor unique_ids.
+    await coordinator.async_restore_state()
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
@@ -185,7 +188,7 @@ def _register_services(hass: HomeAssistant) -> None:
         if not await coord._call_switch("turn_off", load.switch):
             load.suspended_power = 0.0  # rollback on failure
             return
-        notify_entity: str = coord.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
+        notify_entity: str = coord._get_conf(CONF_NOTIFY_ENTITY, "")
         await async_notify(
             hass, notify_entity,
             title="Manual shed",
@@ -263,8 +266,8 @@ def _register_services(hass: HomeAssistant) -> None:
             data={**coord.config_entry.data, CONF_LOADS: loads},
         )
         coord.rebuild_loads()
-        await coord.async_request_refresh()
         await async_rebuild_dashboard(hass, coord.config_entry)
+        await coord.async_request_refresh()
         _LOGGER.info("[%s] Service: moved load %d %s (now at %d)", DOMAIN, index, direction, swap)
 
     async def handle_set_thresholds(call: ServiceCall) -> None:

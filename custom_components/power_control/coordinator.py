@@ -739,6 +739,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 )
                 return
 
+        any_temp_skip = False  # True if at least one load was skipped for a temporary reason
         for i, load in enumerate(self._loads):   # index 0 = highest priority first
             if not load.is_suspended:
                 continue
@@ -755,6 +756,13 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 )
                 continue
 
+            if not load.auto_restart:
+                _LOGGER.debug(
+                    "[%s] Load %d '%s': skip restore — auto_restart disabled",
+                    DOMAIN, i, load.name,
+                )
+                continue
+
             if load.min_off_sec > 0 and load.shed_timestamps:
                 elapsed_off = datetime.now().timestamp() - load.shed_timestamps[-1]
                 if elapsed_off < load.min_off_sec:
@@ -762,14 +770,8 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                         "[%s] Load %d '%s': skip restore — min_off_sec cooldown (%.0f / %d s)",
                         DOMAIN, i, load.name, elapsed_off, load.min_off_sec,
                     )
+                    any_temp_skip = True
                     continue
-
-            if not load.auto_restart:
-                _LOGGER.debug(
-                    "[%s] Load %d '%s': skip restore — auto_restart disabled",
-                    DOMAIN, i, load.name,
-                )
-                continue
 
             # Check headroom: would re-enabling this load keep us under threshold?
             projected = current_power + load.suspended_power
@@ -778,6 +780,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                     "[%s] Load %d '%s': skip restore — projected %.0f W ≥ %.0f W threshold",
                     DOMAIN, i, load.name, projected, threshold_delayed,
                 )
+                any_temp_skip = True
                 continue
 
             # Restore this load
@@ -834,11 +837,14 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
 
         _LOGGER.debug(
             "[%s] No restorable load found "
-            "(all suspended loads have keep_off, auto_restart=False, or insufficient headroom)",
+            "(all suspended loads have keep_off, auto_restart=False, insufficient headroom, or cooldown)",
             DOMAIN,
         )
-        # All suspended loads are permanently off or don't fit — clear timer
-        self._under_threshold_since = None
+        # Only clear the timer if every skip was permanent (keep_off / auto_restart=False).
+        # If any load was skipped temporarily (min_off_sec cooldown / headroom), keep
+        # the timer running so it doesn't restart from zero at the next poll.
+        if not any_temp_skip:
+            self._under_threshold_since = None
 
     # ──────────────────────────────────────────────────────────────────────────
     # State restore after HA restart  (replaces the step-3 stub)
