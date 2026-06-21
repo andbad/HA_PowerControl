@@ -664,7 +664,17 @@ script:
           message: >
             [TEST 11] VERIFICA —
             Carico 5 on (PC disabilitato, nessun distacco): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL — distaccato con PC disabilitato{% endif %}
-      # Riabilito PC
+      # Abbasso potenza prima di riabilitare PC per evitare distacco immediato
+      - service: input_number.set_value
+        data: { value: 0 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+            - input_number.test_pc_potenza_5
+      - delay: { seconds: 5 }
       - service: switch.turn_on
         target: { entity_id: switch.power_control_active }
 
@@ -975,28 +985,26 @@ script:
         data:
           logger: homeassistant.components.pc_test
           level: debug
-          message: "[TEST 20] INIZIO — 6 distacchi rapidi carico 5 → keep_off atteso."
-      # 6 cicli force_stop (FLAP_MAX_SHEDS+1) per superare la soglia
+          message: "[TEST 20] INIZIO — 7 force_stop consecutivi carico 5 (FLAP_MAX_SHEDS+1=6+1) → keep_off atteso."
+      # 7 force_stop consecutivi senza force_start (che azzererebbe shed_timestamps).
+      # FLAP_MAX_SHEDS=5, quindi > 5 sheds attiva keep_off.
       - repeat:
-          count: 6
+          count: 7
           sequence:
             - service: power_control.force_stop_load
               data: { load_index: 4 }
             - delay: { seconds: 2 }
-            - service: power_control.force_start_load
-              data: { load_index: 4 }
-            - delay: { seconds: 2 }
-      # Un ultimo force_stop per lasciarlo sospeso
-      - service: power_control.force_stop_load
-        data: { load_index: 4 }
-      - delay: { seconds: 5 }
+      - delay: { seconds: 3 }
       - service: system_log.write
         data:
           logger: homeassistant.components.pc_test
           level: debug
-          message: "[TEST 20] Anti-flap attivato. Abbasso potenza, verifico che carico 5 rimanga off."
+          message: >
+            [TEST 20] VERIFICA keep_off —
+            Carico 5 switch off dopo 7 force_stop: {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %}
+      # Verifica che il restore automatico non riattivi il carico
       - service: input_number.set_value
-        data: { value: 400 }
+        data: { value: 200 }
         target:
           entity_id:
             - input_number.test_pc_potenza_1
@@ -1009,8 +1017,8 @@ script:
           logger: homeassistant.components.pc_test
           level: debug
           message: >
-            [TEST 20] VERIFICA —
-            Carico 5 off (keep_off=True, anti-flap): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — riattivato nonostante anti-flap{% endif %}
+            [TEST 20] VERIFICA restore bloccato —
+            Carico 5 rimane off (keep_off blocca auto-restore): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — riattivato nonostante keep_off{% endif %}
 
   ################################################################
   # TEST 21 — min_off_sec: cooldown per-carico
