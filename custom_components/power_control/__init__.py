@@ -173,7 +173,7 @@ def _register_services(hass: HomeAssistant) -> None:
         if not load.is_configured:
             _LOGGER.warning("[%s] force_stop_load: load %d not configured", DOMAIN, index)
             return
-        # Save power and turn off
+        # Save power reading before turning off
         ps = hass.states.get(load.power_sensor)
         power = 0.0
         if ps and ps.state not in ("unavailable", "unknown"):
@@ -181,16 +181,26 @@ def _register_services(hass: HomeAssistant) -> None:
                 power = float(ps.state)
             except ValueError:
                 pass
-        await hass.services.async_call(
-            "switch", "turn_off", {"entity_id": load.switch}, blocking=True
-        )
-        load.suspended_power = max(power, 1.0)   # at least 1 W so it's marked suspended
+        load.suspended_power = max(power, 1.0)  # at least 1 W so it's marked suspended
+        if not await coord._call_switch("turn_off", load.switch):
+            load.suspended_power = 0.0  # rollback on failure
+            return
         notify_entity: str = coord.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
         await async_notify(
             hass, notify_entity,
-            title="Distacco manuale",
-            message=f"{load.name} distaccato manualmente.",
+            title="Manual shed",
+            message=f"{load.name} manually switched off.",
         )
+        hass.bus.async_fire(
+            f"{DOMAIN}_load_shed",
+            {
+                "load_name": load.name,
+                "load_index": index,
+                "switch": load.switch,
+                "suspended_power_w": load.suspended_power,
+            },
+        )
+        coord._record_shed_and_check_flap(load)
         coord.publish_current_state()
         _LOGGER.info("[%s] Service: force-stopped load %d '%s'", DOMAIN, index, load.name)
 
@@ -209,14 +219,23 @@ def _register_services(hass: HomeAssistant) -> None:
             return
         load.suspended_power = 0.0
         load.keep_off = False
-        await hass.services.async_call(
-            "switch", "turn_on", {"entity_id": load.switch}, blocking=True
-        )
+        load.shed_timestamps.clear()  # reset anti-flap counter on manual restart
+        if not await coord._call_switch("turn_on", load.switch):
+            return
         notify_entity: str = coord.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
         await async_notify(
             hass, notify_entity,
             title="Manual restart",
             message=f"{load.name} manually switched on.",
+        )
+        hass.bus.async_fire(
+            f"{DOMAIN}_load_restored",
+            {
+                "load_name": load.name,
+                "load_index": index,
+                "switch": load.switch,
+                "restored_power_w": 0.0,  # unknown at force-start time
+            },
         )
         coord.publish_current_state()
         _LOGGER.info("[%s] Service: force-started load %d '%s'", DOMAIN, index, load.name)

@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import pytest
 from datetime import datetime, timedelta
+from collections import deque
 from unittest.mock import AsyncMock, MagicMock, patch, call
 
 import sys
@@ -809,7 +810,8 @@ class TestAntiFlap:
         load = coord._loads[0]
         load.name = "Boiler"
         from custom_components.power_control.coordinator import FLAP_MAX_SHEDS
-        for _ in range(FLAP_MAX_SHEDS):
+        # keep_off triggers after FLAP_MAX_SHEDS+1 sheds (> not >=)
+        for _ in range(FLAP_MAX_SHEDS + 1):
             coord._record_shed_and_check_flap(load)
         assert load.keep_off is True
 
@@ -820,7 +822,7 @@ class TestAntiFlap:
         from custom_components.power_control.coordinator import FLAP_MAX_SHEDS, FLAP_WINDOW_SEC
         # Pre-fill with old timestamps outside the window
         old_ts = datetime.now().timestamp() - FLAP_WINDOW_SEC - 1
-        load.shed_timestamps = [old_ts] * (FLAP_MAX_SHEDS - 1)
+        load.shed_timestamps = deque([old_ts], maxlen=7) * (FLAP_MAX_SHEDS - 1)
         # One fresh shed — should NOT trigger keep_off
         coord._record_shed_and_check_flap(load)
         assert load.keep_off is False
@@ -840,8 +842,8 @@ class TestAntiFlap:
         mock_hass.services.async_call = AsyncMock()
 
         from custom_components.power_control.coordinator import FLAP_MAX_SHEDS
-        # Pre-fill timestamps to one below the limit
-        load.shed_timestamps = [datetime.now().timestamp()] * (FLAP_MAX_SHEDS - 1)
+        # Pre-fill timestamps to FLAP_MAX_SHEDS so the next shed pushes count > FLAP_MAX_SHEDS
+        load.shed_timestamps = deque([datetime.now().timestamp()], maxlen=7) * FLAP_MAX_SHEDS
 
         await coord._shed_one_load(current_power=4000.0, active_threshold=3000.0)
         assert load.keep_off is True
@@ -934,7 +936,7 @@ class TestPerLoadCooldown:
         load.auto_restart = True
         load.keep_off = False
         load.min_off_sec = 300  # 5 minutes cooldown
-        load.shed_timestamps = [datetime.now().timestamp()]  # just shed
+        load.shed_timestamps = deque([datetime.now().timestamp()], maxlen=7)  # just shed
         coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
         coord._call_switch = AsyncMock(return_value=True)
         mock_hass.services.async_call = AsyncMock()
@@ -958,7 +960,7 @@ class TestPerLoadCooldown:
         load.keep_off = False
         load.min_off_sec = 60  # 1 minute
         # Shed happened 2 minutes ago — cooldown expired
-        load.shed_timestamps = [datetime.now().timestamp() - 120]
+        load.shed_timestamps = deque([datetime.now().timestamp() - 120], maxlen=7)
         coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
         coord._call_switch = AsyncMock(return_value=True)
         mock_hass.services.async_call = AsyncMock()
@@ -979,7 +981,7 @@ class TestPerLoadCooldown:
         load.auto_restart = True
         load.keep_off = False
         load.min_off_sec = 0
-        load.shed_timestamps = [datetime.now().timestamp()]
+        load.shed_timestamps = deque([datetime.now().timestamp()], maxlen=7)
         coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
         coord._call_switch = AsyncMock(return_value=True)
         mock_hass.services.async_call = AsyncMock()
@@ -998,10 +1000,10 @@ class TestBugFixes:
         coord = make_coordinator(mock_hass, mock_config_entry)
         # Use the switch actually defined in the mock config entry
         real_switch = coord._loads[0].switch
-        coord._loads[0].shed_timestamps = [1000.0, 2000.0]
+        coord._loads[0].shed_timestamps = deque([1000.0, 2000.0], maxlen=7)
         coord.rebuild_loads()
         assert coord._loads[0].switch == real_switch
-        assert coord._loads[0].shed_timestamps == [1000.0, 2000.0]
+        assert list(coord._loads[0].shed_timestamps) == [1000.0, 2000.0]
 
     def test_rebuild_loads_preserves_keep_off(self, mock_hass, mock_config_entry):
         coord = make_coordinator(mock_hass, mock_config_entry)
@@ -1014,11 +1016,11 @@ class TestBugFixes:
         coord = make_coordinator(mock_hass, mock_config_entry)
         coord._loads[0].switch = "switch.unknown_not_in_config"
         coord._loads[0].keep_off = True
-        coord._loads[0].shed_timestamps = [9999.0]
+        coord._loads[0].shed_timestamps = deque([9999.0], maxlen=7)
         coord.rebuild_loads()
         # The config switch is switch.lavatrice — old "switch.unknown" not matched → fresh
         assert coord._loads[0].keep_off is False
-        assert coord._loads[0].shed_timestamps == []
+        assert list(coord._loads[0].shed_timestamps) == []
 
     # ── B2: watchdog clears shed_timestamps on manual restart ─────────────────
 
@@ -1028,7 +1030,7 @@ class TestBugFixes:
         coord = make_coordinator(mock_hass, mock_config_entry)
         coord._loads[0].suspended_power = 1000.0
         coord._loads[0].switch_state = "on"
-        coord._loads[0].shed_timestamps = [1000.0, 2000.0, 3000.0]
+        coord._loads[0].shed_timestamps = deque([1000.0, 2000.0, 3000.0], maxlen=7)
         coord._watchdog_manual_restart()
         assert coord._loads[0].suspended_power == 0.0
-        assert coord._loads[0].shed_timestamps == []
+        assert list(coord._loads[0].shed_timestamps) == []

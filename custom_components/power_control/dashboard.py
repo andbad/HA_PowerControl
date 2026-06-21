@@ -226,16 +226,16 @@ def _build_reorder_card(lang: str, loads: list[dict]) -> dict:
 
 # ── Dashboard content builder ──────────────────────────────────────────────────
 
-def _build_shed_history_card(lang: str, loads: list[dict]) -> dict:
-    """Build a history-graph card tracking suspended_power for each load."""
-    entities = []
-    for i, load in enumerate(loads):
-        name = load.get(LOAD_NAME, f"Load {i + 1}")
-        name_slug = slugify(f"power_control {name} suspended power")
-        entities.append({
-            "entity": f"sensor.{name_slug}",
-            "name": name,
-        })
+def _build_shed_history_card(lang: str, load_slugs: list[tuple[str, str]]) -> dict:
+    """Build a history-graph card tracking suspended_power for each load.
+
+    Args:
+        load_slugs: list of (name, suspended_sensor_entity_id) tuples.
+    """
+    entities = [
+        {"entity": entity_id, "name": name}
+        for name, entity_id in load_slugs
+    ]
     return {
         "type": "history-graph",
         "title": _t(lang, "shed_history_title"),
@@ -248,6 +248,8 @@ def _build_shed_history_card(lang: str, loads: list[dict]) -> dict:
 
 def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     """Build the full Lovelace dashboard config dict for this entry."""
+    # Invalidate strings cache on each rebuild so language changes are picked up
+    _STRINGS_CACHE.clear()
     # Resolve language: use HA language, fall back to "en"
     # Resolve language from entry config (set by user during setup),
     # falling back to HA system language and then "en".
@@ -280,9 +282,11 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
 
     # ── Per-load cards ────────────────────────────────────────────────────────
     load_cards = []
+    load_slugs: list[tuple[str, str]] = []  # (name, suspended_sensor_entity_id)
     for i, load in enumerate(loads):
         name = load.get(LOAD_NAME, f"Load {i + 1}")
         name_slug = slugify(f"power_control {name} suspended power")
+        load_slugs.append((name, f"sensor.{name_slug}"))
         switch_entity = load.get("switch", "")
         power_sensor = load.get("power_sensor", "")
         auto_restart = load.get("auto_restart", True)
@@ -487,7 +491,7 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
                     ],
                 },
                 # ── Shed history card ─────────────────────────────────────────
-                _build_shed_history_card(lang, loads),
+                _build_shed_history_card(lang, load_slugs),
                 # ── Configuration card ────────────────────────────────────────
                 settings_card,
                 # ── Reorder card ──────────────────────────────────────────────

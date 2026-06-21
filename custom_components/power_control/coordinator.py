@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
@@ -39,8 +40,8 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 # Anti-flap: block a load after this many sheds within the time window
-FLAP_MAX_SHEDS = 5
-FLAP_WINDOW_SEC = 600  # 10 minutes
+FLAP_MAX_SHEDS = 5       # block load when shed count reaches this value within the window
+FLAP_WINDOW_SEC = 600    # rolling window in seconds (10 minutes)
 
 
 @dataclass
@@ -59,7 +60,7 @@ class LoadState:
     keep_off: bool = False          # user-requested permanent off
 
     # Anti-flap: timestamps of recent sheds (rolling window)
-    shed_timestamps: list = field(default_factory=list)
+    shed_timestamps: deque = field(default_factory=lambda: deque(maxlen=FLAP_MAX_SHEDS + 1))
 
     # Derived (refreshed every coordinator update)
     current_power: float = 0.0     # live W reading
@@ -458,12 +459,8 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             return
 
         threshold_immediate, threshold_delayed = self.thresholds
-        delay_imm_sec: int = int(
-            self.config_entry.data.get(CONF_DELAY_IMMEDIATE_SEC, 30)
-        )
-        delay_del_min: int = int(
-            self.config_entry.data.get(CONF_DELAY_DELAYED_MIN, 10)
-        )
+        delay_imm_sec: int = int(self._get_conf(CONF_DELAY_IMMEDIATE_SEC, 30))
+        delay_del_min: int = int(self._get_conf(CONF_DELAY_DELAYED_MIN, 10))
         now = datetime.now()
 
         # ── Track how long we have been over each threshold ──────────────────
@@ -519,9 +516,11 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         """Record a shed event and set keep_off if flap limit is exceeded."""
         now = datetime.now()
         cutoff = now.timestamp() - FLAP_WINDOW_SEC
-        load.shed_timestamps = [t for t in load.shed_timestamps if t > cutoff]
+        # Prune entries outside the rolling window (deque maxlen handles size)
+        while load.shed_timestamps and load.shed_timestamps[0] < cutoff:
+            load.shed_timestamps.popleft()
         load.shed_timestamps.append(now.timestamp())
-        if len(load.shed_timestamps) >= FLAP_MAX_SHEDS:
+        if len(load.shed_timestamps) > FLAP_MAX_SHEDS:
             load.keep_off = True
             _LOGGER.warning(
                 "[%s] Load '%s' shed %d times in %d s — anti-flap: blocking auto-restart",
@@ -533,7 +532,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         action: str,
         entity_id: str,
         retries: int = 2,
-        retry_delay_s: float = 2.0,
+        retry_delay_s: float = 0.5,
     ) -> bool:
         """Call switch.turn_on/off with retry on failure.
 
@@ -571,9 +570,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         self, current_power: float, active_threshold: float
     ) -> None:
         """Turn off the lowest-priority active load that is actually drawing power."""
-        wait_sec: int = int(
-            self.config_entry.data.get(CONF_WAIT_BETWEEN_STOPS_SEC, 10)
-        )
+        wait_sec: int = int(self._get_conf(CONF_WAIT_BETWEEN_STOPS_SEC, 10))
 
         # Cooldown: block shed if the previous one happened too recently.
         # This replaces asyncio.sleep — the coordinator keeps running normally
@@ -629,7 +626,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             )
 
             # Notify
-            notify_entity: str = self.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
+            notify_entity: str = self._get_conf(CONF_NOTIFY_ENTITY, "")
             await async_notify(
                 self.hass,
                 notify_entity,
@@ -686,9 +683,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             return
 
         _, threshold_delayed = self.thresholds
-        wait_before_min: int = int(
-            self.config_entry.data.get(CONF_WAIT_BEFORE_START_MIN, 5)
-        )
+        wait_before_min: int = int(self._get_conf(CONF_WAIT_BEFORE_START_MIN, 5))
         now = datetime.now()
 
         # headroom_ok if at least one suspended load can be restored without exceeding threshold
@@ -732,9 +727,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         self, current_power: float, threshold_delayed: float
     ) -> None:
         """Turn on the highest-priority suspended load that fits within headroom."""
-        wait_min: int = int(
-            self.config_entry.data.get(CONF_WAIT_BETWEEN_STARTS_MIN, 5)
-        )
+        wait_min: int = int(self._get_conf(CONF_WAIT_BETWEEN_STARTS_MIN, 5))
 
         # Cooldown: block restore if the previous one happened too recently.
         if self._last_start_at is not None:
@@ -800,7 +793,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 continue
 
             # Notify
-            notify_entity: str = self.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
+            notify_entity: str = self._get_conf(CONF_NOTIFY_ENTITY, "")
             await async_notify(
                 self.hass,
                 notify_entity,

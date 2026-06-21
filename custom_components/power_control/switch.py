@@ -30,7 +30,7 @@ class PowerControlSwitch(RestoreEntity, SwitchEntity):
     """Master switch that enables or disables the power shedding logic."""
 
     _attr_has_entity_name = True
-    _attr_name = "Attivo"
+    _attr_name = "Active"
     _attr_icon = "mdi:car-cruise-control"
     _attr_should_poll = False
 
