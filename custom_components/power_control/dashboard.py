@@ -41,7 +41,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL_PATH = "power-control"
-DASHBOARD_VERSION = 9  # increment to force regeneration on next HA start
+DASHBOARD_VERSION = 10  # increment to force regeneration on next HA start
 
 _TRANSLATIONS_DIR = pathlib.Path(__file__).parent / "translations"
 
@@ -127,13 +127,13 @@ def _fmt_remaining(lang: str, remaining_sec: int | None) -> str:
     return _t(lang, "timer_sec_remaining", s=remaining_sec)
 
 
-def _timer_row(label: str, icon: str, attr_remaining: str) -> str:
+def _timer_row(label: str, icon: str, attr_remaining: str, idle_text: str) -> str:
     """Return a single Jinja2 text line for a timer row."""
     entity = "sensor.power_control_current_power"
     return (
         f"{{% set rem = state_attr('{entity}','{attr_remaining}') %}}"
         f"\n{icon} {label}: "
-        f"{{% if rem is none %}}—"
+        f"{{% if rem is none %}}{idle_text}"
         f"{{% elif rem >= 60 %}}"
         f"{{% set m = (rem // 60)|int %}}"
         f"{{% set s = (rem % 60)|int %}}"
@@ -145,12 +145,13 @@ def _timer_row(label: str, icon: str, attr_remaining: str) -> str:
 
 def _build_timer_card(lang: str) -> dict:
     """Build the timers card using a markdown card with plain Jinja2 text rows."""
+    idle = _t(lang, "timer_idle")
     rows = [
-        _timer_row(_t(lang, "timer_over_immediate"),  "⚡", "over_immediate_remaining_sec"),
-        _timer_row(_t(lang, "timer_over_delayed"),    "🕐", "over_delayed_remaining_sec"),
-        _timer_row(_t(lang, "timer_stop_cooldown"),   "⏸", "stop_cooldown_remaining_sec"),
-        _timer_row(_t(lang, "timer_under_threshold"), "🔄", "under_threshold_remaining_sec"),
-        _timer_row(_t(lang, "timer_start_cooldown"),  "⏱", "start_cooldown_remaining_sec"),
+        _timer_row(_t(lang, "timer_over_immediate"),  "⚡", "over_immediate_remaining_sec", idle),
+        _timer_row(_t(lang, "timer_over_delayed"),    "🕐", "over_delayed_remaining_sec",   idle),
+        _timer_row(_t(lang, "timer_stop_cooldown"),   "⏸", "stop_cooldown_remaining_sec",   idle),
+        _timer_row(_t(lang, "timer_under_threshold"), "🔄", "under_threshold_remaining_sec", idle),
+        _timer_row(_t(lang, "timer_start_cooldown"),  "⏱", "start_cooldown_remaining_sec",  idle),
     ]
 
     return {
