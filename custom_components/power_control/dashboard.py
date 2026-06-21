@@ -41,7 +41,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL_PATH = "power-control"
-DASHBOARD_VERSION = 10  # increment to force regeneration on next HA start
+DASHBOARD_VERSION = 11  # increment to force regeneration on next HA start
 
 _TRANSLATIONS_DIR = pathlib.Path(__file__).parent / "translations"
 
@@ -356,59 +356,59 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             {"type": "section", "label": _t(lang, "timing_section")},
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_immediate_threshold",
-                "attribute": "_pc_blank",  # non-existent attribute -> empty value, only suffix shown
+                "entity": "sensor.power_control_current_power",
+                "attribute": "cfg_delay_immediate_sec",
                 "name": _t(lang, "delay_immediate_label"),
                 "icon": "mdi:timer-outline",
                 "secondary_info": "none",
-                "suffix": f"{delay_imm_sec} {_t(lang, 'unit_seconds')}",
+                "suffix": _t(lang, "unit_seconds"),
             },
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_delayed_threshold",
-                "attribute": "_pc_blank",
+                "entity": "sensor.power_control_current_power",
+                "attribute": "cfg_delay_delayed_min",
                 "name": _t(lang, "delay_delayed_label"),
                 "icon": "mdi:timer-sand",
                 "secondary_info": "none",
-                "suffix": f"{delay_del_min} {_t(lang, 'unit_minutes')}",
+                "suffix": _t(lang, "unit_minutes"),
             },
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_immediate_threshold",
-                "attribute": "_pc_blank",
+                "entity": "sensor.power_control_current_power",
+                "attribute": "cfg_wait_between_stops_sec",
                 "name": _t(lang, "wait_stops_label"),
                 "icon": "mdi:pause",
                 "secondary_info": "none",
-                "suffix": f"{wait_stops_sec} {_t(lang, 'unit_seconds')}",
+                "suffix": _t(lang, "unit_seconds"),
             },
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_delayed_threshold",
-                "attribute": "_pc_blank",
+                "entity": "sensor.power_control_current_power",
+                "attribute": "cfg_wait_before_start_min",
                 "name": _t(lang, "wait_before_start_label"),
                 "icon": "mdi:clock-start",
                 "secondary_info": "none",
-                "suffix": f"{wait_before_min} {_t(lang, 'unit_minutes')}",
+                "suffix": _t(lang, "unit_minutes"),
             },
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_delayed_threshold",
-                "attribute": "_pc_blank",
+                "entity": "sensor.power_control_current_power",
+                "attribute": "cfg_wait_between_starts_min",
                 "name": _t(lang, "wait_starts_label"),
                 "icon": "mdi:play-circle-outline",
                 "secondary_info": "none",
-                "suffix": f"{wait_starts_min} {_t(lang, 'unit_minutes')}",
+                "suffix": _t(lang, "unit_minutes"),
             },
             # ── Notification ───────────────────────────────────────────────
             {"type": "section", "label": _t(lang, "notify_label")},
             {
                 "type": "attribute",
                 "entity": "sensor.power_control_current_power",
-                "attribute": "_pc_blank",
+                "attribute": "cfg_notify_entity",
                 "name": _t(lang, "notify_label"),
                 "icon": "mdi:bell-outline",
                 "secondary_info": "none",
-                "suffix": notify_entity if notify_entity else _t(lang, "notify_none"),
+                "suffix": "",
             },
         ],
     }

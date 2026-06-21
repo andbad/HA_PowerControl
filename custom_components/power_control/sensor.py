@@ -23,6 +23,12 @@ from .const import (
     CONF_INSTANCE_NAME,
     CONF_THRESHOLD_IMMEDIATE,
     CONF_THRESHOLD_DELAYED,
+    CONF_DELAY_IMMEDIATE_SEC,
+    CONF_DELAY_DELAYED_MIN,
+    CONF_WAIT_BETWEEN_STOPS_SEC,
+    CONF_WAIT_BETWEEN_STARTS_MIN,
+    CONF_WAIT_BEFORE_START_MIN,
+    CONF_NOTIFY_ENTITY,
 )
 from .coordinator import PowerControlCoordinator, PowerControlData
 
@@ -156,10 +162,18 @@ class PowerControlSensor(
 
     @property
     def extra_state_attributes(self) -> dict:
-        """Expose timer state and per-load suspended power on the current_power sensor."""
+        """Expose timer state, config values and per-load suspended power on the current_power sensor."""
         if self.entity_description.key != "current_power":
             return {}
         attrs = dict(self.coordinator.timer_state)
+        # Config values — used by settings card rows in the dashboard to avoid
+        # the "-" placeholder that HA renders for missing attributes.
+        attrs["cfg_delay_immediate_sec"]    = self.coordinator._get_conf(CONF_DELAY_IMMEDIATE_SEC, 0)
+        attrs["cfg_delay_delayed_min"]      = self.coordinator._get_conf(CONF_DELAY_DELAYED_MIN, 0)
+        attrs["cfg_wait_between_stops_sec"] = self.coordinator._get_conf(CONF_WAIT_BETWEEN_STOPS_SEC, 0)
+        attrs["cfg_wait_before_start_min"]  = self.coordinator._get_conf(CONF_WAIT_BEFORE_START_MIN, 0)
+        attrs["cfg_wait_between_starts_min"]= self.coordinator._get_conf(CONF_WAIT_BETWEEN_STARTS_MIN, 0)
+        attrs["cfg_notify_entity"]          = self.coordinator._get_conf(CONF_NOTIFY_ENTITY, "")
         if self.coordinator.data is not None:
             for i, load in enumerate(self.coordinator.data.loads):
                 attrs[f"load_{i}_suspended_w"] = load.suspended_power
