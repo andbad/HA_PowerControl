@@ -62,19 +62,15 @@ GLOBAL_SENSOR_DESCRIPTIONS: tuple[PowerControlSensorDescription, ...] = (
         name="Immediate threshold",
         native_unit_of_measurement=UnitOfPower.WATT,
         icon="mdi:flash-alert",
-        # Static value from config — does not change unless reconfigured
-        value_fn=lambda _coord, entry: float(
-            entry.data.get(CONF_THRESHOLD_IMMEDIATE, 0)
-        ),
+        # Reads effective threshold — reflects runtime override set via set_thresholds service
+        value_fn=lambda coord, _entry: coord.thresholds[0],
     ),
     PowerControlSensorDescription(
         key="threshold_delayed",
         name="Delayed threshold",
         native_unit_of_measurement=UnitOfPower.WATT,
         icon="mdi:flash-outline",
-        value_fn=lambda _coord, entry: float(
-            entry.data.get(CONF_THRESHOLD_DELAYED, 0)
-        ),
+        value_fn=lambda coord, _entry: coord.thresholds[1],
     ),
 )
 
