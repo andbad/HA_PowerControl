@@ -1031,8 +1031,297 @@ automation:
       - wait_template: "{{ is_state('script.test_pc_17_no_restart_potenza_alta', 'off') }}"
         timeout: { minutes: 3 }
 
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_18_set_thresholds_override }
+      - wait_template: "{{ is_state('script.test_pc_18_set_thresholds_override', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_19_set_thresholds_reset }
+      - wait_template: "{{ is_state('script.test_pc_19_set_thresholds_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_20_anti_flap }
+      - wait_template: "{{ is_state('script.test_pc_20_anti_flap', 'off') }}"
+        timeout: { minutes: 5 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_21_min_off_sec }
+      - wait_template: "{{ is_state('script.test_pc_21_min_off_sec', 'off') }}"
+        timeout: { minutes: 4 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_reset }
+      - wait_template: "{{ is_state('script.test_pc_reset', 'off') }}"
+        timeout: { minutes: 2 }
+
+      - service: script.turn_on
+        target: { entity_id: script.test_pc_22_move_load }
+      - wait_template: "{{ is_state('script.test_pc_22_move_load', 'off') }}"
+        timeout: { minutes: 3 }
+
       - service: system_log.write
         data:
           logger: homeassistant.components.pc_test
           level: debug
           message: "========== [TEST PC] FINE SUITE — controlla i log per i risultati PASS/FAIL =========="
+
+  ################################################################
+  # TEST 18 — set_thresholds: override soglia immediata
+  # Abbasso soglia immediata a 2500W via servizio.
+  # 4x700W = 2800W > 2500W → distacco atteso.
+  # Verifica anche che il sensore rifletta il nuovo valore.
+  ################################################################
+  test_pc_18_set_thresholds_override:
+    alias: "[TEST PC] Test 18 — set_thresholds: override soglia"
+    mode: single
+    sequence:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 18] INIZIO — Override soglia immediata a 2500W, poi 4x700W=2800W."
+      - service: power_control.set_thresholds
+        data:
+          immediate_threshold: 2500
+          delayed_threshold: 2000
+      - delay: { seconds: 3 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 18] Sensori soglia dopo override —
+            Immediata: {{ states('sensor.power_control_immediate_threshold') }}W (atteso 2500) |
+            Ritardata: {{ states('sensor.power_control_delayed_threshold') }}W (atteso 2000)
+      - service: input_number.set_value
+        data: { value: 700 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+      - service: input_number.set_value
+        data: { value: 0 }
+        target: { entity_id: input_number.test_pc_potenza_5 }
+      - delay: { seconds: 25 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 18] VERIFICA —
+            Sensore immediata = 2500W: {% if states('sensor.power_control_immediate_threshold')|int == 2500 %}PASS{% else %}FAIL ({{ states('sensor.power_control_immediate_threshold') }}){% endif %} |
+            Carico 4 off (distacco su soglia override 2500W): {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL{% endif %} |
+            Carichi 1-3 on: {% if is_state('switch.test_pc_switch_virtuale_1','on') and is_state('switch.test_pc_switch_virtuale_2','on') and is_state('switch.test_pc_switch_virtuale_3','on') %}PASS{% else %}FAIL{% endif %}
+
+  ################################################################
+  # TEST 19 — set_thresholds: reset override
+  # Prerequisito: override attivo (da T18).
+  # Chiama set_thresholds senza parametri → reset a valori config.
+  # Verifica che il sensore torni ai valori originali (4000/3300W).
+  # Verifica che la logica non distacchi con 4x700W=2800W < 3300W.
+  ################################################################
+  test_pc_19_set_thresholds_reset:
+    alias: "[TEST PC] Test 19 — set_thresholds: reset override"
+    mode: single
+    sequence:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 19] INIZIO — Reset override soglie. Atteso ritorno a 4000W/3300W."
+      - service: power_control.set_thresholds
+        data: {}
+      - delay: { seconds: 3 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 19] VERIFICA SENSORI —
+            Immediata = 4000W: {% if states('sensor.power_control_immediate_threshold')|int == 4000 %}PASS{% else %}FAIL ({{ states('sensor.power_control_immediate_threshold') }}){% endif %} |
+            Ritardata = 3300W: {% if states('sensor.power_control_delayed_threshold')|int == 3300 %}PASS{% else %}FAIL ({{ states('sensor.power_control_delayed_threshold') }}){% endif %}
+      - service: power_control.force_start_load
+        data: { load_index: 3 }
+      - service: input_number.set_value
+        data: { value: 700 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+      - delay: { seconds: 25 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 19] VERIFICA LOGICA —
+            Carichi 1-4 on (2800W < 3300W, nessun distacco): {% if is_state('switch.test_pc_switch_virtuale_1','on') and is_state('switch.test_pc_switch_virtuale_2','on') and is_state('switch.test_pc_switch_virtuale_3','on') and is_state('switch.test_pc_switch_virtuale_4','on') %}PASS{% else %}FAIL — distacco su soglia errata{% endif %}
+
+  ################################################################
+  # TEST 20 — Anti-flap: blocco dopo N distacchi rapidi
+  # Esegue FLAP_MAX_SHEDS+1 (6) force_stop+force_start rapidi
+  # sul carico 5, poi abbassa potenza.
+  # Atteso: carico 5 rimane off (keep_off=True), non riattivato.
+  # Nota: usa force_stop/start per simulare distacchi rapidi
+  # senza aspettare i delay reali del coordinator.
+  ################################################################
+  test_pc_20_anti_flap:
+    alias: "[TEST PC] Test 20 — Anti-flap: blocco dopo N distacchi"
+    mode: single
+    sequence:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 20] INIZIO — 6 distacchi rapidi carico 5 → keep_off atteso."
+      # 6 cicli force_stop (FLAP_MAX_SHEDS+1) per superare la soglia
+      - repeat:
+          count: 6
+          sequence:
+            - service: power_control.force_stop_load
+              data: { load_index: 4 }
+            - delay: { seconds: 2 }
+            - service: power_control.force_start_load
+              data: { load_index: 4 }
+            - delay: { seconds: 2 }
+      # Un ultimo force_stop per lasciarlo sospeso
+      - service: power_control.force_stop_load
+        data: { load_index: 4 }
+      - delay: { seconds: 5 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 20] Anti-flap attivato. Abbasso potenza, verifico che carico 5 rimanga off."
+      - service: input_number.set_value
+        data: { value: 400 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+      - delay: { minutes: 1, seconds: 20 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 20] VERIFICA —
+            Carico 5 off (keep_off=True, anti-flap): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — riattivato nonostante anti-flap{% endif %}
+
+  ################################################################
+  # TEST 21 — min_off_sec: cooldown per-carico
+  # Prerequisito: carico 5 configurato con min_off_sec >= 120s.
+  # Distacca carico 5, poi abbassa potenza immediatamente.
+  # Verifica a 60s: carico 5 ancora off (cooldown non scaduto).
+  # Verifica a 150s: carico 5 on (cooldown scaduto).
+  # ATTENZIONE: richiede min_off_sec=120 configurato sul carico 5.
+  ################################################################
+  test_pc_21_min_off_sec:
+    alias: "[TEST PC] Test 21 — min_off_sec: cooldown per-carico"
+    mode: single
+    sequence:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 21] INIZIO — Distacco carico 5, potenza subito sotto soglia. min_off_sec=120s."
+      - service: power_control.force_stop_load
+        data: { load_index: 4 }
+      - service: input_number.set_value
+        data: { value: 400 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+      - delay: { seconds: 60 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 21] VERIFICA INTERMEDIA (60s) —
+            Carico 5 ancora off (cooldown 120s non scaduto): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL — riattivato prematuramente{% endif %}
+      - delay: { seconds: 100 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 21] VERIFICA FINALE (160s) —
+            Carico 5 on (cooldown scaduto, riattivato): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL — non riattivato dopo cooldown{% endif %}
+
+  ################################################################
+  # TEST 22 — move_load: priorità modificata
+  # Carico 5 ha priorità più bassa (indice 4, distaccato per primo).
+  # Esegue move_load load_index=4 direction=up → carico 5 diventa
+  # indice 3, carico 4 diventa indice 4 (priorità più bassa).
+  # Poi supera soglia: atteso distacco del nuovo indice 4 (ex-carico 4).
+  ################################################################
+  test_pc_22_move_load:
+    alias: "[TEST PC] Test 22 — move_load: cambio priorità"
+    mode: single
+    sequence:
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 22] INIZIO — move_load: sposto carico 5 (indice 4) su di un posto. Ex-carico 4 diventa il meno prioritario."
+      - service: power_control.move_load
+        data:
+          load_index: 4
+          direction: up
+      - delay: { seconds: 5 }
+      - service: input_number.set_value
+        data: { value: 900 }
+        target:
+          entity_id:
+            - input_number.test_pc_potenza_1
+            - input_number.test_pc_potenza_2
+            - input_number.test_pc_potenza_3
+            - input_number.test_pc_potenza_4
+            - input_number.test_pc_potenza_5
+      - delay: { seconds: 25 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 22] VERIFICA —
+            Ex-carico 4 (ora indice 4, meno prioritario) off: {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL{% endif %} |
+            Carico 5 (ora indice 3, più prioritario) on: {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL{% endif %}
+      # Riporta ordine originale
+      - service: power_control.move_load
+        data:
+          load_index: 3
+          direction: down
+      - delay: { seconds: 3 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: "[TEST 22] Ordine ripristinato."
