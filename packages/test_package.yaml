@@ -412,7 +412,7 @@ script:
           message: >
             [TEST 5] VERIFICA —
             Switch 5 on: {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL{% endif %} |
-            Suspended carico 5 azzerata: {% set s = state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w') | int(-1) %}{% if s == 0 %}PASS{% else %}FAIL (valore: {{ s }}W){% endif %}
+            Suspended carico 5 azzerata: {% set s = state_attr('sensor.power_control_current_power','load_4_suspended_w') | int(-1) %}{% if s == 0 %}PASS{% else %}FAIL (valore: {{ s }}W){% endif %}
 
   ################################################################
   # TEST 6 — Distacco a cascata
@@ -644,7 +644,7 @@ script:
           level: debug
           message: "[TEST 11] INIZIO — Disabilito PC, porto 5x1000W=5000W. Nessun distacco atteso."
       - service: switch.turn_off
-        target: { entity_id: switch.power_control_attivo }
+        target: { entity_id: switch.power_control_active }
       - delay: { seconds: 5 }
       - service: input_number.set_value
         data: { value: 1000 }
@@ -666,7 +666,7 @@ script:
             Carico 5 on (PC disabilitato, nessun distacco): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL — distaccato con PC disabilitato{% endif %}
       # Riabilito PC
       - service: switch.turn_on
-        target: { entity_id: switch.power_control_attivo }
+        target: { entity_id: switch.power_control_active }
 
   ################################################################
   # TEST 12 — force_stop_load service
@@ -692,7 +692,7 @@ script:
           message: >
             [TEST 12] VERIFICA —
             Carico 5 off: {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %} |
-            Suspended > 0: {% if state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) > 0 %}PASS{% else %}FAIL{% endif %}
+            Suspended > 0: {% if state_attr('sensor.power_control_current_power','load_4_suspended_w')|int(0) > 0 %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
   # TEST 13 — force_start_load service
@@ -718,7 +718,7 @@ script:
           message: >
             [TEST 13] VERIFICA —
             Carico 5 on: {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL{% endif %} |
-            Suspended = 0: {% if state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
+            Suspended = 0: {% if state_attr('sensor.power_control_current_power','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
   # TEST 14 — reset_load service
@@ -747,7 +747,7 @@ script:
           message: >
             [TEST 14] VERIFICA —
             Carico 5 off (switch invariato): {% if is_state('switch.test_pc_switch_virtuale_5','off') %}PASS{% else %}FAIL{% endif %} |
-            Suspended = 0: {% if state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
+            Suspended = 0: {% if state_attr('sensor.power_control_current_power','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
   # TEST 15 — Carico unavailable
@@ -781,7 +781,7 @@ script:
           message: >
             [TEST 15] VERIFICA —
             Carico 4 off (distaccato normalmente): {% if is_state('switch.test_pc_switch_virtuale_4','off') %}PASS{% else %}FAIL{% endif %} |
-            Carico 5 off e suspended=0 (skippato, già spento): {% if is_state('switch.test_pc_switch_virtuale_5','off') and state_attr('sensor.power_control_potenza_attuale','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
+            Carico 5 off e suspended=0 (skippato, già spento): {% if is_state('switch.test_pc_switch_virtuale_5','off') and state_attr('sensor.power_control_current_power','load_4_suspended_w')|int(0) == 0 %}PASS{% else %}FAIL{% endif %}
 
   ################################################################
   # TEST 16 — Doppio picco (no restart prematuro)
