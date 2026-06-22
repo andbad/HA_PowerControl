@@ -41,7 +41,26 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL_PATH = "power-control"
-DASHBOARD_VERSION = 11  # increment to force regeneration on next HA start
+def _manifest_version_int() -> int:
+    """Convert manifest version string to a comparable integer.
+
+    "4.1.2" → 4_01_02 → 40102. This means every integration version bump
+    automatically triggers a dashboard rebuild on next HA start.
+    """
+    import json as _json
+    import pathlib as _pathlib
+    try:
+        manifest = _json.loads(
+            (_pathlib.Path(__file__).parent / "manifest.json").read_text()
+        )
+        parts = manifest.get("version", "0.0.0").split(".")
+        major, minor, patch = (int(p) for p in (parts + ["0", "0"])[:3])
+        return major * 10000 + minor * 100 + patch
+    except Exception:
+        return 0
+
+
+DASHBOARD_VERSION = _manifest_version_int()
 
 _TRANSLATIONS_DIR = pathlib.Path(__file__).parent / "translations"
 
