@@ -86,6 +86,7 @@ Choose how many loads to manage (1–20). Loads are sorted by priority: **Load 1
 | Power sensor | entity_id of the sensor (e.g., `sensor.washing_machine_power`) |
 | Switch | entity_id of the switch (e.g., `switch.shelly_washing_machine`) |
 | Auto reactivation | If disabled, the load will never be turned back on automatically |
+| Min off time | Minimum seconds the load must stay off before it can be auto-restarted (0 = disabled) |
 
 ---
 
@@ -103,25 +104,32 @@ All entities are grouped under a single **Power Control** device.
 
 | Entity | Description |
 |---|---|
-| `sensor.power_control_potenza_attuale` | Real-time measured power (W) |
-| `sensor.power_control_potenza_sospesa` | Total power of suspended loads (W) |
-| `sensor.power_control_soglia_distacco_immediato` | Configured immediate threshold (W) |
-| `sensor.power_control_soglia_distacco_ritardato` | Configured delayed threshold (W) |
-| `sensor.power_control_<name>_potenza_sospesa` | Suspended power for each individual load (W) |
+| `sensor.power_control_current_power` | Real-time measured power (W) |
+| `sensor.power_control_suspended_power` | Total power of suspended loads (W) |
+| `sensor.power_control_immediate_threshold` | Effective immediate threshold (W) — reflects runtime overrides |
+| `sensor.power_control_delayed_threshold` | Effective delayed threshold (W) — reflects runtime overrides |
+| `sensor.power_control_<name>_suspended_power` | Suspended power for each individual load (W) |
 
 Per-load sensors also expose the following attributes:
 
 - `current_power_w` — instantaneous measured power
 - `switch_state` — switch state (`on` / `off` / `unavailable`)
 - `auto_restart` — automatic reactivation enabled
-- `keep_off` — load manually blocked
+- `keep_off` — load blocked by anti-flap or manually
 - `is_suspended` — load currently suspended
+- `min_off_sec` — configured per-load cooldown in seconds
+
+The icon of each per-load sensor reflects its status at a glance:
+- 🔌 `mdi:power-plug` — active (drawing power)
+- 🔌 `mdi:power-plug-off` — suspended (shed by the coordinator)
+- 🚫 `mdi:cancel` — blocked (`keep_off = True`, will not auto-restart)
+- 🔌 `mdi:power-plug-outline` — switch unavailable or not configured
 
 ### Switches
 
 | Entity | Description |
 |---|---|
-| `switch.power_control_attivo` | Enables/disables the entire system. State persists across HA restarts. |
+| `switch.power_control_active` | Enables/disables the entire system. State persists across HA restarts. |
 
 ---
 
@@ -133,13 +141,17 @@ Per-load sensors also expose the following attributes:
 | `power_control.disable` | — | Disables control and resets all suspended powers |
 | `power_control.reset_load` | `load_index` (0–19) | Removes a load from the suspended list |
 | `power_control.force_stop_load` | `load_index` (0–19) | Immediately sheds a specific load |
-| `power_control.force_start_load` | `load_index` (0–19) | Immediate reactivation, ignoring timers |
+| `power_control.force_start_load` | `load_index` (0–19) | Immediate reactivation, ignoring timers and cooldowns |
+| `power_control.move_load` | `load_index` (0–19), `direction` (`up`/`down`) | Changes a load's priority position and rebuilds the dashboard |
+| `power_control.set_thresholds` | `immediate_threshold`, `delayed_threshold` | Runtime threshold override (see below) |
 
 The `load_index` corresponds to the position of the load in the wizard (0 = first position = highest priority). You can also find it as a `load_index` attribute on the load sensor.
 
 ---
 
-## `set_thresholds` service
+## Service Details
+
+### `set_thresholds`
 
 The `power_control.set_thresholds` service lets you override the intervention thresholds at runtime without changing the persistent configuration. This is useful when you want to adapt thresholds dynamically based on the active power source (grid, solar, solar EPS mode, time of day, etc.).
 
@@ -202,6 +214,49 @@ automation:
 
 ---
 
+## Anti-flap Protection
+
+If a load is shed more than **5 times within a 10-minute rolling window**, it is automatically blocked (`keep_off = True`) to prevent rapid on/off cycling. The load will no longer be auto-restarted; it can be re-enabled manually via `force_start_load` or by toggling the master switch off and on.
+
+The shed counter resets automatically when:
+- The load is restarted manually (watchdog detection)
+- `force_start_load` is called on that load
+- The master switch is toggled off/on
+
+---
+
+## Per-load Cooldown (`min_off_sec`)
+
+Each load can be configured with a minimum off time before the coordinator attempts to restore it. For example, setting `min_off_sec = 120` on a washing machine prevents it from being restarted within 2 minutes of being shed, giving the appliance time to properly power down.
+
+Set to `0` (default) to disable the cooldown.
+
+---
+
+## HA Bus Events
+
+The integration fires Home Assistant bus events that can be used in your own automations:
+
+| Event | Fired when | Data |
+|---|---|---|
+| `power_control_load_shed` | A load is turned off (automatic or via `force_stop_load`) | `load_name`, `load_index`, `switch`, `suspended_power_w` |
+| `power_control_load_restored` | A load is turned on (automatic or via `force_start_load`) | `load_name`, `load_index`, `switch`, `restored_power_w` |
+
+**Example — send a notification when a load is shed:**
+```yaml
+automation:
+  - alias: "Notify on load shed"
+    trigger:
+      - platform: event
+        event_type: power_control_load_shed
+    action:
+      - service: notify.mobile_app_phone
+        data:
+          message: "{{ trigger.event.data.load_name }} turned off ({{ trigger.event.data.suspended_power_w }} W)"
+```
+
+---
+
 ## Dashboard
 
 The Lovelace dashboard is automatically created at the end of the configuration wizard if the **"Create dashboard"** option is enabled. No manual file importing is required.
@@ -209,10 +264,13 @@ The Lovelace dashboard is automatically created at the end of the configuration 
 The dashboard includes:
 - Main load gauge with color coding (green/yellow/red)
 - Real-time status of current and suspended power
-- 1-hour history graph
-- Configuration card showing thresholds and timing parameters
-- Timer card with progress bars for internal timers
-- Individual cards for each configured load with power sensor and suspension state
+- 1-hour power history graph (current + thresholds)
+- **Load shed history** — 3-hour history graph showing suspended power per load (highlights exactly when each load was shed and restored)
+- Configuration card showing effective thresholds and timing parameters (reflects runtime overrides from `set_thresholds`)
+- Timer card showing internal coordinator timers
+- Individual cards for each configured load with power sensor, suspension state, and icon badge
+
+The dashboard is **automatically regenerated** on every integration version upgrade — no manual intervention needed.
 
 The dashboard is accessible in the sidebar as **Power Control** and is automatically removed when the integration is deleted.
 
