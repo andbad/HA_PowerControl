@@ -2,4 +2,4 @@
 # Dependabot monitors this file for updates.
 pytest>=7.4
 pytest-asyncio>=0.23
-pytest-homeassistant-custom-component>=0.13
+pytest-homeassistant-custom-component>=0.13.340
