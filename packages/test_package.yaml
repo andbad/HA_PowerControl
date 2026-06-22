@@ -197,6 +197,20 @@ script:
     alias: "[TEST PC] Reset stato iniziale"
     mode: single
     sequence:
+      # force_start su tutti i carichi: resetta keep_off e shed_timestamps nel coordinator
+      - service: power_control.force_start_load
+        data: { load_index: 0 }
+      - service: power_control.force_start_load
+        data: { load_index: 1 }
+      - service: power_control.force_start_load
+        data: { load_index: 2 }
+      - service: power_control.force_start_load
+        data: { load_index: 3 }
+      - service: power_control.force_start_load
+        data: { load_index: 4 }
+      # Reset override soglie
+      - service: power_control.set_thresholds
+        data: {}
       - service: input_boolean.turn_on
         target:
           entity_id:
@@ -642,10 +656,26 @@ script:
         data:
           logger: homeassistant.components.pc_test
           level: debug
-          message: "[TEST 11] INIZIO — Disabilito PC, porto 5x1000W=5000W. Nessun distacco atteso."
+          message: >
+            [TEST 11] INIZIO — Disabilito PC tramite switch (entity_id dipende dal nome istanza).
+            Switch trovato: {% set sw = states.switch | selectattr('attributes.unique_id','defined') | selectattr('attributes.unique_id','search','_enabled') | map(attribute='entity_id') | list | first | default('') %}{{ sw if sw else 'NON TROVATO — controlla entity_id' }}
+      # Disabilita il master switch cercandolo per unique_id suffix "_enabled"
+      - variables:
+          pc_switch: >
+            {{ states.switch
+               | selectattr('entity_id','search','power_control')
+               | map(attribute='entity_id')
+               | list | first | default('switch.power_control_active') }}
       - service: switch.turn_off
-        target: { entity_id: switch.power_control_active }
+        target: { entity_id: "{{ pc_switch }}" }
       - delay: { seconds: 5 }
+      - service: system_log.write
+        data:
+          logger: homeassistant.components.pc_test
+          level: debug
+          message: >
+            [TEST 11] PC switch = {{ pc_switch }} — stato: {{ states(pc_switch) }}
+            {% if states(pc_switch) == 'off' %}(disabilitato correttamente){% else %}ATTENZIONE: switch non disabilitato!{% endif %}
       - service: input_number.set_value
         data: { value: 1000 }
         target:
@@ -663,8 +693,9 @@ script:
           level: debug
           message: >
             [TEST 11] VERIFICA —
-            Carico 5 on (PC disabilitato, nessun distacco): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL — distaccato con PC disabilitato{% endif %}
-      # Abbasso potenza prima di riabilitare PC per evitare distacco immediato
+            PC disabilitato (switch off): {% if states(pc_switch) == 'off' %}PASS{% else %}FAIL — switch non disabilitato{% endif %} |
+            Carico 5 on (nessun distacco): {% if is_state('switch.test_pc_switch_virtuale_5','on') %}PASS{% else %}FAIL — distaccato con PC disabilitato{% endif %}
+      # Abbasso potenza prima di riabilitare PC
       - service: input_number.set_value
         data: { value: 0 }
         target:
@@ -676,7 +707,7 @@ script:
             - input_number.test_pc_potenza_5
       - delay: { seconds: 5 }
       - service: switch.turn_on
-        target: { entity_id: switch.power_control_active }
+        target: { entity_id: "{{ pc_switch }}" }
 
   ################################################################
   # TEST 12 — force_stop_load service
