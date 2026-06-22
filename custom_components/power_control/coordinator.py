@@ -1,13 +1,16 @@
 """Coordinator for Power Control integration."""
 from __future__ import annotations
 
+import asyncio
 import logging
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, State, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -31,9 +34,14 @@ from .const import (
     LOAD_POWER_SENSOR,
     LOAD_SWITCH,
     LOAD_AUTO_RESTART,
+    LOAD_MIN_OFF_SEC,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# Anti-flap: block a load after this many sheds within the time window
+FLAP_MAX_SHEDS = 5       # block load when shed count reaches this value within the window
+FLAP_WINDOW_SEC = 600    # rolling window in seconds (10 minutes)
 
 
 @dataclass
@@ -45,10 +53,14 @@ class LoadState:
     power_sensor: str          # entity_id or ""
     switch: str                # entity_id or ""
     auto_restart: bool
+    min_off_sec: int = 0        # minimum seconds off before auto-restart
 
     # Runtime state
     suspended_power: float = 0.0   # W at time of shutdown; 0 = load is active/unmanaged
     keep_off: bool = False          # user-requested permanent off
+
+    # Anti-flap: timestamps of recent sheds (rolling window)
+    shed_timestamps: deque = field(default_factory=lambda: deque(maxlen=FLAP_MAX_SHEDS + 1))
 
     # Derived (refreshed every coordinator update)
     current_power: float = 0.0     # live W reading
@@ -125,6 +137,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 power_sensor=l.get(LOAD_POWER_SENSOR, ""),
                 switch=l.get(LOAD_SWITCH, ""),
                 auto_restart=l.get(LOAD_AUTO_RESTART, True),
+                min_off_sec=int(l.get(LOAD_MIN_OFF_SEC, 0)),
             )
             for i, l in enumerate(raw)
         ]
@@ -298,6 +311,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                     load.suspended_power,
                 )
                 load.suspended_power = 0.0
+                load.shed_timestamps.clear()  # reset anti-flap counter on manual restart
 
     # ──────────────────────────────────────────────────────────────────────────
     # Public API (used by stop/start logic in step 5 & 6, and by services)
@@ -414,11 +428,17 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         Preserves suspended_power for loads that still exist, matched by
         switch entity_id so that reordering does not lose suspended state.
         """
-        old_by_switch = {l.switch: l.suspended_power for l in self._loads if l.switch}
+        old_by_switch = {
+            l.switch: (l.suspended_power, l.shed_timestamps, l.keep_off)
+            for l in self._loads if l.switch
+        }
         self._loads = self._build_loads()
         for load in self._loads:
             if load.switch and load.switch in old_by_switch:
-                load.suspended_power = old_by_switch[load.switch]
+                sp, ts, ko = old_by_switch[load.switch]
+                load.suspended_power = sp
+                load.shed_timestamps = ts
+                load.keep_off = ko
         _LOGGER.debug("[%s] Load list rebuilt (%d loads)", DOMAIN, len(self._loads))
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -439,12 +459,8 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             return
 
         threshold_immediate, threshold_delayed = self.thresholds
-        delay_imm_sec: int = int(
-            self.config_entry.data.get(CONF_DELAY_IMMEDIATE_SEC, 30)
-        )
-        delay_del_min: int = int(
-            self.config_entry.data.get(CONF_DELAY_DELAYED_MIN, 10)
-        )
+        delay_imm_sec: int = int(self._get_conf(CONF_DELAY_IMMEDIATE_SEC, 30))
+        delay_del_min: int = int(self._get_conf(CONF_DELAY_DELAYED_MIN, 10))
         now = datetime.now()
 
         # ── Track how long we have been over each threshold ──────────────────
@@ -496,13 +512,65 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         # ── Shed one load (lowest priority first = highest index first) ───────
         await self._shed_one_load(current_power, active_threshold)
 
+    def _record_shed_and_check_flap(self, load) -> None:
+        """Record a shed event and set keep_off if flap limit is exceeded."""
+        now = datetime.now()
+        cutoff = now.timestamp() - FLAP_WINDOW_SEC
+        # Prune entries outside the rolling window (deque maxlen handles size)
+        while load.shed_timestamps and load.shed_timestamps[0] < cutoff:
+            load.shed_timestamps.popleft()
+        load.shed_timestamps.append(now.timestamp())
+        if len(load.shed_timestamps) > FLAP_MAX_SHEDS:
+            load.keep_off = True
+            _LOGGER.warning(
+                "[%s] Load '%s' shed %d times in %d s — anti-flap: blocking auto-restart",
+                DOMAIN, load.name, len(load.shed_timestamps), FLAP_WINDOW_SEC,
+            )
+
+    async def _call_switch(
+        self,
+        action: str,
+        entity_id: str,
+        retries: int = 2,
+        retry_delay_s: float = 0.5,
+    ) -> bool:
+        """Call switch.turn_on/off with retry on failure.
+
+        Returns True on success, False if all attempts fail.
+        """
+        for attempt in range(1, retries + 2):  # 1 … retries+1
+            try:
+                await self.hass.services.async_call(
+                    "switch",
+                    action,
+                    {"entity_id": entity_id},
+                    blocking=True,
+                )
+                if attempt > 1:
+                    _LOGGER.info(
+                        "[%s] switch.%s %s succeeded on attempt %d",
+                        DOMAIN, action, entity_id, attempt,
+                    )
+                return True
+            except Exception as exc:  # noqa: BLE001
+                if attempt <= retries:
+                    _LOGGER.warning(
+                        "[%s] switch.%s %s failed (attempt %d/%d): %s — retrying in %.0f s",
+                        DOMAIN, action, entity_id, attempt, retries + 1, exc, retry_delay_s,
+                    )
+                    await asyncio.sleep(retry_delay_s)
+                else:
+                    _LOGGER.error(
+                        "[%s] switch.%s %s failed after %d attempts: %s — skipping load",
+                        DOMAIN, action, entity_id, retries + 1, exc,
+                    )
+        return False
+
     async def _shed_one_load(
         self, current_power: float, active_threshold: float
     ) -> None:
         """Turn off the lowest-priority active load that is actually drawing power."""
-        wait_sec: int = int(
-            self.config_entry.data.get(CONF_WAIT_BETWEEN_STOPS_SEC, 10)
-        )
+        wait_sec: int = int(self._get_conf(CONF_WAIT_BETWEEN_STOPS_SEC, 10))
 
         # Cooldown: block shed if the previous one happened too recently.
         # This replaces asyncio.sleep — the coordinator keeps running normally
@@ -548,12 +616,9 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 DOMAIN, i, load.name, load.suspended_power, load.switch,
             )
 
-            await self.hass.services.async_call(
-                "switch",
-                "turn_off",
-                {"entity_id": load.switch},
-                blocking=True,
-            )
+            if not await self._call_switch("turn_off", load.switch):
+                load.suspended_power = 0.0  # rollback — switch call failed
+                continue
 
             _LOGGER.debug(
                 "[%s] Load %d '%s' switched off — waiting %d s before next check",
@@ -561,13 +626,27 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             )
 
             # Notify
-            notify_entity: str = self.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
+            notify_entity: str = self._get_conf(CONF_NOTIFY_ENTITY, "")
             await async_notify(
                 self.hass,
                 notify_entity,
                 title="Power limit exceeded",
                 message=f"{load.name} switched off.",
             )
+
+            # Fire HA event for external automations
+            self.hass.bus.async_fire(
+                f"{DOMAIN}_load_shed",
+                {
+                    "load_name": load.name,
+                    "load_index": i,
+                    "switch": load.switch,
+                    "suspended_power_w": load.suspended_power,
+                },
+            )
+
+            # Anti-flap: record this shed and block auto-restart if limit exceeded
+            self._record_shed_and_check_flap(load)
 
             # Record the stop time — the next shed is blocked until
             # wait_between_stops_sec have elapsed (checked at the top of this method).
@@ -604,9 +683,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             return
 
         _, threshold_delayed = self.thresholds
-        wait_before_min: int = int(
-            self.config_entry.data.get(CONF_WAIT_BEFORE_START_MIN, 5)
-        )
+        wait_before_min: int = int(self._get_conf(CONF_WAIT_BEFORE_START_MIN, 5))
         now = datetime.now()
 
         # headroom_ok if at least one suspended load can be restored without exceeding threshold
@@ -650,9 +727,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         self, current_power: float, threshold_delayed: float
     ) -> None:
         """Turn on the highest-priority suspended load that fits within headroom."""
-        wait_min: int = int(
-            self.config_entry.data.get(CONF_WAIT_BETWEEN_STARTS_MIN, 5)
-        )
+        wait_min: int = int(self._get_conf(CONF_WAIT_BETWEEN_STARTS_MIN, 5))
 
         # Cooldown: block restore if the previous one happened too recently.
         if self._last_start_at is not None:
@@ -664,6 +739,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 )
                 return
 
+        any_temp_skip = False  # True if at least one load was skipped for a temporary reason
         for i, load in enumerate(self._loads):   # index 0 = highest priority first
             if not load.is_suspended:
                 continue
@@ -687,6 +763,16 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                 )
                 continue
 
+            if load.min_off_sec > 0 and load.shed_timestamps:
+                elapsed_off = datetime.now().timestamp() - load.shed_timestamps[-1]
+                if elapsed_off < load.min_off_sec:
+                    _LOGGER.debug(
+                        "[%s] Load %d '%s': skip restore — min_off_sec cooldown (%.0f / %d s)",
+                        DOMAIN, i, load.name, elapsed_off, load.min_off_sec,
+                    )
+                    any_temp_skip = True
+                    continue
+
             # Check headroom: would re-enabling this load keep us under threshold?
             projected = current_power + load.suspended_power
             if projected >= threshold_delayed:
@@ -694,6 +780,7 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
                     "[%s] Load %d '%s': skip restore — projected %.0f W ≥ %.0f W threshold",
                     DOMAIN, i, load.name, projected, threshold_delayed,
                 )
+                any_temp_skip = True
                 continue
 
             # Restore this load
@@ -704,20 +791,28 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             restored_watts = load.suspended_power
             load.suspended_power = 0.0
 
-            await self.hass.services.async_call(
-                "switch",
-                "turn_on",
-                {"entity_id": load.switch},
-                blocking=True,
-            )
+            if not await self._call_switch("turn_on", load.switch):
+                load.suspended_power = restored_watts  # rollback — switch call failed
+                continue
 
             # Notify
-            notify_entity: str = self.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
+            notify_entity: str = self._get_conf(CONF_NOTIFY_ENTITY, "")
             await async_notify(
                 self.hass,
                 notify_entity,
                 title="Power limit restored",
                 message=f"{load.name} switched on.",
+            )
+
+            # Fire HA event for external automations
+            self.hass.bus.async_fire(
+                f"{DOMAIN}_load_restored",
+                {
+                    "load_name": load.name,
+                    "load_index": i,
+                    "switch": load.switch,
+                    "restored_power_w": restored_watts,
+                },
             )
 
             # Reserve this wattage optimistically so the next restore in the same
@@ -742,11 +837,14 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
 
         _LOGGER.debug(
             "[%s] No restorable load found "
-            "(all suspended loads have keep_off, auto_restart=False, or insufficient headroom)",
+            "(all suspended loads have keep_off, auto_restart=False, insufficient headroom, or cooldown)",
             DOMAIN,
         )
-        # All suspended loads are permanently off or don't fit — clear timer
-        self._under_threshold_since = None
+        # Only clear the timer if every skip was permanent (keep_off / auto_restart=False).
+        # If any load was skipped temporarily (min_off_sec cooldown / headroom), keep
+        # the timer running so it doesn't restart from zero at the next poll.
+        if not any_temp_skip:
+            self._under_threshold_since = None
 
     # ──────────────────────────────────────────────────────────────────────────
     # State restore after HA restart  (replaces the step-3 stub)
@@ -755,13 +853,15 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
     async def async_restore_state(self) -> None:
         """Restore suspended_power from the per-load sensor entities.
 
-        The per-load sensor entities (created in step 4) persist their last
-        known state in HA's state machine across restarts.  We read that value
-        back here so the coordinator resumes correctly without losing track of
-        which loads were suspended before the restart.
+        Uses the entity registry to resolve the current entity_id from the
+        stable unique_id, so renames and reorders don't break the restore.
         """
+        registry = er.async_get(self.hass)
         for i, load in enumerate(self._loads):
-            entity_id = f"sensor.power_control_load_{i}_suspended"
+            unique_id = f"{self.config_entry.entry_id}_load_{i}_suspended"
+            entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+            if entity_id is None:
+                continue
             state = self.hass.states.get(entity_id)
             if state and state.state not in ("unavailable", "unknown", "None", ""):
                 try:

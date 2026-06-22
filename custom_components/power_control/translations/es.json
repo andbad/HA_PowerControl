@@ -145,7 +145,8 @@
     "timer_idle": "Inactivo",
     "timer_sec_remaining": "{s}s restantes",
     "timer_min_remaining": "{m}m {s}s restantes",
-    "reorder_title": "Orden de prioridad de cargas"
+    "reorder_title": "Orden de prioridad de cargas",
+    "shed_history_title": "Historial de desconexiones (últimas 3 horas)"
   },
   "selector": {
     "dashboard_language": {

@@ -36,4 +36,4 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/ -q
+          python -m pytest tests/ -q --tb=short

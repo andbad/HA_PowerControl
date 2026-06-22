@@ -23,6 +23,12 @@ from .const import (
     CONF_INSTANCE_NAME,
     CONF_THRESHOLD_IMMEDIATE,
     CONF_THRESHOLD_DELAYED,
+    CONF_DELAY_IMMEDIATE_SEC,
+    CONF_DELAY_DELAYED_MIN,
+    CONF_WAIT_BETWEEN_STOPS_SEC,
+    CONF_WAIT_BETWEEN_STARTS_MIN,
+    CONF_WAIT_BEFORE_START_MIN,
+    CONF_NOTIFY_ENTITY,
 )
 from .coordinator import PowerControlCoordinator, PowerControlData
 
@@ -62,19 +68,15 @@ GLOBAL_SENSOR_DESCRIPTIONS: tuple[PowerControlSensorDescription, ...] = (
         name="Immediate threshold",
         native_unit_of_measurement=UnitOfPower.WATT,
         icon="mdi:flash-alert",
-        # Static value from config — does not change unless reconfigured
-        value_fn=lambda _coord, entry: float(
-            entry.data.get(CONF_THRESHOLD_IMMEDIATE, 0)
-        ),
+        # Reads effective threshold — reflects runtime override set via set_thresholds service
+        value_fn=lambda coord, _entry: coord.thresholds[0],
     ),
     PowerControlSensorDescription(
         key="threshold_delayed",
         name="Delayed threshold",
         native_unit_of_measurement=UnitOfPower.WATT,
         icon="mdi:flash-outline",
-        value_fn=lambda _coord, entry: float(
-            entry.data.get(CONF_THRESHOLD_DELAYED, 0)
-        ),
+        value_fn=lambda coord, _entry: coord.thresholds[1],
     ),
 )
 
@@ -160,10 +162,18 @@ class PowerControlSensor(
 
     @property
     def extra_state_attributes(self) -> dict:
-        """Expose timer state and per-load suspended power on the current_power sensor."""
+        """Expose timer state, config values and per-load suspended power on the current_power sensor."""
         if self.entity_description.key != "current_power":
             return {}
         attrs = dict(self.coordinator.timer_state)
+        # Config values — used by settings card rows in the dashboard to avoid
+        # the "-" placeholder that HA renders for missing attributes.
+        attrs["cfg_delay_immediate_sec"]    = self.coordinator._get_conf(CONF_DELAY_IMMEDIATE_SEC, 0)
+        attrs["cfg_delay_delayed_min"]      = self.coordinator._get_conf(CONF_DELAY_DELAYED_MIN, 0)
+        attrs["cfg_wait_between_stops_sec"] = self.coordinator._get_conf(CONF_WAIT_BETWEEN_STOPS_SEC, 0)
+        attrs["cfg_wait_before_start_min"]  = self.coordinator._get_conf(CONF_WAIT_BEFORE_START_MIN, 0)
+        attrs["cfg_wait_between_starts_min"]= self.coordinator._get_conf(CONF_WAIT_BETWEEN_STARTS_MIN, 0)
+        attrs["cfg_notify_entity"]          = self.coordinator._get_conf(CONF_NOTIFY_ENTITY, "")
         if self.coordinator.data is not None:
             for i, load in enumerate(self.coordinator.data.loads):
                 attrs[f"load_{i}_suspended_w"] = load.suspended_power
@@ -181,7 +191,6 @@ class PowerControlLoadSensor(
     _attr_device_class = SensorDeviceClass.POWER
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfPower.WATT
-    _attr_icon = "mdi:power-plug-off"
 
     def __init__(
         self,
@@ -208,6 +217,23 @@ class PowerControlLoadSensor(
         if self._load_index >= len(loads):
             return None
         return loads[self._load_index].suspended_power
+
+    @property
+    def icon(self) -> str:
+        """Return an icon reflecting the load status."""
+        if self.coordinator.data is None:
+            return "mdi:power-plug-outline"
+        loads = self.coordinator.data.loads
+        if self._load_index >= len(loads):
+            return "mdi:power-plug-outline"
+        load = loads[self._load_index]
+        if load.keep_off:
+            return "mdi:cancel"
+        if load.is_suspended:
+            return "mdi:power-plug-off"
+        if load.switch_state in ("unavailable", "unknown"):
+            return "mdi:power-plug-outline"
+        return "mdi:power-plug"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

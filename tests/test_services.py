@@ -197,12 +197,12 @@ class TestForceStartLoad:
 class TestMasterSwitch:
     async def test_master_switch_entity_exists(self, hass, setup_integration):
         """The enable/disable switch entity must be created."""
-        state = hass.states.get("switch.power_control_attivo")
+        state = hass.states.get("switch.power_control_active")
         assert state is not None
 
     async def test_master_switch_starts_on(self, hass, setup_integration):
         """Master switch must be on by default."""
-        state = hass.states.get("switch.power_control_attivo")
+        state = hass.states.get("switch.power_control_active")
         assert state.state == "on"
 
     async def test_turning_off_master_switch_disables_coordinator(
@@ -212,7 +212,7 @@ class TestMasterSwitch:
         hass, coordinator, _ = setup_integration
         await hass.services.async_call(
             "switch", "turn_off",
-            {"entity_id": "switch.power_control_attivo"},
+            {"entity_id": "switch.power_control_active"},
             blocking=True,
         )
         await hass.async_block_till_done()
@@ -226,7 +226,7 @@ class TestMasterSwitch:
         coordinator.enabled = False
         await hass.services.async_call(
             "switch", "turn_on",
-            {"entity_id": "switch.power_control_attivo"},
+            {"entity_id": "switch.power_control_active"},
             blocking=True,
         )
         await hass.async_block_till_done()

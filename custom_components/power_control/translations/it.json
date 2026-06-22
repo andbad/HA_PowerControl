@@ -145,7 +145,8 @@
     "timer_idle": "Inattivo",
     "timer_sec_remaining": "{s}s rimanenti",
     "timer_min_remaining": "{m}m {s}s rimanenti",
-    "reorder_title": "Ordine priorità carichi"
+    "reorder_title": "Ordine priorità carichi",
+    "shed_history_title": "Storico distacchi carichi (ultime 3 ore)"
   },
   "selector": {
     "dashboard_language": {

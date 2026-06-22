@@ -23,6 +23,7 @@ LOAD_NAME = "name"
 LOAD_POWER_SENSOR = "power_sensor"
 LOAD_SWITCH = "switch"
 LOAD_AUTO_RESTART = "auto_restart"
+LOAD_MIN_OFF_SEC = "min_off_sec"
 
 # ── misc ──────────────────────────────────────────────────────────────────────
 UPDATE_INTERVAL_SEC = 5

@@ -41,7 +41,26 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL_PATH = "power-control"
-DASHBOARD_VERSION = 8  # increment to force regeneration on next HA start
+def _manifest_version_int() -> int:
+    """Convert manifest version string to a comparable integer.
+
+    "4.1.2" → 4_01_02 → 40102. This means every integration version bump
+    automatically triggers a dashboard rebuild on next HA start.
+    """
+    import json as _json
+    import pathlib as _pathlib
+    try:
+        manifest = _json.loads(
+            (_pathlib.Path(__file__).parent / "manifest.json").read_text()
+        )
+        parts = manifest.get("version", "0.0.0").split(".")
+        major, minor, patch = (int(p) for p in (parts + ["0", "0"])[:3])
+        return major * 10000 + minor * 100 + patch
+    except Exception:
+        return 0
+
+
+DASHBOARD_VERSION = _manifest_version_int()
 
 _TRANSLATIONS_DIR = pathlib.Path(__file__).parent / "translations"
 
@@ -127,13 +146,13 @@ def _fmt_remaining(lang: str, remaining_sec: int | None) -> str:
     return _t(lang, "timer_sec_remaining", s=remaining_sec)
 
 
-def _timer_row(label: str, icon: str, attr_remaining: str) -> str:
+def _timer_row(label: str, icon: str, attr_remaining: str, idle_text: str) -> str:
     """Return a single Jinja2 text line for a timer row."""
     entity = "sensor.power_control_current_power"
     return (
         f"{{% set rem = state_attr('{entity}','{attr_remaining}') %}}"
         f"\n{icon} {label}: "
-        f"{{% if rem is none %}}—"
+        f"{{% if rem is none %}}{idle_text}"
         f"{{% elif rem >= 60 %}}"
         f"{{% set m = (rem // 60)|int %}}"
         f"{{% set s = (rem % 60)|int %}}"
@@ -145,12 +164,13 @@ def _timer_row(label: str, icon: str, attr_remaining: str) -> str:
 
 def _build_timer_card(lang: str) -> dict:
     """Build the timers card using a markdown card with plain Jinja2 text rows."""
+    idle = _t(lang, "timer_idle")
     rows = [
-        _timer_row(_t(lang, "timer_over_immediate"),  "⚡", "over_immediate_remaining_sec"),
-        _timer_row(_t(lang, "timer_over_delayed"),    "🕐", "over_delayed_remaining_sec"),
-        _timer_row(_t(lang, "timer_stop_cooldown"),   "⏸", "stop_cooldown_remaining_sec"),
-        _timer_row(_t(lang, "timer_under_threshold"), "🔄", "under_threshold_remaining_sec"),
-        _timer_row(_t(lang, "timer_start_cooldown"),  "⏱", "start_cooldown_remaining_sec"),
+        _timer_row(_t(lang, "timer_over_immediate"),  "⚡", "over_immediate_remaining_sec", idle),
+        _timer_row(_t(lang, "timer_over_delayed"),    "🕐", "over_delayed_remaining_sec",   idle),
+        _timer_row(_t(lang, "timer_stop_cooldown"),   "⏸", "stop_cooldown_remaining_sec",   idle),
+        _timer_row(_t(lang, "timer_under_threshold"), "🔄", "under_threshold_remaining_sec", idle),
+        _timer_row(_t(lang, "timer_start_cooldown"),  "⏱", "start_cooldown_remaining_sec",  idle),
     ]
 
     return {
@@ -226,8 +246,30 @@ def _build_reorder_card(lang: str, loads: list[dict]) -> dict:
 
 # ── Dashboard content builder ──────────────────────────────────────────────────
 
+def _build_shed_history_card(lang: str, load_slugs: list[tuple[str, str]]) -> dict:
+    """Build a history-graph card tracking suspended_power for each load.
+
+    Args:
+        load_slugs: list of (name, suspended_sensor_entity_id) tuples.
+    """
+    entities = [
+        {"entity": entity_id, "name": name}
+        for name, entity_id in load_slugs
+    ]
+    return {
+        "type": "history-graph",
+        "title": _t(lang, "shed_history_title"),
+        "hours_to_show": 3,
+        "refresh_interval": 30,
+        "entities": entities,
+    }
+
+
+
 def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     """Build the full Lovelace dashboard config dict for this entry."""
+    # Invalidate strings cache on each rebuild so language changes are picked up
+    _STRINGS_CACHE.clear()
     # Resolve language: use HA language, fall back to "en"
     # Resolve language from entry config (set by user during setup),
     # falling back to HA system language and then "en".
@@ -260,9 +302,11 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
 
     # ── Per-load cards ────────────────────────────────────────────────────────
     load_cards = []
+    load_slugs: list[tuple[str, str]] = []  # (name, suspended_sensor_entity_id)
     for i, load in enumerate(loads):
         name = load.get(LOAD_NAME, f"Load {i + 1}")
         name_slug = slugify(f"power_control {name} suspended power")
+        load_slugs.append((name, f"sensor.{name_slug}"))
         switch_entity = load.get("switch", "")
         power_sensor = load.get("power_sensor", "")
         auto_restart = load.get("auto_restart", True)
@@ -331,59 +375,59 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
             {"type": "section", "label": _t(lang, "timing_section")},
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_immediate_threshold",
-                "attribute": "_pc_blank",  # non-existent attribute -> empty value, only suffix shown
+                "entity": "sensor.power_control_current_power",
+                "attribute": "cfg_delay_immediate_sec",
                 "name": _t(lang, "delay_immediate_label"),
                 "icon": "mdi:timer-outline",
                 "secondary_info": "none",
-                "suffix": f"{delay_imm_sec} {_t(lang, 'unit_seconds')}",
+                "suffix": _t(lang, "unit_seconds"),
             },
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_delayed_threshold",
-                "attribute": "_pc_blank",
+                "entity": "sensor.power_control_current_power",
+                "attribute": "cfg_delay_delayed_min",
                 "name": _t(lang, "delay_delayed_label"),
                 "icon": "mdi:timer-sand",
                 "secondary_info": "none",
-                "suffix": f"{delay_del_min} {_t(lang, 'unit_minutes')}",
+                "suffix": _t(lang, "unit_minutes"),
             },
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_immediate_threshold",
-                "attribute": "_pc_blank",
+                "entity": "sensor.power_control_current_power",
+                "attribute": "cfg_wait_between_stops_sec",
                 "name": _t(lang, "wait_stops_label"),
                 "icon": "mdi:pause",
                 "secondary_info": "none",
-                "suffix": f"{wait_stops_sec} {_t(lang, 'unit_seconds')}",
+                "suffix": _t(lang, "unit_seconds"),
             },
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_delayed_threshold",
-                "attribute": "_pc_blank",
+                "entity": "sensor.power_control_current_power",
+                "attribute": "cfg_wait_before_start_min",
                 "name": _t(lang, "wait_before_start_label"),
                 "icon": "mdi:clock-start",
                 "secondary_info": "none",
-                "suffix": f"{wait_before_min} {_t(lang, 'unit_minutes')}",
+                "suffix": _t(lang, "unit_minutes"),
             },
             {
                 "type": "attribute",
-                "entity": "sensor.power_control_delayed_threshold",
-                "attribute": "_pc_blank",
+                "entity": "sensor.power_control_current_power",
+                "attribute": "cfg_wait_between_starts_min",
                 "name": _t(lang, "wait_starts_label"),
                 "icon": "mdi:play-circle-outline",
                 "secondary_info": "none",
-                "suffix": f"{wait_starts_min} {_t(lang, 'unit_minutes')}",
+                "suffix": _t(lang, "unit_minutes"),
             },
             # ── Notification ───────────────────────────────────────────────
             {"type": "section", "label": _t(lang, "notify_label")},
             {
                 "type": "attribute",
                 "entity": "sensor.power_control_current_power",
-                "attribute": "_pc_blank",
+                "attribute": "cfg_notify_entity",
                 "name": _t(lang, "notify_label"),
                 "icon": "mdi:bell-outline",
                 "secondary_info": "none",
-                "suffix": notify_entity if notify_entity else _t(lang, "notify_none"),
+                "suffix": "",
             },
         ],
     }
@@ -466,6 +510,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
                         },
                     ],
                 },
+                # ── Shed history card ─────────────────────────────────────────
+                _build_shed_history_card(lang, load_slugs),
                 # ── Configuration card ────────────────────────────────────────
                 settings_card,
                 # ── Reorder card ──────────────────────────────────────────────

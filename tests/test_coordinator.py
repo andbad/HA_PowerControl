@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import pytest
 from datetime import datetime, timedelta
+from collections import deque
 from unittest.mock import AsyncMock, MagicMock, patch, call
 
 import sys
@@ -730,3 +731,366 @@ class TestCooldown:
 
         # Should complete in milliseconds, not seconds
         assert elapsed < 0.5, f"Coordinator blocked for {elapsed:.2f}s — cooldown not using timestamp"
+
+
+class TestCallSwitch:
+    """Tests for _call_switch retry logic."""
+
+    @pytest.mark.asyncio
+    async def test_success_on_first_attempt(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        mock_hass.services.async_call = AsyncMock()
+        result = await coord._call_switch("turn_off", "switch.test")
+        assert result is True
+        assert mock_hass.services.async_call.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_retry_on_failure_then_success(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        mock_hass.services.async_call = AsyncMock(
+            side_effect=[Exception("timeout"), None]
+        )
+        with patch("custom_components.power_control.coordinator.asyncio.sleep", new=AsyncMock()):
+            result = await coord._call_switch("turn_off", "switch.test", retries=1, retry_delay_s=0)
+        assert result is True
+        assert mock_hass.services.async_call.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_returns_false_after_all_retries(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        mock_hass.services.async_call = AsyncMock(side_effect=Exception("fail"))
+        with patch("custom_components.power_control.coordinator.asyncio.sleep", new=AsyncMock()):
+            result = await coord._call_switch("turn_off", "switch.test", retries=2, retry_delay_s=0)
+        assert result is False
+        assert mock_hass.services.async_call.call_count == 3  # 1 + 2 retries
+
+    @pytest.mark.asyncio
+    async def test_shed_rolls_back_on_switch_failure(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        coord._loads[0].power_sensor = "sensor.p1"
+        coord._loads[0].switch = "switch.s1"
+        coord._loads[0].current_power = 1500.0
+        coord._loads[0].switch_state = "on"
+        coord._call_switch = AsyncMock(return_value=False)
+        await coord._shed_one_load(current_power=4000.0, active_threshold=3000.0)
+        # suspended_power must be rolled back to 0
+        assert coord._loads[0].suspended_power == 0.0
+
+    @pytest.mark.asyncio
+    async def test_restore_rolls_back_on_switch_failure(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        coord._loads[0].power_sensor = "sensor.p1"
+        coord._loads[0].switch = "switch.s1"
+        coord._loads[0].suspended_power = 1500.0
+        coord._loads[0].switch_state = "off"
+        coord._loads[0].auto_restart = True
+        coord._loads[0].keep_off = False
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+        coord._call_switch = AsyncMock(return_value=False)
+        await coord._restore_one_load(current_power=500.0, threshold_delayed=3000.0)
+        # suspended_power must be restored on failure
+        assert coord._loads[0].suspended_power == 1500.0
+
+
+class TestAntiFlap:
+    """Tests for anti-flap protection (#12)."""
+
+    def test_shed_timestamps_recorded(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        load = coord._loads[0]
+        load.name = "Boiler"
+        coord._record_shed_and_check_flap(load)
+        assert len(load.shed_timestamps) == 1
+        assert load.keep_off is False
+
+    def test_flap_triggers_keep_off(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        load = coord._loads[0]
+        load.name = "Boiler"
+        from custom_components.power_control.coordinator import FLAP_MAX_SHEDS
+        # keep_off triggers after FLAP_MAX_SHEDS+1 sheds (> not >=)
+        for _ in range(FLAP_MAX_SHEDS + 1):
+            coord._record_shed_and_check_flap(load)
+        assert load.keep_off is True
+
+    def test_old_sheds_expire_from_window(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        load = coord._loads[0]
+        load.name = "Boiler"
+        from custom_components.power_control.coordinator import FLAP_MAX_SHEDS, FLAP_WINDOW_SEC
+        # Pre-fill with old timestamps outside the window
+        old_ts = datetime.now().timestamp() - FLAP_WINDOW_SEC - 1
+        load.shed_timestamps = deque([old_ts], maxlen=7) * (FLAP_MAX_SHEDS - 1)
+        # One fresh shed — should NOT trigger keep_off
+        coord._record_shed_and_check_flap(load)
+        assert load.keep_off is False
+        assert len(load.shed_timestamps) == 1  # old ones pruned
+
+    @pytest.mark.asyncio
+    async def test_shed_sets_keep_off_after_flap_limit(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        load = coord._loads[0]
+        load.power_sensor = "sensor.p1"
+        load.switch = "switch.s1"
+        load.switch_state = "on"
+        load.current_power = 1500.0
+        load.name = "Boiler"
+        coord._call_switch = AsyncMock(return_value=True)
+        mock_hass.services.async_call = AsyncMock()
+
+        from custom_components.power_control.coordinator import FLAP_MAX_SHEDS
+        # Pre-fill timestamps to FLAP_MAX_SHEDS so the next shed pushes count > FLAP_MAX_SHEDS
+        load.shed_timestamps = deque([datetime.now().timestamp()], maxlen=7) * FLAP_MAX_SHEDS
+
+        await coord._shed_one_load(current_power=4000.0, active_threshold=3000.0)
+        assert load.keep_off is True
+
+
+class TestCustomEvents:
+    """Tests for HA custom events (#7)."""
+
+    @pytest.mark.asyncio
+    async def test_load_shed_event_fired(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        load = coord._loads[0]
+        load.power_sensor = "sensor.p1"
+        load.switch = "switch.s1"
+        load.switch_state = "on"
+        load.current_power = 1500.0
+        load.name = "Boiler"
+        coord._call_switch = AsyncMock(return_value=True)
+        mock_hass.services.async_call = AsyncMock()
+        fired = []
+        mock_hass.bus.async_fire = MagicMock(side_effect=lambda e, d=None: fired.append((e, d)))
+
+        await coord._shed_one_load(current_power=4000.0, active_threshold=3000.0)
+
+        assert len(fired) == 1
+        event_name, event_data = fired[0]
+        assert event_name == "power_control_load_shed"
+        assert event_data["load_name"] == "Boiler"
+        assert event_data["switch"] == "switch.s1"
+        assert event_data["suspended_power_w"] == 1500.0
+
+    @pytest.mark.asyncio
+    async def test_load_restored_event_fired(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        load = coord._loads[0]
+        load.power_sensor = "sensor.p1"
+        load.switch = "switch.s1"
+        load.switch_state = "off"
+        load.suspended_power = 1500.0
+        load.auto_restart = True
+        load.keep_off = False
+        load.name = "Boiler"
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+        coord._call_switch = AsyncMock(return_value=True)
+        mock_hass.services.async_call = AsyncMock()
+        fired = []
+        mock_hass.bus.async_fire = MagicMock(side_effect=lambda e, d=None: fired.append((e, d)))
+
+        await coord._restore_one_load(current_power=500.0, threshold_delayed=3000.0)
+
+        assert len(fired) == 1
+        event_name, event_data = fired[0]
+        assert event_name == "power_control_load_restored"
+        assert event_data["load_name"] == "Boiler"
+        assert event_data["restored_power_w"] == 1500.0
+
+    @pytest.mark.asyncio
+    async def test_no_event_on_switch_failure(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        load = coord._loads[0]
+        load.power_sensor = "sensor.p1"
+        load.switch = "switch.s1"
+        load.switch_state = "on"
+        load.current_power = 1500.0
+        load.name = "Boiler"
+        coord._call_switch = AsyncMock(return_value=False)
+        fired = []
+        mock_hass.bus.async_fire = MagicMock(side_effect=lambda e, d=None: fired.append((e, d)))
+
+        await coord._shed_one_load(current_power=4000.0, active_threshold=3000.0)
+
+        assert fired == []
+
+
+class TestPerLoadCooldown:
+    """Tests for per-load min_off_sec cooldown (#11)."""
+
+    @pytest.mark.asyncio
+    async def test_restore_blocked_during_cooldown(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        load = coord._loads[0]
+        load.power_sensor = "sensor.p1"
+        load.switch = "switch.s1"
+        load.suspended_power = 1500.0
+        load.switch_state = "off"
+        load.auto_restart = True
+        load.keep_off = False
+        load.min_off_sec = 300  # 5 minutes cooldown
+        load.shed_timestamps = deque([datetime.now().timestamp()], maxlen=7)  # just shed
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+        coord._call_switch = AsyncMock(return_value=True)
+        mock_hass.services.async_call = AsyncMock()
+
+        await coord._restore_one_load(current_power=500.0, threshold_delayed=3000.0)
+
+        # Switch must NOT have been called
+        coord._call_switch.assert_not_called()
+        assert load.suspended_power == 1500.0
+
+    @pytest.mark.asyncio
+    async def test_restore_allowed_after_cooldown(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        load = coord._loads[0]
+        load.power_sensor = "sensor.p1"
+        load.switch = "switch.s1"
+        load.suspended_power = 1500.0
+        load.switch_state = "off"
+        load.auto_restart = True
+        load.keep_off = False
+        load.min_off_sec = 60  # 1 minute
+        # Shed happened 2 minutes ago — cooldown expired
+        load.shed_timestamps = deque([datetime.now().timestamp() - 120], maxlen=7)
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+        coord._call_switch = AsyncMock(return_value=True)
+        mock_hass.services.async_call = AsyncMock()
+
+        await coord._restore_one_load(current_power=500.0, threshold_delayed=3000.0)
+
+        coord._call_switch.assert_called_once_with("turn_on", "switch.s1")
+
+    @pytest.mark.asyncio
+    async def test_no_cooldown_when_min_off_sec_zero(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        load = coord._loads[0]
+        load.power_sensor = "sensor.p1"
+        load.switch = "switch.s1"
+        load.suspended_power = 1500.0
+        load.switch_state = "off"
+        load.auto_restart = True
+        load.keep_off = False
+        load.min_off_sec = 0
+        load.shed_timestamps = deque([datetime.now().timestamp()], maxlen=7)
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+        coord._call_switch = AsyncMock(return_value=True)
+        mock_hass.services.async_call = AsyncMock()
+
+        await coord._restore_one_load(current_power=500.0, threshold_delayed=3000.0)
+
+        coord._call_switch.assert_called_once_with("turn_on", "switch.s1")
+
+
+class TestBugFixes:
+    """Regression tests for B1, B2, B6."""
+
+    # ── B6: rebuild_loads preserves shed_timestamps and keep_off ─────────────
+
+    def test_rebuild_loads_preserves_shed_timestamps(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        # Use the switch actually defined in the mock config entry
+        real_switch = coord._loads[0].switch
+        coord._loads[0].shed_timestamps = deque([1000.0, 2000.0], maxlen=7)
+        coord.rebuild_loads()
+        assert coord._loads[0].switch == real_switch
+        assert list(coord._loads[0].shed_timestamps) == [1000.0, 2000.0]
+
+    def test_rebuild_loads_preserves_keep_off(self, mock_hass, mock_config_entry):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._loads[0].keep_off = True
+        coord.rebuild_loads()
+        assert coord._loads[0].keep_off is True
+
+    def test_rebuild_loads_resets_for_removed_switch(self, mock_hass, mock_config_entry):
+        """A load whose switch was overridden to unknown gets fresh state."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._loads[0].switch = "switch.unknown_not_in_config"
+        coord._loads[0].keep_off = True
+        coord._loads[0].shed_timestamps = deque([9999.0], maxlen=7)
+        coord.rebuild_loads()
+        # The config switch is switch.lavatrice — old "switch.unknown" not matched → fresh
+        assert coord._loads[0].keep_off is False
+        assert list(coord._loads[0].shed_timestamps) == []
+
+    # ── B2: watchdog clears shed_timestamps on manual restart ─────────────────
+
+    def test_watchdog_clears_shed_timestamps_on_manual_restart(
+        self, mock_hass, mock_config_entry
+    ):
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._loads[0].suspended_power = 1000.0
+        coord._loads[0].switch_state = "on"
+        coord._loads[0].shed_timestamps = deque([1000.0, 2000.0, 3000.0], maxlen=7)
+        coord._watchdog_manual_restart()
+        assert coord._loads[0].suspended_power == 0.0
+        assert list(coord._loads[0].shed_timestamps) == []
+
+
+class TestN5N6Regressions:
+    """Regression tests for N5 (restore order) and N6 (temp skip timer)."""
+
+    @pytest.mark.asyncio
+    async def test_restore_skips_when_registry_empty(self, mock_hass, mock_config_entry):
+        """N5: async_restore_state is a no-op if entities not yet registered."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord._loads[0].suspended_power = 0.0
+        # entity registry returns None for unknown unique_id → should not raise
+        await coord.async_restore_state()
+        assert coord._loads[0].suspended_power == 0.0
+
+    @pytest.mark.asyncio
+    async def test_under_threshold_timer_preserved_during_min_off_sec_cooldown(
+        self, mock_hass, mock_config_entry
+    ):
+        """N6: _under_threshold_since must not reset when the only skip is min_off_sec."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        load = coord._loads[0]
+        load.power_sensor = "sensor.p1"
+        load.switch = "switch.s1"
+        load.suspended_power = 1500.0
+        load.switch_state = "off"
+        load.auto_restart = True
+        load.keep_off = False
+        load.min_off_sec = 300  # still in cooldown
+        load.shed_timestamps = deque([datetime.now().timestamp()], maxlen=7)
+        sentinel = datetime.now() - timedelta(minutes=10)
+        coord._under_threshold_since = sentinel
+        coord._call_switch = AsyncMock(return_value=True)
+
+        await coord._restore_one_load(current_power=500.0, threshold_delayed=3000.0)
+
+        # Timer must be preserved — cooldown skip is temporary
+        assert coord._under_threshold_since == sentinel
+
+    @pytest.mark.asyncio
+    async def test_under_threshold_timer_cleared_when_all_permanent(
+        self, mock_hass, mock_config_entry
+    ):
+        """N6: _under_threshold_since resets when all skips are permanent (keep_off)."""
+        coord = make_coordinator(mock_hass, mock_config_entry)
+        coord.enabled = True
+        load = coord._loads[0]
+        load.power_sensor = "sensor.p1"
+        load.switch = "switch.s1"
+        load.suspended_power = 1500.0
+        load.switch_state = "off"
+        load.auto_restart = True
+        load.keep_off = True  # permanent block
+        load.min_off_sec = 0
+        sentinel = datetime.now() - timedelta(minutes=10)
+        coord._under_threshold_since = sentinel
+
+        await coord._restore_one_load(current_power=500.0, threshold_delayed=3000.0)
+
+        assert coord._under_threshold_since is None

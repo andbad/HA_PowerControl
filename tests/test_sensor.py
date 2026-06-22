@@ -148,3 +148,56 @@ class TestDeviceGrouping:
         )
         device = list(devices)[0]
         assert device.name == "Power Control"
+
+
+class TestLoadSensorIcon:
+    """Tests for dynamic icon badge on per-load sensors (#5).
+
+    Tests use the entity's icon property directly to avoid interference
+    from _refresh_load_states overwriting switch_state during async_request_refresh.
+    """
+
+    def _get_load_entity(self, hass, coordinator, index=0):
+        from custom_components.power_control.sensor import PowerControlLoadSensor
+        for entity in hass.states.async_all():
+            pass  # just to ensure entities registered
+        # Find the entity object via platform entities
+        load = coordinator.loads[index]
+        from unittest.mock import MagicMock
+        entry = MagicMock()
+        entry.entry_id = coordinator.config_entry.entry_id
+        entity = PowerControlLoadSensor(coordinator, coordinator.config_entry, index)
+        return entity
+
+    def test_icon_active(self, hass, setup_integration):
+        """Active load (switch on, not suspended) → green plug icon."""
+        _, coordinator, _ = setup_integration
+        entity = self._get_load_entity(hass, coordinator)
+        coordinator.loads[0].switch_state = "on"
+        coordinator.loads[0].suspended_power = 0.0
+        coordinator.loads[0].keep_off = False
+        assert entity.icon == "mdi:power-plug"
+
+    def test_icon_suspended(self, hass, setup_integration):
+        """Suspended load → off plug icon."""
+        _, coordinator, _ = setup_integration
+        entity = self._get_load_entity(hass, coordinator)
+        coordinator.loads[0].suspended_power = 1500.0
+        coordinator.loads[0].keep_off = False
+        assert entity.icon == "mdi:power-plug-off"
+
+    def test_icon_keep_off(self, hass, setup_integration):
+        """Blocked load (keep_off=True) → cancel icon."""
+        _, coordinator, _ = setup_integration
+        entity = self._get_load_entity(hass, coordinator)
+        coordinator.loads[0].keep_off = True
+        assert entity.icon == "mdi:cancel"
+
+    def test_icon_unavailable(self, hass, setup_integration):
+        """Unavailable switch → outline plug icon."""
+        _, coordinator, _ = setup_integration
+        entity = self._get_load_entity(hass, coordinator)
+        coordinator.loads[0].switch_state = "unavailable"
+        coordinator.loads[0].suspended_power = 0.0
+        coordinator.loads[0].keep_off = False
+        assert entity.icon == "mdi:power-plug-outline"
