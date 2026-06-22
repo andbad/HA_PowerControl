@@ -1,5 +1,5 @@
 # Test dependencies for Power Control
 # Dependabot monitors this file for updates.
-pytest>=9.1.1
-pytest-asyncio>=1.4.0
-pytest-homeassistant-custom-component>=0.13
+pytest>=9.1
+pytest-asyncio>=1.4
+pytest-homeassistant-custom-component==0.13.205  # last version supporting Python 3.12
