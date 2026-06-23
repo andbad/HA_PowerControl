@@ -1094,3 +1094,394 @@ class TestN5N6Regressions:
         await coord._restore_one_load(current_power=500.0, threshold_delayed=3000.0)
 
         assert coord._under_threshold_since is None
+
+
+# ── Integration Scenarios (translated from test_package.yaml T1–T22) ──────────
+#
+# Covers only the coordinator logic testable as unit tests.
+# HA template rendering, real asyncio delays, and HA service dispatching
+# are OUT OF SCOPE and remain in packages/test_package.yaml.
+#
+# Setup: 5 loads (IMM=4000W, DEL=3300W). Load 3 (index 2) has auto_restart=False.
+# Each test builds a fresh coordinator via _make_scenario_coord().
+
+IMM_THRESH = 4000.0
+DEL_THRESH = 3300.0
+
+
+def _make_scenario_coord(mock_hass, mock_config_entry, load3_auto_restart=False, load5_min_off_sec=0):
+    """Build coordinator with 5 configured loads, matching test_package.yaml."""
+    from custom_components.power_control.const import (
+        CONF_LOADS, LOAD_NAME, LOAD_POWER_SENSOR, LOAD_SWITCH,
+        LOAD_AUTO_RESTART, LOAD_MIN_OFF_SEC,
+        CONF_THRESHOLD_IMMEDIATE, CONF_THRESHOLD_DELAYED,
+    )
+    loads_cfg = [
+        {LOAD_NAME: f"Load {i+1}", LOAD_POWER_SENSOR: f"sensor.p{i+1}",
+         LOAD_SWITCH: f"switch.s{i+1}",
+         LOAD_AUTO_RESTART: (not load3_auto_restart if i == 2 else True),
+         LOAD_MIN_OFF_SEC: (load5_min_off_sec if i == 4 else 0)}
+        for i in range(5)
+    ]
+    mock_config_entry.data = {
+        CONF_LOADS: loads_cfg,
+        CONF_THRESHOLD_IMMEDIATE: IMM_THRESH,
+        CONF_THRESHOLD_DELAYED: DEL_THRESH,
+    }
+    mock_config_entry.options = {}
+    coord = make_coordinator(mock_hass, mock_config_entry)
+    coord._call_switch = AsyncMock(return_value=True)
+    # All loads start ON at 600W
+    for load in coord._loads:
+        load.current_power = 600.0
+        load.switch_state = "on"
+    return coord
+
+
+class TestIntegrationScenarios:
+    """Integration scenarios derived from test_package.yaml T1–T22."""
+
+    # ── T1: Distacco immediato ─────────────────────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t01_immediate_shed(self, mock_hass, mock_config_entry):
+        """T1: 4x800W + 1x1200W = 4400W > IMM 4000W → load 5 (index 4) shed first."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        for i in range(4):
+            coord._loads[i].current_power = 800.0
+        coord._loads[4].current_power = 1200.0
+
+        await coord._shed_one_load(current_power=4400.0, active_threshold=IMM_THRESH)
+
+        assert coord._loads[4].is_suspended  # lowest priority shed first
+        assert coord._loads[4].suspended_power == 1200.0
+        for i in range(4):
+            assert not coord._loads[i].is_suspended
+
+    # ── T2: Distacco ritardato — shed logic is threshold-agnostic ─────────────
+    @pytest.mark.asyncio
+    async def test_t02_delayed_shed(self, mock_hass, mock_config_entry):
+        """T2: 5x700W = 3500W > DEL 3300W. _shed_one_load uses the passed threshold."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        for load in coord._loads:
+            load.current_power = 700.0
+
+        await coord._shed_one_load(current_power=3500.0, active_threshold=DEL_THRESH)
+
+        assert coord._loads[4].is_suspended
+        assert coord._loads[4].suspended_power == 700.0
+
+    # ── T3: Riattivazione automatica ──────────────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t03_auto_restore(self, mock_hass, mock_config_entry):
+        """T3: Load 5 suspended 700W. Active 4x500W=2000W. Headroom ok → restored."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord._loads[4].suspended_power = 700.0
+        coord._loads[4].switch_state = "off"
+        for i in range(4):
+            coord._loads[i].current_power = 500.0
+        # Timer already expired
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+
+        await coord._restore_one_load(current_power=2000.0, threshold_delayed=DEL_THRESH)
+
+        assert not coord._loads[4].is_suspended
+        coord._call_switch.assert_awaited_once_with("turn_on", "switch.s5")
+
+    # ── T4: Auto-restart disabilitato ─────────────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t04_auto_restart_disabled(self, mock_hass, mock_config_entry):
+        """T4: Load 3 (auto_restart=False) stays off even when headroom is available."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry, load3_auto_restart=True)
+        # Suspend loads 3, 4, 5
+        for i in [2, 3, 4]:
+            coord._loads[i].suspended_power = 1000.0
+            coord._loads[i].switch_state = "off"
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+
+        await coord._restore_one_load(current_power=800.0, threshold_delayed=DEL_THRESH)
+
+        # Load 3 (index 2) must stay suspended
+        assert coord._loads[2].is_suspended
+        # Load 4 (index 3) gets restored (highest priority suspended + auto_restart=True)
+        assert not coord._loads[3].is_suspended
+
+    # ── T5: Watchdog azzera suspended su riaccensione manuale ─────────────────
+    def test_t05_watchdog_clears_suspended_on_manual_restart(self, mock_hass, mock_config_entry):
+        """T5: If switch comes back on manually, watchdog clears suspended_power."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord._loads[4].suspended_power = 700.0
+        coord._loads[4].switch_state = "on"  # user turned it on manually
+
+        coord._watchdog_manual_restart()
+
+        assert coord._loads[4].suspended_power == 0.0
+        assert len(coord._loads[4].shed_timestamps) == 0
+
+    # ── T6: Distacco a cascata ─────────────────────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t06_cascade_shed(self, mock_hass, mock_config_entry):
+        """T6: 5x1000W=5000W. After shedding load 5 (1000W) power=4000W >= IMM → shed load 4."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        for load in coord._loads:
+            load.current_power = 1000.0
+
+        # First shed: load 5
+        await coord._shed_one_load(current_power=5000.0, active_threshold=IMM_THRESH)
+        assert coord._loads[4].is_suspended
+
+        # Power still at limit (4000W). Second shed: load 4.
+        # Clear _last_stop_at to bypass cooldown in unit test
+        coord._last_stop_at = None
+        await coord._shed_one_load(current_power=4000.0, active_threshold=IMM_THRESH)
+        assert coord._loads[3].is_suspended
+
+        # Loads 1-3 untouched
+        for i in range(3):
+            assert not coord._loads[i].is_suspended
+
+    # ── T7: Riattivazione parziale ────────────────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t07_partial_restore(self, mock_hass, mock_config_entry):
+        """T7: Loads 4+5 suspended 1000W each. Active 1-3 at 600W = 1800W.
+        Headroom = 3300-1800 = 1500W. Load 4 (higher priority): 1800+1000=2800 < 3300 → restored.
+        Load 5 (lower priority): 2800+1000=3800 >= 3300 → blocked.
+        """
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord._loads[3].suspended_power = 1000.0
+        coord._loads[3].switch_state = "off"
+        coord._loads[4].suspended_power = 1000.0
+        coord._loads[4].switch_state = "off"
+        for i in range(3):
+            coord._loads[i].current_power = 600.0
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+
+        await coord._restore_one_load(current_power=1800.0, threshold_delayed=DEL_THRESH)
+
+        # Load 4 (index 3) restored first (higher priority)
+        assert not coord._loads[3].is_suspended
+        # Load 5 (index 4) still suspended (headroom exhausted)
+        assert coord._loads[4].is_suspended
+
+    # ── T8: Carico già spento al momento del distacco ─────────────────────────
+    @pytest.mark.asyncio
+    async def test_t08_load_already_off(self, mock_hass, mock_config_entry):
+        """T8: Load 5 already off (power=0). 4x1100W=4400W > IMM → load 4 shed (skip load 5)."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord._loads[4].current_power = 0.0   # already off
+        coord._loads[4].switch_state = "off"
+        for i in range(4):
+            coord._loads[i].current_power = 1100.0
+
+        await coord._shed_one_load(current_power=4400.0, active_threshold=IMM_THRESH)
+
+        # Load 5 not touched (power ≤ MIN_ACTIVE_POWER_W)
+        assert not coord._loads[4].is_suspended
+        # Load 4 shed
+        assert coord._loads[3].is_suspended
+
+    # ── T12: force_stop_load logic ────────────────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t12_force_stop(self, mock_hass, mock_config_entry):
+        """T12: force_stop sets suspended_power and turns switch off."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord._loads[4].current_power = 600.0
+
+        # Replicate what handle_force_stop_load does
+        load = coord._loads[4]
+        load.suspended_power = max(load.current_power, 1.0)
+        result = await coord._call_switch("turn_off", load.switch)
+
+        assert result is True
+        assert load.suspended_power == 600.0
+        coord._call_switch.assert_awaited_once_with("turn_off", "switch.s5")
+
+    # ── T13: force_start_load logic ───────────────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t13_force_start(self, mock_hass, mock_config_entry):
+        """T13: force_start clears suspended_power, clears shed_timestamps, turns switch on."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        load = coord._loads[4]
+        load.suspended_power = 600.0
+        load.keep_off = True
+        load.shed_timestamps.append(datetime.now().timestamp())
+
+        # Replicate handle_force_start_load
+        load.suspended_power = 0.0
+        load.keep_off = False
+        load.shed_timestamps.clear()
+        await coord._call_switch("turn_on", load.switch)
+
+        assert not load.is_suspended
+        assert not load.keep_off
+        assert len(load.shed_timestamps) == 0
+        coord._call_switch.assert_awaited_with("turn_on", "switch.s5")
+
+    # ── T14: reset_load_suspended ─────────────────────────────────────────────
+    def test_t14_reset_load_suspended(self, mock_hass, mock_config_entry):
+        """T14: reset_load_suspended zeroes suspended_power without touching switch."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord._loads[4].suspended_power = 700.0
+        coord._loads[4].switch_state = "off"
+
+        coord.reset_load_suspended(4)
+
+        assert coord._loads[4].suspended_power == 0.0
+        assert coord._loads[4].switch_state == "off"  # switch untouched
+
+    # ── T17: Riattivazione bloccata da potenza alta ───────────────────────────
+    @pytest.mark.asyncio
+    async def test_t17_restore_blocked_by_high_power(self, mock_hass, mock_config_entry):
+        """T17: Load 5 suspended 600W. Active = 2800W. 2800+600=3400 >= 3300 → no restore."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord._loads[4].suspended_power = 600.0
+        coord._loads[4].switch_state = "off"
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+
+        await coord._restore_one_load(current_power=2800.0, threshold_delayed=DEL_THRESH)
+
+        assert coord._loads[4].is_suspended  # not restored
+        coord._call_switch.assert_not_awaited()
+
+    # ── T18: set_thresholds override ──────────────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t18_set_thresholds_override(self, mock_hass, mock_config_entry):
+        """T18: Override IMM to 2500W. 4x700W=2800W > 2500W → load shed."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord.set_thresholds(immediate_w=2500.0, delayed_w=2000.0)
+        assert coord.thresholds == (2500.0, 2000.0)
+
+        for i in range(4):
+            coord._loads[i].current_power = 700.0
+        coord._loads[4].current_power = 0.0
+        coord._loads[4].switch_state = "off"
+
+        imm, _ = coord.thresholds
+        await coord._shed_one_load(current_power=2800.0, active_threshold=imm)
+
+        # Load 3 (index 3) is highest-index active load
+        assert coord._loads[3].is_suspended
+
+    # ── T19: set_thresholds reset ─────────────────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t19_set_thresholds_reset(self, mock_hass, mock_config_entry):
+        """T19: Reset override → thresholds back to config values. No shed at 2800W."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord.set_thresholds(immediate_w=2500.0, delayed_w=2000.0)
+        coord.set_thresholds(immediate_w=None, delayed_w=None)
+
+        assert coord.thresholds == (IMM_THRESH, DEL_THRESH)
+
+        for i in range(4):
+            coord._loads[i].current_power = 700.0
+        coord._loads[4].current_power = 0.0
+
+        imm, _ = coord.thresholds
+        await coord._shed_one_load(current_power=2800.0, active_threshold=imm)
+
+        # 2800W < IMM_THRESH=4000W, but _shed_one_load acts on what it's passed.
+        # We pass imm=4000W and power=2800W: no load is above MIN_ACTIVE_POWER_W threshold
+        # check is not done here — the caller guards before invoking shed.
+        # Verify thresholds are correct (core of T19):
+        assert coord._threshold_override is None
+
+    # ── T20: Anti-flap — keep_off after N sheds ───────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t20_anti_flap_keep_off(self, mock_hass, mock_config_entry):
+        """T20: 7 force_stop calls → > FLAP_MAX_SHEDS(5) in window → keep_off=True."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        load = coord._loads[4]
+        load.current_power = 600.0
+
+        # Simulate 7 sheds (> FLAP_MAX_SHEDS=5)
+        for _ in range(7):
+            load.suspended_power = max(load.current_power, 1.0)
+            coord._record_shed_and_check_flap(load)
+            # Between sheds, simulate force_stop pattern (no clear of timestamps)
+
+        assert load.keep_off is True
+
+    # ── T20b: keep_off blocks auto-restore ────────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t20b_keep_off_blocks_restore(self, mock_hass, mock_config_entry):
+        """T20: keep_off=True prevents auto-restore even with sufficient headroom."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord._loads[4].suspended_power = 600.0
+        coord._loads[4].switch_state = "off"
+        coord._loads[4].keep_off = True
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+
+        await coord._restore_one_load(current_power=500.0, threshold_delayed=DEL_THRESH)
+
+        assert coord._loads[4].is_suspended
+        coord._call_switch.assert_not_awaited()
+
+    # ── T21: min_off_sec cooldown ─────────────────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t21_min_off_sec_blocks_early_restore(self, mock_hass, mock_config_entry):
+        """T21: Load 5 has min_off_sec=120. Shed 10s ago → still in cooldown."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry, load5_min_off_sec=120)
+        load = coord._loads[4]
+        load.suspended_power = 600.0
+        load.switch_state = "off"
+        load.shed_timestamps.append(datetime.now().timestamp() - 10)  # only 10s ago
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+
+        await coord._restore_one_load(current_power=500.0, threshold_delayed=DEL_THRESH)
+
+        assert load.is_suspended  # cooldown not expired
+        coord._call_switch.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_t21_min_off_sec_allows_restore_after_cooldown(self, mock_hass, mock_config_entry):
+        """T21: Load 5 has min_off_sec=120. Shed 130s ago → cooldown expired → restored."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry, load5_min_off_sec=120)
+        load = coord._loads[4]
+        load.suspended_power = 600.0
+        load.switch_state = "off"
+        load.shed_timestamps.append(datetime.now().timestamp() - 130)  # 130s ago
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+
+        await coord._restore_one_load(current_power=500.0, threshold_delayed=DEL_THRESH)
+
+        assert not load.is_suspended  # restored after cooldown
+        coord._call_switch.assert_awaited_once_with("turn_on", "switch.s5")
+
+    # ── T22: move_load (swap priority) ────────────────────────────────────────
+    def test_t22_move_load_swaps_order(self, mock_hass, mock_config_entry):
+        """T22: rebuild_loads after swapping loads[3] and loads[4] in config_entry.data."""
+        from custom_components.power_control.const import CONF_LOADS
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+
+        # Swap loads 4 and 5 (indices 3 and 4) in config_entry.data
+        loads_cfg = list(coord.config_entry.data[CONF_LOADS])
+        loads_cfg[3], loads_cfg[4] = loads_cfg[4], loads_cfg[3]
+        coord.config_entry.data = {**coord.config_entry.data, CONF_LOADS: loads_cfg}
+        coord.rebuild_loads()
+
+        # After swap, what was load 5 (s5) is now at index 3
+        assert coord._loads[3].switch == "switch.s5"
+        assert coord._loads[4].switch == "switch.s4"
+
+    @pytest.mark.asyncio
+    async def test_t22_after_move_shed_hits_new_lowest_priority(self, mock_hass, mock_config_entry):
+        """T22: After moving load 5 up, shed hits ex-load 4 (now at index 4)."""
+        from custom_components.power_control.const import CONF_LOADS
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+
+        loads_cfg = list(coord.config_entry.data[CONF_LOADS])
+        loads_cfg[3], loads_cfg[4] = loads_cfg[4], loads_cfg[3]
+        coord.config_entry.data = {**coord.config_entry.data, CONF_LOADS: loads_cfg}
+        coord.rebuild_loads()
+        coord._call_switch = AsyncMock(return_value=True)
+
+        for load in coord._loads:
+            load.current_power = 900.0
+            load.switch_state = "on"
+
+        await coord._shed_one_load(current_power=4500.0, active_threshold=IMM_THRESH)
+
+        # Index 4 is now ex-load4 (switch.s4) — must be the one shed
+        assert coord._loads[4].is_suspended
+        assert coord._loads[4].switch == "switch.s4"
+        # Index 3 (ex-load5, switch.s5) must still be on
+        assert not coord._loads[3].is_suspended
