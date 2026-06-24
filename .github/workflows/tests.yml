@@ -2,15 +2,9 @@ name: Tests
 
 on:
   push:
-    branches:
-      - main
-      - 'v*'
-      - dev
+
   pull_request:
-    branches:
-      - main
-      - 'v*'
-      - dev
+
 
 jobs:
   test:
