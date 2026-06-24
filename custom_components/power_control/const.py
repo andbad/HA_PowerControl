@@ -25,6 +25,12 @@ LOAD_SWITCH = "switch"
 LOAD_AUTO_RESTART = "auto_restart"
 LOAD_MIN_OFF_SEC = "min_off_sec"
 
+# ── dashboard user-control ────────────────────────────────────────────────────
+CONF_DASHBOARD_USER_CONTROLLED = "dashboard_user_controlled"
+CONF_DASHBOARD_SKIPPED_VERSION = "dashboard_skipped_version"
+NOTIF_ID_REGEN_CONFIRM = "power_control_regen_confirm"
+SERVICE_REGENERATE_DASHBOARD = "regenerate_dashboard"
+
 # ── misc ──────────────────────────────────────────────────────────────────────
 UPDATE_INTERVAL_SEC = 5
 MIN_ACTIVE_POWER_W = 10        # below this a load is considered off

@@ -88,6 +88,14 @@ Choose how many loads to manage (1–20). Loads are sorted by priority: **Load 1
 | Auto reactivation | If disabled, the load will never be turned back on automatically |
 | Min off time | Minimum seconds the load must stay off before it can be auto-restarted (0 = disabled) |
 
+### Step 4 — Dashboard
+
+| Field | Description | Default |
+|---|---|---|
+| Create dashboard | Generate the Lovelace dashboard | on |
+| Dashboard language | Language for labels and texts | auto-detected |
+| Take control of the dashboard | If enabled, the dashboard will not be overwritten on upgrades (see below) | off |
+
 ---
 
 ### Migration from an Old YAML Package
@@ -131,6 +139,12 @@ The icon of each per-load sensor reflects its status at a glance:
 |---|---|
 | `switch.power_control_active` | Enables/disables the entire system. State persists across HA restarts. |
 
+### Buttons
+
+| Entity | Visible when | Description |
+|---|---|---|
+| `button.power_control_regenerate_dashboard` | Dashboard user-controlled mode | Triggers the dashboard regeneration confirmation flow |
+
 ---
 
 ## Services
@@ -144,6 +158,7 @@ The icon of each per-load sensor reflects its status at a glance:
 | `power_control.force_start_load` | `load_index` (0–19) | Immediate reactivation, ignoring timers and cooldowns |
 | `power_control.move_load` | `load_index` (0–19), `direction` (`up`/`down`) | Changes a load's priority position and rebuilds the dashboard |
 | `power_control.set_thresholds` | `immediate_threshold`, `delayed_threshold` | Runtime threshold override (see below) |
+| `power_control.regenerate_dashboard` | — | Immediately regenerates the dashboard (bypasses confirmation) |
 
 The `load_index` corresponds to the position of the load in the wizard (0 = first position = highest priority). You can also find it as a `load_index` attribute on the load sensor.
 
@@ -270,9 +285,25 @@ The dashboard includes:
 - Timer card showing internal coordinator timers
 - Individual cards for each configured load with power sensor, suspension state, and icon badge
 
-The dashboard is **automatically regenerated** on every integration version upgrade — no manual intervention needed.
-
 The dashboard is accessible in the sidebar as **Power Control** and is automatically removed when the integration is deleted.
+
+### Dashboard User-Controlled Mode
+
+By default the dashboard is **automatically regenerated on every integration upgrade**, so it always reflects the latest layout and features.
+
+If you want to customise the dashboard (add cards, change layout, modify styles) without having your changes overwritten on the next upgrade, enable **"Take control of the dashboard"** in the setup wizard.
+
+**How it works:**
+
+- On first install the dashboard is generated normally.
+- On subsequent upgrades, if a newer dashboard version is available, a **persistent notification** appears in HA instead of overwriting the dashboard:
+  > *"A new version of the Power Control dashboard is available. Regenerating will overwrite all your customisations. Do you want to proceed?"*
+  - **Update dashboard** — regenerates the dashboard with the latest layout (your customisations will be lost).
+  - **Skip** — dismisses the notification; it will not reappear until the next integration upgrade.
+- A **button entity** (`button.power_control_regenerate_dashboard`) is also available in the dashboard and in the device page. Pressing it shows the same confirmation notification before proceeding.
+- To bypass the confirmation and regenerate directly from an automation, call `power_control.regenerate_dashboard`.
+
+> **Note:** switching user-controlled mode off and then back on requires a re-configure flow (Settings → Devices & services → Power Control → Configure).
 
 ---
 
