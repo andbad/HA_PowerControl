@@ -40,10 +40,12 @@
         "data": {
           "create_dashboard": "Crea dashboard Lovelace",
           "dashboard_language": "Lingua della dashboard",
-          "dashboard_require_admin": "Dashboard visibile solo agli admin"
+          "dashboard_require_admin": "Dashboard visibile solo agli admin",
+          "dashboard_user_controlled": "Gestisci aggiornamenti dashboard manualmente"
         },
         "data_description": {
-          "dashboard_require_admin": "Se abilitato, la dashboard nella barra laterale sarà visibile solo agli amministratori di Home Assistant."
+          "dashboard_require_admin": "Se abilitato, la dashboard nella barra laterale sarà visibile solo agli amministratori di Home Assistant.",
+          "dashboard_user_controlled": "Se abilitato, apparirà un pulsante per rigenerare manualmente la dashboard invece degli aggiornamenti automatici."
         }
       },
       "migrate": {

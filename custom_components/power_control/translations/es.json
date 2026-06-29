@@ -40,10 +40,12 @@
         "data": {
           "create_dashboard": "Crear panel Lovelace",
           "dashboard_language": "Idioma del panel",
-          "dashboard_require_admin": "Panel de control visible solo para admins"
+          "dashboard_require_admin": "Panel de control visible solo para admins",
+          "dashboard_user_controlled": "Gestionar actualizaciones del panel manualmente"
         },
         "data_description": {
-          "dashboard_require_admin": "Si está activado, el panel lateral solo será visible para los administradores de Home Assistant."
+          "dashboard_require_admin": "Si está activado, el panel lateral solo será visible para los administradores de Home Assistant.",
+          "dashboard_user_controlled": "Si está activado, aparecerá un botón para regenerar manualmente el panel en lugar de actualizaciones automáticas."
         }
       },
       "migrate": {

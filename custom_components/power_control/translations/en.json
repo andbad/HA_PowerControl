@@ -40,10 +40,12 @@
         "data": {
           "create_dashboard": "Create Lovelace dashboard",
           "dashboard_language": "Dashboard language",
-          "dashboard_require_admin": "Dashboard visible to admins only"
+          "dashboard_require_admin": "Dashboard visible to admins only",
+          "dashboard_user_controlled": "Manage dashboard updates manually"
         },
         "data_description": {
-          "dashboard_require_admin": "If enabled, the sidebar dashboard will only be visible to Home Assistant administrators."
+          "dashboard_require_admin": "If enabled, the sidebar dashboard will only be visible to Home Assistant administrators.",
+          "dashboard_user_controlled": "If enabled, a button will appear to manually trigger dashboard regeneration instead of automatic updates."
         }
       },
       "migrate": {

@@ -40,10 +40,12 @@
         "data": {
           "create_dashboard": "Créer le tableau de bord Lovelace",
           "dashboard_language": "Langue du tableau de bord",
-          "dashboard_require_admin": "Tableau de bord visible uniquement par les admins"
+          "dashboard_require_admin": "Tableau de bord visible uniquement par les admins",
+          "dashboard_user_controlled": "Gérer les mises à jour du tableau de bord manuellement"
         },
         "data_description": {
-          "dashboard_require_admin": "Si activé, le tableau de bord dans la barre latérale ne sera visible que par les administrateurs Home Assistant."
+          "dashboard_require_admin": "Si activé, le tableau de bord dans la barre latérale ne sera visible que par les administrateurs Home Assistant.",
+          "dashboard_user_controlled": "Si activé, un bouton apparaîtra pour déclencher manuellement la régénération du tableau de bord au lieu des mises à jour automatiques."
         }
       },
       "migrate": {
