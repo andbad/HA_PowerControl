@@ -1,4 +1,4 @@
 # Test dependencies for Power Control
 # Dependabot monitors this file for updates.
 # pytest and pytest-asyncio are pinned by pytest-homeassistant-custom-component — do not add them here.
-pytest-homeassistant-custom-component>=0.13
+pytest-homeassistant-custom-component>=0.13.342
