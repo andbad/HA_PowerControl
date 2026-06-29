@@ -39,7 +39,11 @@
         "description": "Vuoi che Power Control crei automaticamente una dashboard Lovelace? Sarà accessibile dal menu laterale come 'Power Control'.",
         "data": {
           "create_dashboard": "Crea dashboard Lovelace",
-          "dashboard_language": "Lingua della dashboard"
+          "dashboard_language": "Lingua della dashboard",
+          "dashboard_require_admin": "Dashboard visibile solo agli admin"
+        },
+        "data_description": {
+          "dashboard_require_admin": "Se abilitato, la dashboard nella barra laterale sarà visibile solo agli amministratori di Home Assistant."
         }
       },
       "migrate": {

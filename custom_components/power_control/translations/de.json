@@ -39,7 +39,11 @@
         "description": "Soll Power Control automatisch ein Lovelace-Dashboard erstellen? Es wird im Seitenmenü als 'Power Control' angezeigt.",
         "data": {
           "create_dashboard": "Lovelace-Dashboard erstellen",
-          "dashboard_language": "Dashboard-Sprache"
+          "dashboard_language": "Dashboard-Sprache",
+          "dashboard_require_admin": "Dashboard nur für Admins sichtbar"
+        },
+        "data_description": {
+          "dashboard_require_admin": "Wenn aktiviert, ist das Dashboard in der Seitenleiste nur für Home Assistant-Administratoren sichtbar."
         }
       },
       "migrate": {

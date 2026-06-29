@@ -39,7 +39,11 @@
         "description": "Souhaitez-vous que Power Control crée automatiquement un tableau de bord Lovelace ? Il sera accessible depuis le menu latéral sous 'Power Control'.",
         "data": {
           "create_dashboard": "Créer le tableau de bord Lovelace",
-          "dashboard_language": "Langue du tableau de bord"
+          "dashboard_language": "Langue du tableau de bord",
+          "dashboard_require_admin": "Tableau de bord visible uniquement par les admins"
+        },
+        "data_description": {
+          "dashboard_require_admin": "Si activé, le tableau de bord dans la barre latérale ne sera visible que par les administrateurs Home Assistant."
         }
       },
       "migrate": {
