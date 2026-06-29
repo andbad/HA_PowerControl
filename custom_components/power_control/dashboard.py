@@ -616,6 +616,12 @@ async def async_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> Non
         _LOGGER.debug("[%s] Dashboard creation deferred to homeassistant_started", DOMAIN)
 
 
+async def async_dashboard_exists(hass: HomeAssistant, entry: ConfigEntry) -> bool:  # noqa: ARG001
+    """Return True if the Power Control dashboard is already present in lovelace."""
+    dashboards = _get_lovelace_dashboards(hass)
+    return bool(dashboards and DASHBOARD_URL_PATH in dashboards)
+
+
 async def async_remove_dashboard(hass: HomeAssistant) -> None:
     """Remove the Power Control Lovelace dashboard and its sidebar panel."""
     # Remove sidebar panel

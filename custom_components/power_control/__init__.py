@@ -12,14 +12,18 @@ from homeassistant.helpers import entity_registry as er
 import homeassistant.helpers.config_validation as cv
 from homeassistant.util import slugify
 
-from .const import DOMAIN, CONF_NOTIFY_ENTITY, CONF_NOTIFY_SERVICE, CONF_LOADS
-from .dashboard import async_create_dashboard, async_remove_dashboard, async_rebuild_dashboard
+from .const import (
+    DOMAIN, CONF_NOTIFY_ENTITY, CONF_NOTIFY_SERVICE, CONF_LOADS,
+    CONF_DASHBOARD_USER_CONTROLLED, CONF_DASHBOARD_SKIPPED_VERSION,
+    NOTIF_ID_REGEN_CONFIRM, SERVICE_REGENERATE_DASHBOARD,
+)
+from .dashboard import async_create_dashboard, async_remove_dashboard, async_rebuild_dashboard, DASHBOARD_VERSION
 from .coordinator import PowerControlCoordinator
 from .notify import async_notify
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.SWITCH]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.SWITCH, Platform.BUTTON]
 
 # Service schemas
 _LOAD_INDEX_SCHEMA = vol.Schema(
@@ -116,15 +120,60 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
-    # Create Lovelace dashboard if the user requested it during setup
+    # Create / handle Lovelace dashboard
     if entry.data.get("create_dashboard", False):
-        await async_create_dashboard(hass, entry)
+        await _async_handle_dashboard_setup(hass, entry)
 
 
     _register_services(hass)
 
     _LOGGER.debug("[%s] Setup complete for entry %s", DOMAIN, entry.entry_id)
     return True
+
+
+async def _async_handle_dashboard_setup(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Create dashboard on first run; if user_controlled, notify instead of overwriting."""
+    from .dashboard import async_dashboard_exists
+
+    user_controlled: bool = entry.data.get(CONF_DASHBOARD_USER_CONTROLLED, False)
+    dashboard_exists: bool = await async_dashboard_exists(hass, entry)
+    skipped_version: int | None = entry.options.get(CONF_DASHBOARD_SKIPPED_VERSION)
+
+    if not user_controlled:
+        # Legacy behaviour: always regenerate
+        await async_create_dashboard(hass, entry)
+        return
+
+    if not dashboard_exists:
+        # First time: generate even in user_controlled mode
+        await async_create_dashboard(hass, entry)
+        return
+
+    # Dashboard exists and user is in control.
+    # Show notification only if version is outdated and not already skipped.
+    if skipped_version == DASHBOARD_VERSION:
+        _LOGGER.debug("[%s] Dashboard update skipped (version %s)", DOMAIN, DASHBOARD_VERSION)
+        return
+
+    # Dashboard outdated: post confirmation notification
+    instance = entry.data.get("instance_name", DOMAIN)
+    await hass.services.async_call(
+        "persistent_notification",
+        "create",
+        {
+            "notification_id": NOTIF_ID_REGEN_CONFIRM,
+            "title": "PowerControl — Aggiornamento dashboard disponibile",
+            "message": (
+                f"È disponibile una nuova versione della dashboard **{instance}** "
+                f"(versione {DASHBOARD_VERSION}).\n\n"
+                "⚠️ **Rigenerando la dashboard perderai tutte le personalizzazioni.** "
+                "Vuoi procedere?\n\n"
+                f"[✅ Aggiorna dashboard](/api/power_control/regen_confirm/{entry.entry_id}/confirm)  "
+                f"[⏭️ Salta](/api/power_control/regen_confirm/{entry.entry_id}/cancel)"
+            ),
+        },
+    )
+    _LOGGER.debug("[%s] Dashboard outdated notification created (v%s)", DOMAIN, DASHBOARD_VERSION)
 
 
 def _register_services(hass: HomeAssistant) -> None:
@@ -278,6 +327,16 @@ def _register_services(hass: HomeAssistant) -> None:
         dly = call.data.get("delayed_threshold")
         coord.set_thresholds(imm, dly)
 
+    async def handle_regenerate_dashboard(call: ServiceCall) -> None:
+        """Regenerate dashboard for the first entry (single-entry assumption)."""
+        entries = hass.data.get(DOMAIN, {})
+        if not entries:
+            return
+        entry_id = next(iter(entries))
+        cfg_entry = hass.config_entries.async_get_entry(entry_id)
+        if cfg_entry:
+            await _async_do_regen_dashboard(hass, cfg_entry)
+
     hass.services.async_register(DOMAIN, "enable", handle_enable)
     hass.services.async_register(DOMAIN, "disable", handle_disable)
     hass.services.async_register(DOMAIN, "reset_load", handle_reset_load, schema=_LOAD_INDEX_SCHEMA)
@@ -285,8 +344,51 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(DOMAIN, "force_start_load", handle_force_start_load, schema=_LOAD_INDEX_SCHEMA)
     hass.services.async_register(DOMAIN, "move_load", handle_move_load, schema=_MOVE_LOAD_SCHEMA)
     hass.services.async_register(DOMAIN, "set_thresholds", handle_set_thresholds, schema=_SET_THRESHOLDS_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_REGENERATE_DASHBOARD, handle_regenerate_dashboard)
+
+    # Register HTTP views for notification action buttons (confirm / cancel)
+    from homeassistant.components.http import HomeAssistantView
+
+    class _RegenConfirmView(HomeAssistantView):
+        url = "/api/power_control/regen_confirm/{entry_id}/{action}"
+        name = "api:power_control:regen_confirm"
+        requires_auth = True
+
+        async def get(self, request, entry_id: str, action: str):
+            cfg_entry = hass.config_entries.async_get_entry(entry_id)
+            if cfg_entry is None:
+                return self.json_message("Entry not found", 404)
+            if action == "confirm":
+                await _async_do_regen_dashboard(hass, cfg_entry)
+            elif action == "cancel":
+                await _async_skip_dashboard_version(hass, cfg_entry)
+            # Dismiss notification in both cases
+            await hass.services.async_call(
+                "persistent_notification", "dismiss",
+                {"notification_id": NOTIF_ID_REGEN_CONFIRM},
+            )
+            return self.json_message("OK")
+
+    if hass.http is not None:
+        hass.http.register_view(_RegenConfirmView())
 
     _LOGGER.debug("[%s] Services registered", DOMAIN)
+
+
+async def _async_do_regen_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Regenerate dashboard and clear the skipped-version flag."""
+    await async_rebuild_dashboard(hass, entry)
+    new_options = {**entry.options}
+    new_options.pop(CONF_DASHBOARD_SKIPPED_VERSION, None)
+    hass.config_entries.async_update_entry(entry, options=new_options)
+    _LOGGER.info("[%s] Dashboard regenerated (v%s)", DOMAIN, DASHBOARD_VERSION)
+
+
+async def _async_skip_dashboard_version(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Persist the current version as skipped so notification won't reappear until next upgrade."""
+    new_options = {**entry.options, CONF_DASHBOARD_SKIPPED_VERSION: DASHBOARD_VERSION}
+    hass.config_entries.async_update_entry(entry, options=new_options)
+    _LOGGER.debug("[%s] Dashboard update skipped at v%s", DOMAIN, DASHBOARD_VERSION)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
