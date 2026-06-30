@@ -35,7 +35,6 @@ from .const import (
     CONF_NOTIFY_ENTITY,
     CONF_LOADS,
     CONF_DASHBOARD_LANGUAGE,
-    CONF_DASHBOARD_REQUIRE_ADMIN,
     LOAD_NAME,
 )
 
@@ -112,7 +111,7 @@ def _priority_label(lang: str, index: int, total: int) -> str:
 # ── Panel helpers ──────────────────────────────────────────────────────────────
 
 def _register_dashboard_panel(
-    hass: HomeAssistant, title: str, icon: str, require_admin: bool = True, update: bool = False
+    hass: HomeAssistant, title: str, icon: str, update: bool = False
 ) -> None:
     """Register (or update) the sidebar panel for our dashboard."""
     frontend.async_register_built_in_panel(
@@ -122,7 +121,7 @@ def _register_dashboard_panel(
         sidebar_icon=icon,
         frontend_url_path=DASHBOARD_URL_PATH,
         config={"mode": MODE_STORAGE},
-        require_admin=require_admin,
+        require_admin=False,
         update=update,
     )
 
@@ -448,7 +447,7 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
                             "cards": [
                                 {
                                     "type": "tile",
-                                    "entity": "switch.power_control_attivo",
+                                    "entity": "switch.power_control_active",
                                     "name": _t(lang, "system_status"),
                                     "icon": "mdi:car-cruise-control",
                                     "color": "green",
@@ -538,7 +537,6 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return False
 
     title = entry.data.get(CONF_INSTANCE_NAME, "Power Control")
-    require_admin = entry.data.get(CONF_DASHBOARD_REQUIRE_ADMIN, False)
 
     # Check stored version: if outdated, force regeneration
     existing_store = dashboards.get(DASHBOARD_URL_PATH) if dashboards else None
@@ -568,7 +566,7 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             CONF_TITLE: title,
             CONF_ICON: "mdi:lightning-bolt-circle",
             CONF_SHOW_IN_SIDEBAR: True,
-            CONF_REQUIRE_ADMIN: require_admin,
+            CONF_REQUIRE_ADMIN: False,
         }
         dashboards[DASHBOARD_URL_PATH] = lv_dashboard.LovelaceStorage(hass, item_config)
         _LOGGER.debug("[%s] LovelaceStorage injected for /%s", DOMAIN, DASHBOARD_URL_PATH)
@@ -590,7 +588,6 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # so the frontend never sees an empty dashboard on first load.
     _register_dashboard_panel(
         hass, title, "mdi:lightning-bolt-circle",
-        require_admin=require_admin,
         update=DASHBOARD_URL_PATH in (_get_lovelace_dashboards(hass) or {}),
     )
 
