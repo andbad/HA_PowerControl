@@ -89,7 +89,14 @@ def _notify_options(hass) -> list[str]:
     """Build the list of selectable notify targets: modern entities first,
     then legacy notify services (e.g. groups created with the old
     ``notify: group`` YAML platform, or integrations not yet migrated to
-    the notify entity platform, such as some LG TVs)."""
+    the notify entity platform, such as some LG TVs).
+
+    Internal/system services (notify.notify, notify.send_message,
+    notify.persistent_notification) are excluded — they're plumbing, not
+    a useful notification destination on their own.
+    """
+    _EXCLUDED_SERVICES = {"notify", "send_message", "persistent_notification"}
+
     options: list[str] = []
 
     # Modern notify entities (e.g. notify.mobile_app_phone)
@@ -100,6 +107,8 @@ def _notify_options(hass) -> list[str]:
     # not as entities (e.g. notify.tutti for a group, notify.lg_webos_tv).
     legacy_services = hass.services.async_services().get("notify", {})
     for service_name in legacy_services:
+        if service_name in _EXCLUDED_SERVICES:
+            continue
         full_name = f"notify.{service_name}"
         if full_name not in options:
             options.append(full_name)
