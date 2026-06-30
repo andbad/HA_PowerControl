@@ -45,6 +45,7 @@ from .const import (
     CONF_LOADS,
     CONF_DASHBOARD_LANGUAGE,
     CONF_DASHBOARD_USER_CONTROLLED,
+    CONF_DASHBOARD_REQUIRE_ADMIN,
     LOAD_NAME,
     LOAD_POWER_SENSOR,
     LOAD_SWITCH,
@@ -238,7 +239,7 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._loads = self._data.get(CONF_LOADS, [])
                 self._num_loads = int(self._data.get(CONF_NUM_LOADS, len(self._loads)))
                 await async_clear_backup(self.hass)
-                return await self.async_step_global()
+                return await self.async_step_restore_confirm()
             await async_clear_backup(self.hass)
             if detect_old_package(self.hass):
                 return await self.async_step_migrate()
@@ -249,6 +250,40 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {vol.Required("restore", default=True): BooleanSelector()}
             ),
+        )
+
+    async def async_step_restore_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Show the restored config for review, then create the entry directly
+        (skipping num_loads/load steps, which would otherwise wipe self._loads)."""
+        if user_input is not None:
+            if user_input.get("confirm", True):
+                return self.async_create_entry(
+                    title=self._data.get(CONF_INSTANCE_NAME, "Power Control"),
+                    data=self._data,
+                    options=self._restored_options,
+                )
+            return await self.async_step_global()
+
+        load_names = ", ".join(
+            l.get(LOAD_NAME, f"Load {i+1}")
+            for i, l in enumerate(self._loads[:5])
+        )
+        if len(self._loads) > 5:
+            load_names += f" ... (+{len(self._loads) - 5})"
+
+        return self.async_show_form(
+            step_id="restore_confirm",
+            data_schema=vol.Schema(
+                {vol.Required("confirm", default=True): BooleanSelector()}
+            ),
+            description_placeholders={
+                "load_count": str(self._num_loads),
+                "load_names": load_names,
+                "threshold_immediate": str(self._data.get(CONF_THRESHOLD_IMMEDIATE, "?")),
+                "threshold_delayed": str(self._data.get(CONF_THRESHOLD_DELAYED, "?")),
+            },
         )
 
     async def async_step_migrate(
@@ -381,6 +416,7 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
                 _CONF_CREATE_DASHBOARD: self._create_dashboard,
                 CONF_DASHBOARD_LANGUAGE: user_input.get(CONF_DASHBOARD_LANGUAGE, "en"),
                 CONF_DASHBOARD_USER_CONTROLLED: user_input.get(CONF_DASHBOARD_USER_CONTROLLED, False),
+                CONF_DASHBOARD_REQUIRE_ADMIN: user_input.get(CONF_DASHBOARD_REQUIRE_ADMIN, True),
             }
             if self._from_migration:
                 return await self.async_step_migrate_cleanup()
@@ -415,6 +451,7 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
                         translation_key="dashboard_language",
                     )),
                     vol.Required(CONF_DASHBOARD_USER_CONTROLLED, default=False): BooleanSelector(),
+                    vol.Required(CONF_DASHBOARD_REQUIRE_ADMIN, default=True): BooleanSelector(),
                 }
             ),
         )

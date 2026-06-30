@@ -39,7 +39,13 @@
         "description": "Soll Power Control automatisch ein Lovelace-Dashboard erstellen? Es wird im Seitenmenü als 'Power Control' angezeigt.",
         "data": {
           "create_dashboard": "Lovelace-Dashboard erstellen",
-          "dashboard_language": "Dashboard-Sprache"
+          "dashboard_language": "Dashboard-Sprache",
+          "dashboard_user_controlled": "Dashboard-Updates manuell verwalten",
+          "dashboard_require_admin": "Dashboard nur für Admins sichtbar"
+        },
+        "data_description": {
+          "dashboard_user_controlled": "Wenn aktiviert, erscheint eine Schaltfläche zur manuellen Dashboard-Regenerierung statt automatischer Updates.",
+          "dashboard_require_admin": "Wenn aktiviert, ist das Dashboard in der Seitenleiste nur für Home Assistant-Administratoren sichtbar."
         }
       },
       "migrate": {
@@ -62,14 +68,52 @@
       },
       "restore_backup": {
         "title": "Konfigurationssicherung gefunden",
-        "description": "Es wurde eine Konfigurationssicherung aus einer früheren Installation gefunden. Möchten Sie sie wiederherstellen?",
+        "description": "Es wurde eine Konfigurationssicherung aus einer früheren Installation gefunden, einschließlich Lasten, Schwellenwerte und Zeiten. Möchten Sie sie wiederherstellen?",
         "data": {
           "restore": "Vorherige Konfiguration wiederherstellen"
+        }
+      },
+      "global": {
+        "title": "Globale Einstellungen",
+        "description": "Konfigurieren Sie Schwellenwerte, Zeiten und Benachrichtigungen für die Lastabwurfsteuerung.",
+        "data": {
+          "instance_name": "Instanzname",
+          "global_power_sensor": "Globaler Leistungssensor (optional)",
+          "threshold_immediate": "Sofortiger Schwellenwert (W)",
+          "threshold_delayed": "Verzögerter Schwellenwert (W)",
+          "delay_immediate_sec": "Sofortige Verzögerung (s)",
+          "delay_delayed_min": "Verzögerte Verzögerung (Min)",
+          "wait_between_stops_sec": "Wartezeit zwischen Abwürfen (s)",
+          "wait_between_starts_min": "Wartezeit zwischen Wiederherstellungen (Min)",
+          "wait_before_start_min": "Wartezeit vor Wiederherstellung (Min)",
+          "notify_entity": "Benachrichtigungsdienst (optional)"
+        },
+        "data_description": {
+          "instance_name": "Ein Name zur Identifizierung dieser Power-Control-Instanz.",
+          "global_power_sensor": "Sensor zur Messung der Gesamtleistung. Wenn leer, wird die Summe der konfigurierten Lastsensoren verwendet.",
+          "threshold_immediate": "Leistungsniveau, ab dem Lasten schnell abgeworfen werden (nach der sofortigen Verzögerung).",
+          "threshold_delayed": "Leistungsniveau, ab dem Lasten langsam abgeworfen werden (nach der verzögerten Verzögerung). Muss niedriger sein als der sofortige Schwellenwert.",
+          "delay_immediate_sec": "Wie lange der sofortige Schwellenwert überschritten sein muss, bevor eine Last abgeworfen wird.",
+          "delay_delayed_min": "Wie lange der verzögerte Schwellenwert überschritten sein muss, bevor eine Last abgeworfen wird.",
+          "wait_between_stops_sec": "Pause zwischen dem Abwerfen einer Last und der Prüfung, ob eine weitere abgeworfen werden muss.",
+          "wait_between_starts_min": "Pause zwischen der Wiederherstellung einer Last und der nächsten.",
+          "wait_before_start_min": "Wie lange die Leistung unter dem Schwellenwert bleiben muss, bevor eine Last wiederhergestellt wird.",
+          "notify_entity": "Benachrichtigungsdienst, der Sie informiert, wenn Lasten abgeworfen oder wiederhergestellt werden."
+        },
+        "error": {
+          "threshold_order": "Der sofortige Schwellenwert muss höher sein als der verzögerte Schwellenwert."
+        }
+      },
+      "restore_confirm": {
+        "title": "Wiederherstellte Konfiguration prüfen",
+        "description": "{load_count} Lasten werden wiederhergestellt: {load_names}.\nSchwellenwerte: sofort {threshold_immediate} W, verzögert {threshold_delayed} W.\n\nBestätigen Sie, um diese Konfiguration anzuwenden, oder lehnen Sie ab, um eine Neukonfiguration zu starten.",
+        "data": {
+          "confirm": "Wiederherstellte Konfiguration anwenden"
         }
       }
     },
     "error": {
-      "threshold_order": "Die Sofortschwelle muss größer als die Verzögerungsschwelle sein."
+      "threshold_order": "Der sofortige Schwellenwert muss höher sein als der verzögerte Schwellenwert."
     },
     "abort": {
       "already_configured": "Power Control ist bereits konfiguriert."
