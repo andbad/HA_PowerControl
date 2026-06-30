@@ -98,7 +98,7 @@
           "wait_between_stops_sec": "Pause between shedding one load and checking whether another must be shed.",
           "wait_between_starts_min": "Pause between restoring one load and the next.",
           "wait_before_start_min": "How long power must stay below the threshold before restoring any load.",
-          "notify_entity": "Select where to send notifications: modern notify entities and legacy notify services (including notification groups) are both listed. If your target isn't shown, you can type it manually."
+          "notify_entity": "Notification service used to alert you when loads are shed or restored."
         },
         "error": {
           "threshold_order": "The immediate threshold must be higher than the delayed threshold."

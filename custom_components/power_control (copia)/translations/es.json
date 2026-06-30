@@ -98,7 +98,7 @@
           "wait_between_stops_sec": "Pausa entre el corte de una carga y la comprobación de si cortar otra.",
           "wait_between_starts_min": "Pausa entre la reactivación de una carga y la siguiente.",
           "wait_before_start_min": "Cuánto tiempo debe permanecer la potencia bajo el umbral antes de reactivar una carga.",
-          "notify_entity": "Selecciona dónde enviar las notificaciones: se muestran tanto las entidades notify modernas como los servicios notify antiguos (incluidos los grupos de notificación). Si tu destino no aparece, puedes escribirlo manualmente."
+          "notify_entity": "Servicio de notificación usado para avisarte cuando las cargas se cortan o reactivan."
         },
         "error": {
           "threshold_order": "El umbral inmediato debe ser mayor que el umbral retardado."

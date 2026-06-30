@@ -98,7 +98,7 @@
           "wait_between_stops_sec": "Pause zwischen dem Abwerfen einer Last und der Prüfung, ob eine weitere abgeworfen werden muss.",
           "wait_between_starts_min": "Pause zwischen der Wiederherstellung einer Last und der nächsten.",
           "wait_before_start_min": "Wie lange die Leistung unter dem Schwellenwert bleiben muss, bevor eine Last wiederhergestellt wird.",
-          "notify_entity": "Wählen Sie, wohin Benachrichtigungen gesendet werden sollen: sowohl moderne Notify-Entitäten als auch Legacy-Notify-Dienste (einschließlich Benachrichtigungsgruppen) werden aufgelistet. Falls Ihr Ziel nicht angezeigt wird, können Sie es manuell eingeben."
+          "notify_entity": "Benachrichtigungsdienst, der Sie informiert, wenn Lasten abgeworfen oder wiederhergestellt werden."
         },
         "error": {
           "threshold_order": "Der sofortige Schwellenwert muss höher sein als der verzögerte Schwellenwert."

@@ -1,0 +1,112 @@
+enable:
+  name: Abilita Power Control
+  description: Abilita il controllo automatico dei carichi.
+
+disable:
+  name: Disabilita Power Control
+  description: >-
+    Disabilita il controllo automatico dei carichi e resetta
+    tutte le potenze sospese. I carichi non vengono riaccesi automaticamente.
+
+reset_load:
+  name: Resetta carico sospeso
+  description: >-
+    Azzera la potenza sospesa di un singolo carico, rimuovendolo
+    dalla lista di attesa per la riattivazione.
+  fields:
+    load_index:
+      name: Indice carico
+      description: >-
+        Indice del carico da resettare (0 = massima priorità).
+        Visibile come attributo load_index sul sensore del carico.
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 19
+          mode: box
+
+force_stop_load:
+  name: Forza distacco carico
+  description: >-
+    Spegne immediatamente un carico specifico e salva la sua
+    potenza come sospesa, come se fosse stato distaccato automaticamente.
+  fields:
+    load_index:
+      name: Indice carico
+      description: Indice del carico da distaccare (0 = massima priorità).
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 19
+          mode: box
+
+force_start_load:
+  name: Forza riattivazione carico
+  description: >-
+    Riattiva immediatamente un carico specifico, ignorando
+    i timer di attesa. Utile per test o emergenze.
+  fields:
+    load_index:
+      name: Indice carico
+      description: Indice del carico da riattivare (0 = massima priorità).
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 19
+          mode: box
+
+move_load:
+  name: Sposta carico
+  description: >-
+    Sposta un carico su o giù nella lista delle priorità,
+    scambiandolo con il carico adiacente.
+  fields:
+    load_index:
+      name: Indice carico
+      description: Indice del carico da spostare (0 = massima priorità).
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 19
+          mode: box
+    direction:
+      name: Direzione
+      description: "up = aumenta priorità, down = diminuisce priorità."
+      required: true
+      selector:
+        select:
+          options:
+            - up
+            - down
+
+set_thresholds:
+  name: Set dynamic thresholds
+  description: >-
+    Overrides the intervention thresholds at runtime without changing the
+    persistent configuration. Overrides are lost on HA restart.
+    Call with no fields to reset both thresholds to the configured values.
+  fields:
+    immediate_threshold:
+      name: Immediate threshold (W)
+      description: New immediate shedding threshold in Watts. Omit to leave unchanged.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 15000
+          unit_of_measurement: W
+          mode: box
+    delayed_threshold:
+      name: Delayed threshold (W)
+      description: New delayed shedding threshold in Watts. Omit to leave unchanged.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 15000
+          unit_of_measurement: W
+          mode: box

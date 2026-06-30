@@ -1,0 +1,12 @@
+{
+  "domain": "power_control",
+  "name": "Power Control",
+  "version": "4.0.1",
+  "documentation": "https://github.com/andbad/HA_PowerControl",
+  "issue_tracker": "https://github.com/andbad/HA_PowerControl/issues",
+  "codeowners": ["@andbad"],
+  "iot_class": "local_push",
+  "config_flow": true,
+  "dependencies": [],
+  "requirements": []
+}

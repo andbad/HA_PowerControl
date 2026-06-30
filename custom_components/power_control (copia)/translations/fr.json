@@ -98,7 +98,7 @@
           "wait_between_stops_sec": "Pause entre le délestage d'une charge et la vérification d'une autre.",
           "wait_between_starts_min": "Pause entre la réactivation d'une charge et la suivante.",
           "wait_before_start_min": "Durée pendant laquelle la puissance doit rester sous le seuil avant de réactiver une charge.",
-          "notify_entity": "Sélectionnez où envoyer les notifications : les entités notify modernes et les services notify existants (y compris les groupes de notification) sont tous deux répertoriés. Si votre cible n'apparaît pas, vous pouvez la saisir manuellement."
+          "notify_entity": "Service de notification utilisé pour vous alerter lors du délestage ou de la réactivation des charges."
         },
         "error": {
           "threshold_order": "Le seuil immédiat doit être supérieur au seuil différé."

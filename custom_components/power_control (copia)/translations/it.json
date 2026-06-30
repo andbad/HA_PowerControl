@@ -98,7 +98,7 @@
           "wait_between_stops_sec": "Pausa tra il distacco di un carico e la verifica se distaccarne un altro.",
           "wait_between_starts_min": "Pausa tra la riattivazione di un carico e il successivo.",
           "wait_before_start_min": "Per quanto tempo la potenza deve restare sotto soglia prima di riattivare un carico.",
-          "notify_entity": "Seleziona dove inviare le notifiche: sono elencate sia le entità di notifica moderne sia i servizi di notifica legacy (inclusi i gruppi di notifica). Se il tuo target non compare, puoi digitarlo manualmente."
+          "notify_entity": "Servizio di notifica usato per avvisarti quando i carichi vengono distaccati o riattivati."
         },
         "error": {
           "threshold_order": "La soglia immediata deve essere superiore alla soglia ritardata."

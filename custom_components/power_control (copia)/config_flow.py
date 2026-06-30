@@ -85,36 +85,7 @@ def _coerce_ints(data: dict) -> dict:
 
 # ── Shared schema builders ─────────────────────────────────────────────────────
 
-def _notify_options(hass) -> list[str]:
-    """Build the list of selectable notify targets: modern entities first,
-    then legacy notify services (e.g. groups created with the old
-    ``notify: group`` YAML platform, or integrations not yet migrated to
-    the notify entity platform, such as some LG TVs)."""
-    options: list[str] = []
-
-    # Modern notify entities (e.g. notify.mobile_app_phone)
-    for state in hass.states.async_all("notify"):
-        options.append(state.entity_id)
-
-    # Legacy notify services — registered directly under the "notify" domain,
-    # not as entities (e.g. notify.tutti for a group, notify.lg_webos_tv).
-    legacy_services = hass.services.async_services().get("notify", {})
-    for service_name in legacy_services:
-        full_name = f"notify.{service_name}"
-        if full_name not in options:
-            options.append(full_name)
-
-    return options
-
-
-def _global_schema(hass, defaults: dict = {}) -> vol.Schema:
-    notify_options = _notify_options(hass)
-    current_notify = defaults.get(CONF_NOTIFY_ENTITY, "")
-    # Keep a previously saved value selectable even if it's no longer
-    # detected (e.g. the integration providing it is currently unavailable).
-    if current_notify and current_notify not in notify_options:
-        notify_options.append(current_notify)
-
+def _global_schema(defaults: dict = {}) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(
@@ -179,12 +150,8 @@ def _global_schema(hass, defaults: dict = {}) -> vol.Schema:
 
             vol.Optional(
                 CONF_NOTIFY_ENTITY,
-                description={"suggested_value": current_notify},
-            ): SelectSelector(SelectSelectorConfig(
-                options=notify_options,
-                mode=SelectSelectorMode.DROPDOWN,
-                custom_value=True,
-            )),
+                description={"suggested_value": defaults.get(CONF_NOTIFY_ENTITY, "")},
+            ): EntitySelector(EntitySelectorConfig(domain="notify")),
         }
     )
 
@@ -435,7 +402,7 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="global",
-            data_schema=_global_schema(self.hass, self._data or {}),
+            data_schema=_global_schema(self._data or {}),
             errors=errors,
         )
 
@@ -574,7 +541,7 @@ class PowerControlOptionsFlow(OptionsFlow):
         # Pass self._data so all current values appear as defaults
         return self.async_show_form(
             step_id="init",
-            data_schema=_global_schema(self.hass, self._data),
+            data_schema=_global_schema(self._data),
             errors=errors,
         )
 
