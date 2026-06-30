@@ -331,11 +331,9 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
         """
         if self._threshold_override is not None:
             return self._threshold_override
-        opts = self.config_entry.options
-        source = opts if (opts is not None and len(opts) > 0) else self.config_entry.data
         return (
-            float(source.get(CONF_THRESHOLD_IMMEDIATE, 3000)),
-            float(source.get(CONF_THRESHOLD_DELAYED, 2700)),
+            float(self._get_conf(CONF_THRESHOLD_IMMEDIATE, 3000)),
+            float(self._get_conf(CONF_THRESHOLD_DELAYED, 2700)),
         )
 
     def set_thresholds(self, immediate_w: float | None, delayed_w: float | None) -> None:
@@ -355,10 +353,17 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             )
 
     def _get_conf(self, key: str, default):
-        """Read config key from options first, then data (options flow override support)."""
+        """Read config key from options first, then data, per-key.
+
+        A partially-populated options dict (e.g. containing only the
+        enabled switch state) must not shadow unrelated keys still living
+        in config_entry.data — so we check key presence individually
+        instead of picking one whole dict over the other.
+        """
         opts = self.config_entry.options
-        source = opts if (opts is not None and len(opts) > 0) else self.config_entry.data
-        return source.get(key, default)
+        if opts is not None and key in opts:
+            return opts[key]
+        return self.config_entry.data.get(key, default)
 
     @property
     def timer_state(self) -> dict:
