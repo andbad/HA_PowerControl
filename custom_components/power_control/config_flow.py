@@ -220,6 +220,8 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Route to backup restore, migration, or fresh setup."""
+        await self.async_set_unique_id(DOMAIN)
+        self._abort_if_unique_id_configured()
         backup = await async_load_backup(self.hass)
         if backup and backup.get("data"):
             return await self.async_step_restore_backup()
