@@ -211,7 +211,15 @@
     "timer_sec_remaining": "{s}s remaining",
     "timer_min_remaining": "{m}m {s}s remaining",
     "reorder_title": "Load priority order",
-    "shed_history_title": "Load shed history (last 3 hours)"
+    "shed_history_title": "Load shed history (last 3 hours)",
+    "notify_shed_title": "Power limit exceeded",
+    "notify_shed_message": "{load_name} switched off.",
+    "notify_restored_title": "Power limit restored",
+    "notify_restored_message": "{load_name} switched on.",
+    "notify_manual_shed_title": "Manual shed",
+    "notify_manual_shed_message": "{load_name} manually switched off.",
+    "notify_manual_restart_title": "Manual restart",
+    "notify_manual_restart_message": "{load_name} manually switched on."
   },
   "selector": {
     "dashboard_language": {

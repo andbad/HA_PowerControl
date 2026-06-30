@@ -101,6 +101,11 @@ def _t(lang: str, key: str, **kwargs: Any) -> str:
     return text.format(**kwargs) if kwargs else text
 
 
+# Public alias — other modules (e.g. notify.py) reuse this translation
+# system instead of duplicating a separate strings dictionary.
+translate = _t
+
+
 def _priority_label(lang: str, index: int, total: int) -> str:
     if index == 0:
         return _t(lang, "priority_high")

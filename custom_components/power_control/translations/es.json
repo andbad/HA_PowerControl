@@ -211,7 +211,15 @@
     "timer_sec_remaining": "{s}s restantes",
     "timer_min_remaining": "{m}m {s}s restantes",
     "reorder_title": "Orden de prioridad de cargas",
-    "shed_history_title": "Historial de desconexiones (últimas 3 horas)"
+    "shed_history_title": "Historial de desconexiones (últimas 3 horas)",
+    "notify_shed_title": "Límite de potencia superado",
+    "notify_shed_message": "{load_name} desactivado.",
+    "notify_restored_title": "Límite de potencia restablecido",
+    "notify_restored_message": "{load_name} reactivado.",
+    "notify_manual_shed_title": "Corte manual",
+    "notify_manual_shed_message": "{load_name} desactivado manualmente.",
+    "notify_manual_restart_title": "Reinicio manual",
+    "notify_manual_restart_message": "{load_name} reactivado manualmente."
   },
   "selector": {
     "dashboard_language": {

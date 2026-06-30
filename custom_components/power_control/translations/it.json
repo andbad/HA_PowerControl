@@ -211,7 +211,15 @@
     "timer_sec_remaining": "{s}s rimanenti",
     "timer_min_remaining": "{m}m {s}s rimanenti",
     "reorder_title": "Ordine priorità carichi",
-    "shed_history_title": "Storico distacchi carichi (ultime 3 ore)"
+    "shed_history_title": "Storico distacchi carichi (ultime 3 ore)",
+    "notify_shed_title": "Limite di potenza superato",
+    "notify_shed_message": "{load_name} disattivato.",
+    "notify_restored_title": "Limite di potenza rientrato",
+    "notify_restored_message": "{load_name} riattivato.",
+    "notify_manual_shed_title": "Distacco manuale",
+    "notify_manual_shed_message": "{load_name} disattivato manualmente.",
+    "notify_manual_restart_title": "Riavvio manuale",
+    "notify_manual_restart_message": "{load_name} riattivato manualmente."
   },
   "selector": {
     "dashboard_language": {

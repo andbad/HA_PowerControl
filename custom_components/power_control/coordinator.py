@@ -15,6 +15,7 @@ from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .notify import async_notify
+from .dashboard import translate
 from .const import (
     DOMAIN,
     UPDATE_INTERVAL_SEC,
@@ -35,6 +36,7 @@ from .const import (
     LOAD_SWITCH,
     LOAD_AUTO_RESTART,
     LOAD_MIN_OFF_SEC,
+    CONF_DASHBOARD_LANGUAGE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -632,11 +634,12 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
 
             # Notify
             notify_entity: str = self._get_conf(CONF_NOTIFY_ENTITY, "")
+            lang = self._get_conf(CONF_DASHBOARD_LANGUAGE, "en")
             await async_notify(
                 self.hass,
                 notify_entity,
-                title="Power limit exceeded",
-                message=f"{load.name} switched off.",
+                title=translate(lang, "notify_shed_title"),
+                message=translate(lang, "notify_shed_message", load_name=load.name),
             )
 
             # Fire HA event for external automations
@@ -802,11 +805,12 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
 
             # Notify
             notify_entity: str = self._get_conf(CONF_NOTIFY_ENTITY, "")
+            lang = self._get_conf(CONF_DASHBOARD_LANGUAGE, "en")
             await async_notify(
                 self.hass,
                 notify_entity,
-                title="Power limit restored",
-                message=f"{load.name} switched on.",
+                title=translate(lang, "notify_restored_title"),
+                message=translate(lang, "notify_restored_message", load_name=load.name),
             )
 
             # Fire HA event for external automations

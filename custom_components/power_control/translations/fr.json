@@ -211,7 +211,15 @@
     "timer_sec_remaining": "{s}s restantes",
     "timer_min_remaining": "{m}m {s}s restantes",
     "reorder_title": "Ordre de priorité des charges",
-    "shed_history_title": "Historique des délestages (3 dernières heures)"
+    "shed_history_title": "Historique des délestages (3 dernières heures)",
+    "notify_shed_title": "Limite de puissance dépassée",
+    "notify_shed_message": "{load_name} désactivé.",
+    "notify_restored_title": "Limite de puissance rétablie",
+    "notify_restored_message": "{load_name} réactivé.",
+    "notify_manual_shed_title": "Délestage manuel",
+    "notify_manual_shed_message": "{load_name} désactivé manuellement.",
+    "notify_manual_restart_title": "Redémarrage manuel",
+    "notify_manual_restart_message": "{load_name} réactivé manuellement."
   },
   "selector": {
     "dashboard_language": {

@@ -211,7 +211,15 @@
     "timer_sec_remaining": "{s}s verbleibend",
     "timer_min_remaining": "{m}m {s}s verbleibend",
     "reorder_title": "Prioritätsreihenfolge der Lasten",
-    "shed_history_title": "Abschaltverlauf (letzte 3 Stunden)"
+    "shed_history_title": "Abschaltverlauf (letzte 3 Stunden)",
+    "notify_shed_title": "Leistungsgrenze überschritten",
+    "notify_shed_message": "{load_name} ausgeschaltet.",
+    "notify_restored_title": "Leistungsgrenze wieder eingehalten",
+    "notify_restored_message": "{load_name} eingeschaltet.",
+    "notify_manual_shed_title": "Manueller Abwurf",
+    "notify_manual_shed_message": "{load_name} manuell ausgeschaltet.",
+    "notify_manual_restart_title": "Manueller Neustart",
+    "notify_manual_restart_message": "{load_name} manuell eingeschaltet."
   },
   "selector": {
     "dashboard_language": {

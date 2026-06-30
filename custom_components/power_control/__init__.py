@@ -15,9 +15,10 @@ from homeassistant.util import slugify
 from .const import (
     DOMAIN, CONF_NOTIFY_ENTITY, CONF_NOTIFY_SERVICE, CONF_LOADS,
     CONF_DASHBOARD_USER_CONTROLLED, CONF_DASHBOARD_SKIPPED_VERSION,
+    CONF_DASHBOARD_LANGUAGE,
     NOTIF_ID_REGEN_CONFIRM, SERVICE_REGENERATE_DASHBOARD,
 )
-from .dashboard import async_create_dashboard, async_remove_dashboard, async_rebuild_dashboard, DASHBOARD_VERSION
+from .dashboard import async_create_dashboard, async_remove_dashboard, async_rebuild_dashboard, DASHBOARD_VERSION, translate
 from .coordinator import PowerControlCoordinator
 from .notify import async_notify
 from .backup import async_save_backup
@@ -239,10 +240,11 @@ def _register_services(hass: HomeAssistant) -> None:
             load.suspended_power = 0.0  # rollback on failure
             return
         notify_entity: str = coord._get_conf(CONF_NOTIFY_ENTITY, "")
+        lang = coord._get_conf(CONF_DASHBOARD_LANGUAGE, "en")
         await async_notify(
             hass, notify_entity,
-            title="Manual shed",
-            message=f"{load.name} manually switched off.",
+            title=translate(lang, "notify_manual_shed_title"),
+            message=translate(lang, "notify_manual_shed_message", load_name=load.name),
         )
         hass.bus.async_fire(
             f"{DOMAIN}_load_shed",
@@ -276,10 +278,11 @@ def _register_services(hass: HomeAssistant) -> None:
         if not await coord._call_switch("turn_on", load.switch):
             return
         notify_entity: str = coord.config_entry.data.get(CONF_NOTIFY_ENTITY, "")
+        lang = coord.config_entry.data.get(CONF_DASHBOARD_LANGUAGE, "en")
         await async_notify(
             hass, notify_entity,
-            title="Manual restart",
-            message=f"{load.name} manually switched on.",
+            title=translate(lang, "notify_manual_restart_title"),
+            message=translate(lang, "notify_manual_restart_message", load_name=load.name),
         )
         hass.bus.async_fire(
             f"{DOMAIN}_load_restored",
