@@ -20,6 +20,7 @@ from .const import (
 from .dashboard import async_create_dashboard, async_remove_dashboard, async_rebuild_dashboard, DASHBOARD_VERSION
 from .coordinator import PowerControlCoordinator
 from .notify import async_notify
+from .backup import async_save_backup
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -422,3 +423,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     _LOGGER.debug("[%s] Unloaded entry %s (ok=%s)", DOMAIN, entry.entry_id, unload_ok)
     return unload_ok
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Called when the config entry is permanently deleted (not just unloaded).
+
+    Snapshot the entry's data/options so the config flow can offer to
+    restore them if the integration is set up again later.
+    """
+    await async_save_backup(hass, dict(entry.data), dict(entry.options))
+    _LOGGER.info("[%s] Entry removed — configuration backed up for future restore", DOMAIN)
