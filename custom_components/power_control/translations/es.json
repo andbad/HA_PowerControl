@@ -150,6 +150,20 @@
           "switch": "Interruptor (entity_id)",
           "auto_restart": "Reconexión automática habilitada"
         }
+      },
+      "dashboard": {
+        "title": "Crear panel de control",
+        "description": "¿Desea que Power Control cree automáticamente un panel Lovelace? Estará accesible desde el menú lateral como 'Power Control'.",
+        "data": {
+          "create_dashboard": "Crear panel Lovelace",
+          "dashboard_language": "Idioma del panel",
+          "dashboard_user_controlled": "Gestionar actualizaciones del panel manualmente",
+          "dashboard_require_admin": "Panel de control visible solo para admins"
+        },
+        "data_description": {
+          "dashboard_user_controlled": "Si está activado, aparecerá un botón para regenerar manualmente el panel en lugar de actualizaciones automáticas.",
+          "dashboard_require_admin": "Si está activado, el panel lateral solo será visible para los administradores de Home Assistant."
+        }
       }
     },
     "error": {

@@ -145,6 +145,19 @@
           "switch": "Interruttore (entity_id)",
           "auto_restart": "Riattivazione automatica abilitata"
         }
+      },
+      "dashboard": {
+        "title": "Crea dashboard",
+        "description": "Vuoi che Power Control crei automaticamente una dashboard Lovelace? Sarà accessibile dal menu laterale come 'Power Control'.",
+        "data": {
+          "create_dashboard": "Crea dashboard Lovelace",
+          "dashboard_user_controlled": "Manage dashboard updates manually",
+          "dashboard_require_admin": "Dashboard visible to admins only"
+        },
+        "data_description": {
+          "dashboard_user_controlled": "If enabled, a button will appear to manually trigger dashboard regeneration instead of automatic updates.",
+          "dashboard_require_admin": "If enabled, the sidebar dashboard will only be visible to Home Assistant administrators."
+        }
       }
     },
     "error": {

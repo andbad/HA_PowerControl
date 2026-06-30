@@ -150,6 +150,20 @@
           "switch": "Interrupteur (entity_id)",
           "auto_restart": "Réenclenchement automatique activé"
         }
+      },
+      "dashboard": {
+        "title": "Créer un tableau de bord",
+        "description": "Souhaitez-vous que Power Control crée automatiquement un tableau de bord Lovelace ? Il sera accessible depuis le menu latéral sous 'Power Control'.",
+        "data": {
+          "create_dashboard": "Créer le tableau de bord Lovelace",
+          "dashboard_language": "Langue du tableau de bord",
+          "dashboard_user_controlled": "Gérer les mises à jour du tableau de bord manuellement",
+          "dashboard_require_admin": "Tableau de bord visible uniquement par les admins"
+        },
+        "data_description": {
+          "dashboard_user_controlled": "Si activé, un bouton apparaîtra pour déclencher manuellement la régénération du tableau de bord au lieu des mises à jour automatiques.",
+          "dashboard_require_admin": "Si activé, le tableau de bord dans la barre latérale ne sera visible que par les administrateurs Home Assistant."
+        }
       }
     },
     "error": {

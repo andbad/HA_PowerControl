@@ -150,6 +150,20 @@
           "switch": "Switch (entity_id)",
           "auto_restart": "Automatic reconnection enabled"
         }
+      },
+      "dashboard": {
+        "title": "Create Dashboard",
+        "description": "Do you want Power Control to automatically create a Lovelace dashboard? It will be accessible from the sidebar as 'Power Control'.",
+        "data": {
+          "create_dashboard": "Create Lovelace dashboard",
+          "dashboard_language": "Dashboard language",
+          "dashboard_user_controlled": "Manage dashboard updates manually",
+          "dashboard_require_admin": "Dashboard visible to admins only"
+        },
+        "data_description": {
+          "dashboard_user_controlled": "If enabled, a button will appear to manually trigger dashboard regeneration instead of automatic updates.",
+          "dashboard_require_admin": "If enabled, the sidebar dashboard will only be visible to Home Assistant administrators."
+        }
       }
     },
     "error": {

@@ -166,6 +166,44 @@ def _num_loads_schema(default: int = 3) -> vol.Schema:
     )
 
 
+def _default_dashboard_language(hass, context: dict) -> str:
+    """Pick a sensible default dashboard language: context, then HA system, then en."""
+    ctx_lang = (context.get("language") or "").split("-")[0].lower()
+    sys_lang = (hass.config.language or "").split("-")[0].lower()
+    for candidate in (ctx_lang, sys_lang):
+        if candidate in _SUPPORTED_LANGUAGES:
+            return candidate
+    return "en"
+
+
+def _dashboard_schema(defaults: dict, default_lang: str) -> vol.Schema:
+    """Shared dashboard-options schema, used by both ConfigFlow and OptionsFlow."""
+    return vol.Schema(
+        {
+            vol.Required(
+                _CONF_CREATE_DASHBOARD,
+                default=defaults.get(_CONF_CREATE_DASHBOARD, True),
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_DASHBOARD_LANGUAGE,
+                default=defaults.get(CONF_DASHBOARD_LANGUAGE, default_lang),
+            ): SelectSelector(SelectSelectorConfig(
+                options=_SUPPORTED_LANGUAGES,
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key="dashboard_language",
+            )),
+            vol.Required(
+                CONF_DASHBOARD_USER_CONTROLLED,
+                default=defaults.get(CONF_DASHBOARD_USER_CONTROLLED, False),
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_DASHBOARD_REQUIRE_ADMIN,
+                default=defaults.get(CONF_DASHBOARD_REQUIRE_ADMIN, True),
+            ): BooleanSelector(),
+        }
+    )
+
+
 def _load_schema(index: int, defaults: dict = {}) -> vol.Schema:
     return vol.Schema(
         {
@@ -428,34 +466,12 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
                 options=self._restored_options,
             )
 
-        # Pre-select language: prefer context language (set by frontend),
-        # fall back to HA system language, then "en"
-        ctx_lang = (self.context.get("language") or "").split("-")[0].lower()
-        sys_lang = (self.hass.config.language or "").split("-")[0].lower()
-        for candidate in (ctx_lang, sys_lang):
-            if candidate in _SUPPORTED_LANGUAGES:
-                default_lang = candidate
-                break
-        else:
-            default_lang = "en"
-        _LOGGER.debug("[%s] Dashboard lang — ctx=%r sys=%r → %s", DOMAIN, ctx_lang, sys_lang, default_lang)
+        default_lang = _default_dashboard_language(self.hass, self.context)
+        _LOGGER.debug("[%s] Dashboard lang default → %s", DOMAIN, default_lang)
 
         return self.async_show_form(
             step_id="dashboard",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(_CONF_CREATE_DASHBOARD, default=True): BooleanSelector(),
-                    vol.Required(
-                        CONF_DASHBOARD_LANGUAGE, default=default_lang
-                    ): SelectSelector(SelectSelectorConfig(
-                        options=_SUPPORTED_LANGUAGES,
-                        mode=SelectSelectorMode.DROPDOWN,
-                        translation_key="dashboard_language",
-                    )),
-                    vol.Required(CONF_DASHBOARD_USER_CONTROLLED, default=False): BooleanSelector(),
-                    vol.Required(CONF_DASHBOARD_REQUIRE_ADMIN, default=True): BooleanSelector(),
-                }
-            ),
+            data_schema=_dashboard_schema(self._data, default_lang),
         )
 
     async def async_step_migrate_cleanup(
@@ -564,7 +580,9 @@ class PowerControlOptionsFlow(OptionsFlow):
             self._current_load_index += 1
 
             if self._current_load_index >= self._num_loads:
-                return await self._save_and_finish()
+                self._data[CONF_NUM_LOADS] = self._num_loads
+                self._data[CONF_LOADS] = self._loads
+                return await self.async_step_dashboard()
 
             return await self.async_step_load()
 
@@ -577,6 +595,20 @@ class PowerControlOptionsFlow(OptionsFlow):
                 "load_number": str(self._current_load_index + 1),
                 "total_loads": str(self._num_loads),
             },
+        )
+
+    async def async_step_dashboard(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Dashboard settings, pre-populated with existing values."""
+        if user_input is not None:
+            self._data.update(user_input)
+            return await self._save_and_finish()
+
+        default_lang = _default_dashboard_language(self.hass, self.context)
+        return self.async_show_form(
+            step_id="dashboard",
+            data_schema=_dashboard_schema(self._data, default_lang),
         )
 
     async def _save_and_finish(self) -> FlowResult:
