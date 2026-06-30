@@ -39,6 +39,13 @@ LOAD_DATA = {
     "auto_restart": True,
 }  # power_sensor and switch are real entity IDs here so EntitySelector is happy
 
+DASHBOARD_STEP_DATA = {
+    "create_dashboard": True,
+    "dashboard_language": "en",
+    "dashboard_user_controlled": False,
+    "dashboard_require_admin": True,
+}
+
 
 async def _start_flow(hass):
     """Initialize a fresh user config flow and return the global settings form.
@@ -247,6 +254,11 @@ class TestOptionsFlow:
                 user_input={**LOAD_DATA, "name": f"Carico {i + 1}"},
             )
 
+        # Proceed through the new dashboard step
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=DASHBOARD_STEP_DATA
+        )
+
         assert result["type"] == FlowResultType.CREATE_ENTRY
         await hass.async_block_till_done()
 
@@ -290,6 +302,11 @@ class TestOptionsFlowFixes:
             result = await hass.config_entries.options.async_configure(
                 result["flow_id"], user_input=load_input
             )
+
+        assert result["step_id"] == "dashboard"
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=DASHBOARD_STEP_DATA
+        )
 
         return result
 
