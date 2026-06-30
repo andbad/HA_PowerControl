@@ -53,13 +53,24 @@ class PowerControlSwitch(RestoreEntity, SwitchEntity):
     # ── State persistence across restarts ─────────────────────────────────────
 
     async def async_added_to_hass(self) -> None:
-        """Restore previous on/off state after HA restart."""
+        """Restore previous on/off state after HA restart.
+
+        Fresh install (no previous state): default to enabled=True and
+        write the state immediately so the entity isn't left as "off"
+        by default. Upgrade/restart with prior state: respect it as-is.
+        """
         await super().async_added_to_hass()
         last = await self.async_get_last_state()
         if last is not None:
             self._coordinator.enabled = last.state == "on"
             _LOGGER.debug(
                 "[%s] Switch restored to: %s", DOMAIN, last.state
+            )
+        else:
+            self._coordinator.enabled = True
+            self.async_write_ha_state()
+            _LOGGER.debug(
+                "[%s] No previous state — defaulting switch to ON", DOMAIN
             )
 
     # ── SwitchEntity interface ─────────────────────────────────────────────────
