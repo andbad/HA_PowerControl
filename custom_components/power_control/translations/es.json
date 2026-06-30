@@ -39,13 +39,7 @@
         "description": "¿Desea que Power Control cree automáticamente un panel Lovelace? Estará accesible desde el menú lateral como 'Power Control'.",
         "data": {
           "create_dashboard": "Crear panel Lovelace",
-          "dashboard_language": "Idioma del panel",
-          "dashboard_require_admin": "Panel de control visible solo para admins",
-          "dashboard_user_controlled": "Gestionar actualizaciones del panel manualmente"
-        },
-        "data_description": {
-          "dashboard_require_admin": "Si está activado, el panel lateral solo será visible para los administradores de Home Assistant.",
-          "dashboard_user_controlled": "Si está activado, aparecerá un botón para regenerar manualmente el panel en lugar de actualizaciones automáticas."
+          "dashboard_language": "Idioma del panel"
         }
       },
       "migrate": {
@@ -65,6 +59,13 @@
       "migrate_cleanup": {
         "title": "Migración completada",
         "description": "La configuración se ha importado correctamente.\n\n**Pasos de limpieza manual:**\n\n1. **Paquete YAML antiguo**: puede eliminar `pc.yaml` de la carpeta `/config/packages/`.\n2. **Panel antiguo**: elimine manualmente el antiguo panel de Lovelace en **Configuración → Paneles**.\n\nEl paquete antiguo ha sido **desactivado** automáticamente (`input_boolean.attiva_power_control` puesto en off)."
+      },
+      "restore_backup": {
+        "title": "Copia de seguridad encontrada",
+        "description": "Se encontró una copia de seguridad de una instalación anterior. ¿Desea restaurarla?",
+        "data": {
+          "restore": "Restaurar configuración anterior"
+        }
       }
     },
     "error": {

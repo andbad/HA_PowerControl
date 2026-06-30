@@ -27,6 +27,7 @@ from homeassistant.helpers.selector import (
 )
 
 from .migration import detect_old_package, read_old_config
+from .backup import async_load_backup, async_clear_backup
 from .const import (
     DOMAIN,
     CONF_INSTANCE_NAME,
@@ -44,7 +45,6 @@ from .const import (
     CONF_LOADS,
     CONF_DASHBOARD_LANGUAGE,
     CONF_DASHBOARD_USER_CONTROLLED,
-    CONF_DASHBOARD_REQUIRE_ADMIN,
     LOAD_NAME,
     LOAD_POWER_SENSOR,
     LOAD_SWITCH,
@@ -213,14 +213,43 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
         self._current_load_index: int = 0
         self._create_dashboard: bool = True
         self._from_migration: bool = False
+        self._restored_options: dict[str, Any] = {}
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Route to migration or fresh setup."""
+        """Route to backup restore, migration, or fresh setup."""
+        backup = await async_load_backup(self.hass)
+        if backup and backup.get("data"):
+            return await self.async_step_restore_backup()
         if detect_old_package(self.hass):
             return await self.async_step_migrate()
         return await self.async_step_global()
+
+    async def async_step_restore_backup(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Offer to restore a configuration saved when the entry was removed."""
+        if user_input is not None:
+            if user_input.get("restore", True):
+                backup = await async_load_backup(self.hass)
+                self._data = dict(backup.get("data", {}))
+                self._restored_options = dict(backup.get("options", {}))
+                self._loads = self._data.get(CONF_LOADS, [])
+                self._num_loads = int(self._data.get(CONF_NUM_LOADS, len(self._loads)))
+                await async_clear_backup(self.hass)
+                return await self.async_step_global()
+            await async_clear_backup(self.hass)
+            if detect_old_package(self.hass):
+                return await self.async_step_migrate()
+            return await self.async_step_global()
+
+        return self.async_show_form(
+            step_id="restore_backup",
+            data_schema=vol.Schema(
+                {vol.Required("restore", default=True): BooleanSelector()}
+            ),
+        )
 
     async def async_step_migrate(
         self, user_input: dict[str, Any] | None = None
@@ -352,13 +381,13 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
                 _CONF_CREATE_DASHBOARD: self._create_dashboard,
                 CONF_DASHBOARD_LANGUAGE: user_input.get(CONF_DASHBOARD_LANGUAGE, "en"),
                 CONF_DASHBOARD_USER_CONTROLLED: user_input.get(CONF_DASHBOARD_USER_CONTROLLED, False),
-                CONF_DASHBOARD_REQUIRE_ADMIN: user_input.get(CONF_DASHBOARD_REQUIRE_ADMIN, True),
             }
             if self._from_migration:
                 return await self.async_step_migrate_cleanup()
             return self.async_create_entry(
                 title=self._data[CONF_INSTANCE_NAME],
                 data=self._data,
+                options=self._restored_options,
             )
 
         # Pre-select language: prefer context language (set by frontend),
@@ -386,7 +415,6 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
                         translation_key="dashboard_language",
                     )),
                     vol.Required(CONF_DASHBOARD_USER_CONTROLLED, default=False): BooleanSelector(),
-                    vol.Required(CONF_DASHBOARD_REQUIRE_ADMIN, default=True): BooleanSelector(),
                 }
             ),
         )
@@ -406,6 +434,7 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(
                 title=self._data[CONF_INSTANCE_NAME],
                 data=self._data,
+                options=self._restored_options,
             )
 
         return self.async_show_form(

@@ -39,13 +39,7 @@
         "description": "Vuoi che Power Control crei automaticamente una dashboard Lovelace? Sarà accessibile dal menu laterale come 'Power Control'.",
         "data": {
           "create_dashboard": "Crea dashboard Lovelace",
-          "dashboard_language": "Lingua della dashboard",
-          "dashboard_require_admin": "Dashboard visibile solo agli admin",
-          "dashboard_user_controlled": "Gestisci aggiornamenti dashboard manualmente"
-        },
-        "data_description": {
-          "dashboard_require_admin": "Se abilitato, la dashboard nella barra laterale sarà visibile solo agli amministratori di Home Assistant.",
-          "dashboard_user_controlled": "Se abilitato, apparirà un pulsante per rigenerare manualmente la dashboard invece degli aggiornamenti automatici."
+          "dashboard_language": "Lingua della dashboard"
         }
       },
       "migrate": {
@@ -65,6 +59,13 @@
       "migrate_cleanup": {
         "title": "Migrazione completata",
         "description": "La configurazione è stata importata con successo.\n\n**Operazioni manuali da completare:**\n\n1. **Vecchio package YAML**: puoi eliminare il file `pc.yaml` (o il file che conteneva il vecchio package Power Control) dalla cartella `/config/packages/`.\n2. **Vecchia dashboard**: rimuovi manualmente la vecchia dashboard Lovelace da **Impostazioni → Dashboard**.\n\nIl vecchio package è stato **disabilitato** automaticamente (`input_boolean.attiva_power_control` impostato su off) per evitare conflitti con la nuova integrazione."
+      },
+      "restore_backup": {
+        "title": "Configurazione di backup trovata",
+        "description": "È stato trovato un backup di configurazione da una precedente installazione. Vuoi ripristinarlo?",
+        "data": {
+          "restore": "Ripristina configurazione precedente"
+        }
       }
     },
     "error": {

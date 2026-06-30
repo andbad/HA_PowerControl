@@ -39,13 +39,7 @@
         "description": "Souhaitez-vous que Power Control crée automatiquement un tableau de bord Lovelace ? Il sera accessible depuis le menu latéral sous 'Power Control'.",
         "data": {
           "create_dashboard": "Créer le tableau de bord Lovelace",
-          "dashboard_language": "Langue du tableau de bord",
-          "dashboard_require_admin": "Tableau de bord visible uniquement par les admins",
-          "dashboard_user_controlled": "Gérer les mises à jour du tableau de bord manuellement"
-        },
-        "data_description": {
-          "dashboard_require_admin": "Si activé, le tableau de bord dans la barre latérale ne sera visible que par les administrateurs Home Assistant.",
-          "dashboard_user_controlled": "Si activé, un bouton apparaîtra pour déclencher manuellement la régénération du tableau de bord au lieu des mises à jour automatiques."
+          "dashboard_language": "Langue du tableau de bord"
         }
       },
       "migrate": {
@@ -65,6 +59,13 @@
       "migrate_cleanup": {
         "title": "Migration terminée",
         "description": "La configuration a été importée avec succès.\n\n**Étapes de nettoyage manuelles :**\n\n1. **Ancien package YAML** : vous pouvez supprimer `pc.yaml` du dossier `/config/packages/`.\n2. **Ancien tableau de bord** : supprimez manuellement l'ancien tableau de bord Lovelace via **Paramètres → Tableaux de bord**.\n\nL'ancien package a été **désactivé** automatiquement (`input_boolean.attiva_power_control` mis sur off)."
+      },
+      "restore_backup": {
+        "title": "Sauvegarde de configuration trouvée",
+        "description": "Une sauvegarde de configuration d'une installation précédente a été trouvée. Voulez-vous la restaurer ?",
+        "data": {
+          "restore": "Restaurer la configuration précédente"
+        }
       }
     },
     "error": {

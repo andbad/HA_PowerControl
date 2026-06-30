@@ -39,13 +39,7 @@
         "description": "Soll Power Control automatisch ein Lovelace-Dashboard erstellen? Es wird im Seitenmenü als 'Power Control' angezeigt.",
         "data": {
           "create_dashboard": "Lovelace-Dashboard erstellen",
-          "dashboard_language": "Dashboard-Sprache",
-          "dashboard_require_admin": "Dashboard nur für Admins sichtbar",
-          "dashboard_user_controlled": "Dashboard-Updates manuell verwalten"
-        },
-        "data_description": {
-          "dashboard_require_admin": "Wenn aktiviert, ist das Dashboard in der Seitenleiste nur für Home Assistant-Administratoren sichtbar.",
-          "dashboard_user_controlled": "Wenn aktiviert, erscheint eine Schaltfläche zur manuellen Dashboard-Regenerierung statt automatischer Updates."
+          "dashboard_language": "Dashboard-Sprache"
         }
       },
       "migrate": {
@@ -65,6 +59,13 @@
       "migrate_cleanup": {
         "title": "Migration abgeschlossen",
         "description": "Die Konfiguration wurde erfolgreich importiert.\n\n**Manuelle Bereinigungsschritte:**\n\n1. **Altes YAML-Paket**: Sie können `pc.yaml` aus dem Ordner `/config/packages/` sicher löschen.\n2. **Altes Dashboard**: Entfernen Sie das alte Lovelace-Dashboard manuell unter **Einstellungen → Dashboards**.\n\nDas alte Paket wurde automatisch **deaktiviert** (`input_boolean.attiva_power_control` auf off gesetzt)."
+      },
+      "restore_backup": {
+        "title": "Konfigurationssicherung gefunden",
+        "description": "Es wurde eine Konfigurationssicherung aus einer früheren Installation gefunden. Möchten Sie sie wiederherstellen?",
+        "data": {
+          "restore": "Vorherige Konfiguration wiederherstellen"
+        }
       }
     },
     "error": {
