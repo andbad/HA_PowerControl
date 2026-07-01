@@ -414,3 +414,135 @@ class TestOptionsFlowFixes:
         # Thresholds must be saved as int
         assert isinstance(entry.data.get("threshold_immediate"), int)
         assert isinstance(entry.data.get("threshold_delayed"), int)
+
+
+# ── Restore-backup flow ────────────────────────────────────────────────────────
+
+class TestRestoreBackupFlow:
+    """Config flow: restore_backup + restore_confirm steps."""
+
+    _BACKUP_DATA = {
+        "instance_name": "Test PC",
+        "threshold_immediate": 3300,
+        "threshold_delayed": 3000,
+        "delay_immediate_sec": 30,
+        "delay_delayed_min": 10,
+        "wait_between_stops_sec": 10,
+        "wait_between_starts_min": 5,
+        "wait_before_start_min": 5,
+        "num_loads": 1,
+        "loads": [{"name": "Lavatrice", "power_sensor": "sensor.p", "switch": "switch.s", "auto_restart": True}],
+    }
+
+    async def _init_with_backup(self, hass, backup_data=None, backup_options=None):
+        """Patch async_load_backup to return a saved backup, then start the flow."""
+        from unittest.mock import patch, AsyncMock
+        payload = {"data": backup_data or self._BACKUP_DATA, "options": backup_options or {}}
+        with patch(
+            "custom_components.power_control.config_flow.async_load_backup",
+            new=AsyncMock(return_value=payload),
+        ), patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ):
+            result = await hass.config_entries.flow.async_init(
+                DOMAIN, context={"source": "user"}
+            )
+            return result
+
+    @pytest.mark.asyncio
+    async def test_shows_restore_backup_step_when_backup_exists(self, hass):
+        """Flow lands on restore_backup when a backup is found."""
+        result = await self._init_with_backup(hass)
+        assert result["type"] == FlowResultType.FORM
+        assert result["step_id"] == "restore_backup"
+
+    @pytest.mark.asyncio
+    async def test_decline_restore_goes_to_global(self, hass):
+        """Declining restore skips to fresh global step."""
+        from unittest.mock import patch, AsyncMock
+        payload = {"data": self._BACKUP_DATA, "options": {}}
+        with patch(
+            "custom_components.power_control.config_flow.async_load_backup",
+            new=AsyncMock(return_value=payload),
+        ), patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ):
+            result = await hass.config_entries.flow.async_init(
+                DOMAIN, context={"source": "user"}
+            )
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], user_input={"restore": False}
+            )
+        assert result["step_id"] == "global"
+
+    @pytest.mark.asyncio
+    async def test_accept_restore_shows_confirm_step(self, hass):
+        """Accepting restore shows the confirm step with load summary."""
+        from unittest.mock import patch, AsyncMock
+        payload = {"data": self._BACKUP_DATA, "options": {}}
+        with patch(
+            "custom_components.power_control.config_flow.async_load_backup",
+            new=AsyncMock(return_value=payload),
+        ), patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ):
+            result = await hass.config_entries.flow.async_init(
+                DOMAIN, context={"source": "user"}
+            )
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], user_input={"restore": True}
+            )
+        assert result["type"] == FlowResultType.FORM
+        assert result["step_id"] == "restore_confirm"
+
+    @pytest.mark.asyncio
+    async def test_confirm_creates_entry_with_restored_data(self, hass):
+        """Confirming restore creates the entry with original loads and thresholds."""
+        from unittest.mock import patch, AsyncMock
+        payload = {"data": self._BACKUP_DATA, "options": {"enabled": False}}
+        with patch(
+            "custom_components.power_control.config_flow.async_load_backup",
+            new=AsyncMock(return_value=payload),
+        ), patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ):
+            result = await hass.config_entries.flow.async_init(
+                DOMAIN, context={"source": "user"}
+            )
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], user_input={"restore": True}
+            )
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], user_input={"confirm": True}
+            )
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        assert result["data"]["threshold_immediate"] == 3300
+        assert result["data"]["loads"][0]["name"] == "Lavatrice"
+        assert result["options"]["enabled"] is False
+
+    @pytest.mark.asyncio
+    async def test_confirm_decline_goes_to_global(self, hass):
+        """Declining at confirm step falls back to fresh global step."""
+        from unittest.mock import patch, AsyncMock
+        payload = {"data": self._BACKUP_DATA, "options": {}}
+        with patch(
+            "custom_components.power_control.config_flow.async_load_backup",
+            new=AsyncMock(return_value=payload),
+        ), patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ):
+            result = await hass.config_entries.flow.async_init(
+                DOMAIN, context={"source": "user"}
+            )
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], user_input={"restore": True}
+            )
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], user_input={"confirm": False}
+            )
+        assert result["step_id"] == "global"
