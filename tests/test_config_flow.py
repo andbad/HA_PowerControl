@@ -546,3 +546,73 @@ class TestRestoreBackupFlow:
                 result["flow_id"], user_input={"confirm": False}
             )
         assert result["step_id"] == "global"
+
+
+async def _complete_entry(hass, num_loads: int = 1):
+    """Run the full ConfigFlow and return the created ConfigEntry."""
+    result = await _complete_flow(hass, num_loads=num_loads)
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    return hass.config_entries.async_entries(DOMAIN)[0]
+
+
+class TestOptionsFlowDashboard:
+    """OptionsFlow: dashboard step appears after last load step."""
+
+    @pytest.mark.asyncio
+    async def test_dashboard_step_shown_after_loads(self, hass):
+        """After completing all load steps the flow shows the dashboard step."""
+        entry = await _complete_entry(hass, num_loads=1)
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={**GLOBAL_STEP_DATA}
+        )
+        assert result["step_id"] == "num_loads"
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={"num_loads": 1}
+        )
+        assert result["step_id"] == "load"
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=LOAD_DATA
+        )
+        assert result["step_id"] == "dashboard"
+
+    @pytest.mark.asyncio
+    async def test_dashboard_step_saves_and_finishes(self, hass):
+        """Completing the dashboard step creates the entry."""
+        entry = await _complete_entry(hass, num_loads=1)
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={**GLOBAL_STEP_DATA}
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={"num_loads": 1}
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=LOAD_DATA
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=DASHBOARD_STEP_DATA
+        )
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+
+    @pytest.mark.asyncio
+    async def test_dashboard_step_persists_require_admin(self, hass):
+        """dashboard_require_admin value is stored in entry.data."""
+        entry = await _complete_entry(hass, num_loads=1)
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={**GLOBAL_STEP_DATA}
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={"num_loads": 1}
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=LOAD_DATA
+        )
+        await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            user_input={**DASHBOARD_STEP_DATA, "dashboard_require_admin": False},
+        )
+        await hass.async_block_till_done()
+        assert entry.data.get("dashboard_require_admin") is False
