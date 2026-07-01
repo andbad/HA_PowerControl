@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import pytest
+from unittest.mock import patch, AsyncMock
 
 from homeassistant.data_entry_flow import FlowResultType
 
@@ -434,74 +435,9 @@ class TestRestoreBackupFlow:
         "loads": [{"name": "Lavatrice", "power_sensor": "sensor.p", "switch": "switch.s", "auto_restart": True}],
     }
 
-    async def _init_with_backup(self, hass, enable_custom_integrations, backup_data=None, backup_options=None):
-        """Patch async_load_backup to return a saved backup, then start the flow."""
-        from unittest.mock import patch, AsyncMock
-        payload = {"data": backup_data or self._BACKUP_DATA, "options": backup_options or {}}
-        with patch(
-            "custom_components.power_control.config_flow.async_load_backup",
-            new=AsyncMock(return_value=payload),
-        ), patch(
-            "custom_components.power_control.config_flow.async_clear_backup",
-            new=AsyncMock(),
-        ):
-            result = await hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": "user"}
-            )
-            return result
-
-    @pytest.mark.asyncio
-    async def test_shows_restore_backup_step_when_backup_exists(self, hass, enable_custom_integrations):
-        """Flow lands on restore_backup when a backup is found."""
-        result = await self._init_with_backup(hass, enable_custom_integrations)
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "restore_backup"
-
-    @pytest.mark.asyncio
-    async def test_decline_restore_goes_to_global(self, hass, enable_custom_integrations):
-        """Declining restore skips to fresh global step."""
-        from unittest.mock import patch, AsyncMock
-        payload = {"data": self._BACKUP_DATA, "options": {}}
-        with patch(
-            "custom_components.power_control.config_flow.async_load_backup",
-            new=AsyncMock(return_value=payload),
-        ), patch(
-            "custom_components.power_control.config_flow.async_clear_backup",
-            new=AsyncMock(),
-        ):
-            result = await hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": "user"}
-            )
-            result = await hass.config_entries.flow.async_configure(
-                result["flow_id"], user_input={"restore": False}
-            )
-        assert result["step_id"] == "global"
-
-    @pytest.mark.asyncio
-    async def test_accept_restore_shows_confirm_step(self, hass, enable_custom_integrations):
-        """Accepting restore shows the confirm step with load summary."""
-        from unittest.mock import patch, AsyncMock
-        payload = {"data": self._BACKUP_DATA, "options": {}}
-        with patch(
-            "custom_components.power_control.config_flow.async_load_backup",
-            new=AsyncMock(return_value=payload),
-        ), patch(
-            "custom_components.power_control.config_flow.async_clear_backup",
-            new=AsyncMock(),
-        ):
-            result = await hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": "user"}
-            )
-            result = await hass.config_entries.flow.async_configure(
-                result["flow_id"], user_input={"restore": True}
-            )
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "restore_confirm"
-
-    @pytest.mark.asyncio
-    async def test_confirm_creates_entry_with_restored_data(self, hass, enable_custom_integrations):
-        """Confirming restore creates the entry with original loads and thresholds."""
-        from unittest.mock import patch, AsyncMock
+    async def _start_restore_flow(self, hass, enable_custom_integrations):
+        """Start a fresh ConfigFlow and fast-forward to restore_backup step
+        by patching async_load_backup before async_init."""
         payload = {"data": self._BACKUP_DATA, "options": {"enabled": False}}
         with patch(
             "custom_components.power_control.config_flow.async_load_backup",
@@ -509,26 +445,45 @@ class TestRestoreBackupFlow:
         ), patch(
             "custom_components.power_control.config_flow.async_clear_backup",
             new=AsyncMock(),
+        ), patch(
+            "custom_components.power_control.config_flow.detect_old_package",
+            return_value=False,
         ):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": "user"}
             )
-            result = await hass.config_entries.flow.async_configure(
-                result["flow_id"], user_input={"restore": True}
-            )
-            result = await hass.config_entries.flow.async_configure(
-                result["flow_id"], user_input={"confirm": True}
-            )
-        assert result["type"] == FlowResultType.CREATE_ENTRY
-        assert result["data"]["threshold_immediate"] == 3300
-        assert result["data"]["loads"][0]["name"] == "Lavatrice"
-        assert result["options"]["enabled"] is False
+        return result, payload
 
     @pytest.mark.asyncio
-    async def test_confirm_decline_goes_to_global(self, hass, enable_custom_integrations):
-        """Declining at confirm step falls back to fresh global step."""
-        from unittest.mock import patch, AsyncMock
-        payload = {"data": self._BACKUP_DATA, "options": {}}
+    async def test_shows_restore_backup_step_when_backup_exists(
+        self, hass, enable_custom_integrations
+    ):
+        result, _ = await self._start_restore_flow(hass, enable_custom_integrations)
+        assert result["type"] == FlowResultType.FORM
+        assert result["step_id"] == "restore_backup"
+
+    @pytest.mark.asyncio
+    async def test_decline_restore_goes_to_global(
+        self, hass, enable_custom_integrations
+    ):
+        result, _ = await self._start_restore_flow(hass, enable_custom_integrations)
+        with patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ), patch(
+            "custom_components.power_control.config_flow.detect_old_package",
+            return_value=False,
+        ):
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], user_input={"restore": False}
+            )
+        assert result["step_id"] == "global"
+
+    @pytest.mark.asyncio
+    async def test_accept_restore_shows_confirm_step(
+        self, hass, enable_custom_integrations
+    ):
+        result, payload = await self._start_restore_flow(hass, enable_custom_integrations)
         with patch(
             "custom_components.power_control.config_flow.async_load_backup",
             new=AsyncMock(return_value=payload),
@@ -536,15 +491,53 @@ class TestRestoreBackupFlow:
             "custom_components.power_control.config_flow.async_clear_backup",
             new=AsyncMock(),
         ):
-            result = await hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": "user"}
-            )
             result = await hass.config_entries.flow.async_configure(
                 result["flow_id"], user_input={"restore": True}
             )
+        assert result["type"] == FlowResultType.FORM
+        assert result["step_id"] == "restore_confirm"
+
+    @pytest.mark.asyncio
+    async def test_confirm_creates_entry_with_restored_data(
+        self, hass, enable_custom_integrations
+    ):
+        result, payload = await self._start_restore_flow(hass, enable_custom_integrations)
+        with patch(
+            "custom_components.power_control.config_flow.async_load_backup",
+            new=AsyncMock(return_value=payload),
+        ), patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ):
             result = await hass.config_entries.flow.async_configure(
-                result["flow_id"], user_input={"confirm": False}
+                result["flow_id"], user_input={"restore": True}
             )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input={"confirm": True}
+        )
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        assert result["data"]["threshold_immediate"] == 3300
+        assert result["data"]["loads"][0]["name"] == "Lavatrice"
+        assert result["options"]["enabled"] is False
+
+    @pytest.mark.asyncio
+    async def test_confirm_decline_goes_to_global(
+        self, hass, enable_custom_integrations
+    ):
+        result, payload = await self._start_restore_flow(hass, enable_custom_integrations)
+        with patch(
+            "custom_components.power_control.config_flow.async_load_backup",
+            new=AsyncMock(return_value=payload),
+        ), patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ):
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], user_input={"restore": True}
+            )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input={"confirm": False}
+        )
         assert result["step_id"] == "global"
 
 
