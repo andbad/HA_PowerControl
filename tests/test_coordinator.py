@@ -1485,3 +1485,37 @@ class TestIntegrationScenarios:
         assert coord._loads[4].switch == "switch.s4"
         # Index 3 (ex-load5, switch.s5) must still be on
         assert not coord._loads[3].is_suspended
+
+
+class TestGetConf:
+    """_get_conf must read per-key: options first, then data, then default."""
+
+    def _make(self, data: dict, options: dict):
+        entry = MagicMock()
+        entry.data = data
+        entry.options = options
+        hass = MagicMock()
+        hass.states.get = MagicMock(return_value=None)
+        coord = make_coordinator(hass, entry)
+        return coord
+
+    def test_reads_from_data_when_options_empty(self):
+        coord = self._make({"threshold_immediate": 3300}, {})
+        assert coord._get_conf("threshold_immediate", 0) == 3300
+
+    def test_reads_from_options_when_key_present(self):
+        coord = self._make({"threshold_immediate": 3300}, {"threshold_immediate": 4000})
+        assert coord._get_conf("threshold_immediate", 0) == 4000
+
+    def test_partial_options_do_not_shadow_data_keys(self):
+        """A partial options dict (e.g. only enabled) must not shadow other data keys."""
+        coord = self._make(
+            {"threshold_immediate": 3300, "delay_immediate_sec": 30},
+            {"enabled": True},           # only CONF_ENABLED in options
+        )
+        assert coord._get_conf("threshold_immediate", 0) == 3300
+        assert coord._get_conf("delay_immediate_sec", 0) == 30
+
+    def test_returns_default_when_key_missing_everywhere(self):
+        coord = self._make({}, {})
+        assert coord._get_conf("nonexistent_key", 42) == 42
