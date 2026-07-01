@@ -10,17 +10,28 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from custom_components.power_control.notify import async_notify
 
 
-def _make_hass(entity_exists: bool = True, send_message_available: bool = True):
+def _make_hass(
+    entity_exists: bool = True,
+    send_message_available: bool = True,
+    legacy_service_exists: bool = True,
+):
     """Build a mock hass for notify tests."""
     hass = MagicMock()
 
     # State machine
     state = MagicMock()
-    state.state = "unknown"  # notify entities typically report no useful state
+    state.state = "unknown"
     hass.states.get = MagicMock(return_value=state if entity_exists else None)
 
-    # Services
-    hass.services.has_service = MagicMock(return_value=send_message_available)
+    # Services: send_message drives the modern path; the service_name check
+    # drives the legacy path.
+    def _has_service(domain, service):
+        if service == "send_message":
+            return send_message_available
+        # Any other service name simulates whether a legacy service exists.
+        return legacy_service_exists
+
+    hass.services.has_service = MagicMock(side_effect=_has_service)
     hass.services.async_call = AsyncMock()
 
     return hass
@@ -35,11 +46,22 @@ class TestAsyncNotify:
         hass.services.async_call.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_skips_when_entity_not_in_state_machine(self):
-        """No call when the entity doesn't exist in hass.states."""
-        hass = _make_hass(entity_exists=False)
+    async def test_skips_when_entity_and_legacy_service_missing(self):
+        """No call when neither the entity nor a legacy service exists."""
+        hass = _make_hass(entity_exists=False, legacy_service_exists=False)
         await async_notify(hass, "notify.telegram_bot_chat", "Title", "Message")
         hass.services.async_call.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_legacy_when_entity_missing(self):
+        """Calls legacy service when entity is absent but service exists."""
+        hass = _make_hass(entity_exists=False, legacy_service_exists=True)
+        await async_notify(hass, "notify.telegram_bot_chat", "Title", "Message")
+        hass.services.async_call.assert_called_once_with(
+            "notify", "telegram_bot_chat",
+            {"message": "Message", "title": "Title"},
+            blocking=False,
+        )
 
     @pytest.mark.asyncio
     async def test_skips_when_send_message_not_available(self):
@@ -98,3 +120,52 @@ class TestAsyncNotify:
         hass.services.async_call = AsyncMock(side_effect=Exception("connection error"))
         # Must not raise
         await async_notify(hass, "notify.telegram_bot_chat", "T", "M")
+
+
+# ── _notify_options ────────────────────────────────────────────────────────────
+
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from custom_components.power_control.config_flow import _notify_options
+
+
+def _make_hass_for_options(entities=None, services=None):
+    hass = MagicMock()
+    states = [MagicMock(entity_id=e) for e in (entities or [])]
+    hass.states.async_all = MagicMock(return_value=states)
+    hass.services.async_services = MagicMock(
+        return_value={"notify": {s: {} for s in (services or [])}}
+    )
+    return hass
+
+
+class TestNotifyOptions:
+    def test_includes_notify_entities(self):
+        hass = _make_hass_for_options(entities=["notify.mobile_app"])
+        assert "notify.mobile_app" in _notify_options(hass)
+
+    def test_includes_legacy_services(self):
+        hass = _make_hass_for_options(services=["lg_webos_tv"])
+        assert "notify.lg_webos_tv" in _notify_options(hass)
+
+    def test_excludes_internal_services(self):
+        hass = _make_hass_for_options(
+            services=["notify", "send_message", "persistent_notification", "lg_webos_tv"]
+        )
+        options = _notify_options(hass)
+        assert "notify.notify" not in options
+        assert "notify.send_message" not in options
+        assert "notify.persistent_notification" not in options
+        assert "notify.lg_webos_tv" in options
+
+    def test_no_duplicates_between_entity_and_service(self):
+        hass = _make_hass_for_options(
+            entities=["notify.mobile_app"],
+            services=["mobile_app"],
+        )
+        options = _notify_options(hass)
+        assert options.count("notify.mobile_app") == 1
+
+    def test_empty_when_no_targets(self):
+        hass = _make_hass_for_options()
+        assert _notify_options(hass) == []

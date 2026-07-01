@@ -38,7 +38,13 @@
         "title": "Crea dashboard",
         "description": "Vuoi che Power Control crei automaticamente una dashboard Lovelace? Sarà accessibile dal menu laterale come 'Power Control'.",
         "data": {
-          "create_dashboard": "Crea dashboard Lovelace"
+          "create_dashboard": "Crea dashboard Lovelace",
+          "dashboard_user_controlled": "Manage dashboard updates manually",
+          "dashboard_require_admin": "Dashboard visible to admins only"
+        },
+        "data_description": {
+          "dashboard_user_controlled": "If enabled, a button will appear to manually trigger dashboard regeneration instead of automatic updates.",
+          "dashboard_require_admin": "If enabled, the sidebar dashboard will only be visible to Home Assistant administrators."
         }
       },
       "migrate": {
@@ -54,10 +60,55 @@
         "data": {
           "confirm": "Conferma e crea integrazione"
         }
+      },
+      "global": {
+        "title": "Global settings",
+        "description": "Configure thresholds, timing and notifications for load shedding.",
+        "data": {
+          "instance_name": "Instance name",
+          "global_power_sensor": "Global power sensor (optional)",
+          "threshold_immediate": "Immediate threshold (W)",
+          "threshold_delayed": "Delayed threshold (W)",
+          "delay_immediate_sec": "Immediate delay (s)",
+          "delay_delayed_min": "Delayed delay (min)",
+          "wait_between_stops_sec": "Wait between shed actions (s)",
+          "wait_between_starts_min": "Wait between restore actions (min)",
+          "wait_before_start_min": "Wait before starting restore (min)",
+          "notify_entity": "Notification service (optional)"
+        },
+        "data_description": {
+          "instance_name": "A name to identify this Power Control instance.",
+          "global_power_sensor": "Sensor measuring total power usage. If left empty, the sum of configured load sensors is used instead.",
+          "threshold_immediate": "Power level above which loads are shed quickly (after the immediate delay).",
+          "threshold_delayed": "Power level above which loads are shed slowly (after the delayed delay). Must be lower than the immediate threshold.",
+          "delay_immediate_sec": "How long the immediate threshold must be exceeded before shedding a load.",
+          "delay_delayed_min": "How long the delayed threshold must be exceeded before shedding a load.",
+          "wait_between_stops_sec": "Pause between shedding one load and checking whether another must be shed.",
+          "wait_between_starts_min": "Pause between restoring one load and the next.",
+          "wait_before_start_min": "How long power must stay below the threshold before restoring any load.",
+          "notify_entity": "Select where to send notifications: modern notify entities and legacy notify services (including notification groups) are both listed. If your target isn't shown, you can type it manually."
+        },
+        "error": {
+          "threshold_order": "The immediate threshold must be higher than the delayed threshold."
+        }
+      },
+      "restore_backup": {
+        "title": "Backup configuration found",
+        "description": "A configuration backup from a previous installation was found, including loads, thresholds and timing. Would you like to restore it?",
+        "data": {
+          "restore": "Restore previous configuration"
+        }
+      },
+      "restore_confirm": {
+        "title": "Review restored configuration",
+        "description": "{load_count} loads will be restored: {load_names}.\nThresholds: immediate {threshold_immediate} W, delayed {threshold_delayed} W.\n\nConfirm to apply this configuration, or decline to start a fresh setup instead.",
+        "data": {
+          "confirm": "Apply restored configuration"
+        }
       }
     },
     "error": {
-      "threshold_order": "La soglia immediata deve essere maggiore della soglia ritardata."
+      "threshold_order": "The immediate threshold must be higher than the delayed threshold."
     },
     "abort": {
       "already_configured": "Power Control è già configurato."
@@ -93,6 +144,19 @@
           "power_sensor": "Sensore potenza (entity_id)",
           "switch": "Interruttore (entity_id)",
           "auto_restart": "Riattivazione automatica abilitata"
+        }
+      },
+      "dashboard": {
+        "title": "Crea dashboard",
+        "description": "Vuoi che Power Control crei automaticamente una dashboard Lovelace? Sarà accessibile dal menu laterale come 'Power Control'.",
+        "data": {
+          "create_dashboard": "Crea dashboard Lovelace",
+          "dashboard_user_controlled": "Manage dashboard updates manually",
+          "dashboard_require_admin": "Dashboard visible to admins only"
+        },
+        "data_description": {
+          "dashboard_user_controlled": "If enabled, a button will appear to manually trigger dashboard regeneration instead of automatic updates.",
+          "dashboard_require_admin": "If enabled, the sidebar dashboard will only be visible to Home Assistant administrators."
         }
       }
     },

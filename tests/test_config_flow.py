@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import pytest
+from unittest.mock import patch, AsyncMock
 
 from homeassistant.data_entry_flow import FlowResultType
 
@@ -38,6 +39,13 @@ LOAD_DATA = {
     "switch": "switch.lavatrice",
     "auto_restart": True,
 }  # power_sensor and switch are real entity IDs here so EntitySelector is happy
+
+DASHBOARD_STEP_DATA = {
+    "create_dashboard": True,
+    "dashboard_language": "en",
+    "dashboard_user_controlled": False,
+    "dashboard_require_admin": True,
+}
 
 
 async def _start_flow(hass):
@@ -247,6 +255,11 @@ class TestOptionsFlow:
                 user_input={**LOAD_DATA, "name": f"Carico {i + 1}"},
             )
 
+        # Proceed through the new dashboard step
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=DASHBOARD_STEP_DATA
+        )
+
         assert result["type"] == FlowResultType.CREATE_ENTRY
         await hass.async_block_till_done()
 
@@ -290,6 +303,11 @@ class TestOptionsFlowFixes:
             result = await hass.config_entries.options.async_configure(
                 result["flow_id"], user_input=load_input
             )
+
+        assert result["step_id"] == "dashboard"
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=DASHBOARD_STEP_DATA
+        )
 
         return result
 
@@ -397,3 +415,197 @@ class TestOptionsFlowFixes:
         # Thresholds must be saved as int
         assert isinstance(entry.data.get("threshold_immediate"), int)
         assert isinstance(entry.data.get("threshold_delayed"), int)
+
+
+# ── Restore-backup flow ────────────────────────────────────────────────────────
+
+class TestRestoreBackupFlow:
+    """Config flow: restore_backup + restore_confirm steps."""
+
+    _BACKUP_DATA = {
+        "instance_name": "Test PC",
+        "threshold_immediate": 3300,
+        "threshold_delayed": 3000,
+        "delay_immediate_sec": 30,
+        "delay_delayed_min": 10,
+        "wait_between_stops_sec": 10,
+        "wait_between_starts_min": 5,
+        "wait_before_start_min": 5,
+        "num_loads": 1,
+        "loads": [{"name": "Lavatrice", "power_sensor": "sensor.p", "switch": "switch.s", "auto_restart": True}],
+    }
+
+    async def _start_restore_flow(self, hass, enable_custom_integrations):
+        """Start a fresh ConfigFlow and fast-forward to restore_backup step
+        by patching async_load_backup before async_init."""
+        payload = {"data": self._BACKUP_DATA, "options": {"enabled": False}}
+        with patch(
+            "custom_components.power_control.config_flow.async_load_backup",
+            new=AsyncMock(return_value=payload),
+        ), patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ), patch(
+            "custom_components.power_control.config_flow.detect_old_package",
+            return_value=False,
+        ):
+            result = await hass.config_entries.flow.async_init(
+                DOMAIN, context={"source": "user"}
+            )
+        return result, payload
+
+    @pytest.mark.asyncio
+    async def test_shows_restore_backup_step_when_backup_exists(
+        self, hass, enable_custom_integrations
+    ):
+        result, _ = await self._start_restore_flow(hass, enable_custom_integrations)
+        assert result["type"] == FlowResultType.FORM
+        assert result["step_id"] == "restore_backup"
+
+    @pytest.mark.asyncio
+    async def test_decline_restore_goes_to_global(
+        self, hass, enable_custom_integrations
+    ):
+        result, _ = await self._start_restore_flow(hass, enable_custom_integrations)
+        with patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ), patch(
+            "custom_components.power_control.config_flow.detect_old_package",
+            return_value=False,
+        ):
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], user_input={"restore": False}
+            )
+        assert result["step_id"] == "global"
+
+    @pytest.mark.asyncio
+    async def test_accept_restore_shows_confirm_step(
+        self, hass, enable_custom_integrations
+    ):
+        result, payload = await self._start_restore_flow(hass, enable_custom_integrations)
+        with patch(
+            "custom_components.power_control.config_flow.async_load_backup",
+            new=AsyncMock(return_value=payload),
+        ), patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ):
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], user_input={"restore": True}
+            )
+        assert result["type"] == FlowResultType.FORM
+        assert result["step_id"] == "restore_confirm"
+
+    @pytest.mark.asyncio
+    async def test_confirm_creates_entry_with_restored_data(
+        self, hass, enable_custom_integrations
+    ):
+        result, payload = await self._start_restore_flow(hass, enable_custom_integrations)
+        with patch(
+            "custom_components.power_control.config_flow.async_load_backup",
+            new=AsyncMock(return_value=payload),
+        ), patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ):
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], user_input={"restore": True}
+            )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input={"confirm": True}
+        )
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        assert result["data"]["threshold_immediate"] == 3300
+        assert result["data"]["loads"][0]["name"] == "Lavatrice"
+        assert result["options"]["enabled"] is False
+
+    @pytest.mark.asyncio
+    async def test_confirm_decline_goes_to_global(
+        self, hass, enable_custom_integrations
+    ):
+        result, payload = await self._start_restore_flow(hass, enable_custom_integrations)
+        with patch(
+            "custom_components.power_control.config_flow.async_load_backup",
+            new=AsyncMock(return_value=payload),
+        ), patch(
+            "custom_components.power_control.config_flow.async_clear_backup",
+            new=AsyncMock(),
+        ):
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], user_input={"restore": True}
+            )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input={"confirm": False}
+        )
+        assert result["step_id"] == "global"
+
+
+async def _complete_entry(hass, num_loads: int = 1):
+    """Run the full ConfigFlow and return the created ConfigEntry."""
+    result = await _complete_flow(hass, num_loads=num_loads)
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    return hass.config_entries.async_entries(DOMAIN)[0]
+
+
+class TestOptionsFlowDashboard:
+    """OptionsFlow: dashboard step appears after last load step."""
+
+    @pytest.mark.asyncio
+    async def test_dashboard_step_shown_after_loads(self, hass, enable_custom_integrations):
+        """After completing all load steps the flow shows the dashboard step."""
+        entry = await _complete_entry(hass, num_loads=1)
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={**GLOBAL_STEP_DATA}
+        )
+        assert result["step_id"] == "num_loads"
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={"num_loads": 1}
+        )
+        assert result["step_id"] == "load"
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=LOAD_DATA
+        )
+        assert result["step_id"] == "dashboard"
+
+    @pytest.mark.asyncio
+    async def test_dashboard_step_saves_and_finishes(self, hass, enable_custom_integrations):
+        """Completing the dashboard step creates the entry."""
+        entry = await _complete_entry(hass, num_loads=1)
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={**GLOBAL_STEP_DATA}
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={"num_loads": 1}
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=LOAD_DATA
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=DASHBOARD_STEP_DATA
+        )
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+
+    @pytest.mark.asyncio
+    async def test_dashboard_step_persists_require_admin(self, hass, enable_custom_integrations):
+        """dashboard_require_admin value is stored in entry.data."""
+        entry = await _complete_entry(hass, num_loads=1)
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={**GLOBAL_STEP_DATA}
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={"num_loads": 1}
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input=LOAD_DATA
+        )
+        await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            user_input={**DASHBOARD_STEP_DATA, "dashboard_require_admin": False},
+        )
+        await hass.async_block_till_done()
+        assert entry.data.get("dashboard_require_admin") is False

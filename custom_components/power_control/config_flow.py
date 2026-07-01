@@ -27,6 +27,7 @@ from homeassistant.helpers.selector import (
 )
 
 from .migration import detect_old_package, read_old_config
+from .backup import async_load_backup, async_clear_backup
 from .const import (
     DOMAIN,
     CONF_INSTANCE_NAME,
@@ -44,6 +45,7 @@ from .const import (
     CONF_LOADS,
     CONF_DASHBOARD_LANGUAGE,
     CONF_DASHBOARD_USER_CONTROLLED,
+    CONF_DASHBOARD_REQUIRE_ADMIN,
     LOAD_NAME,
     LOAD_POWER_SENSOR,
     LOAD_SWITCH,
@@ -83,7 +85,45 @@ def _coerce_ints(data: dict) -> dict:
 
 # ── Shared schema builders ─────────────────────────────────────────────────────
 
-def _global_schema(defaults: dict = {}) -> vol.Schema:
+def _notify_options(hass) -> list[str]:
+    """Build the list of selectable notify targets: modern entities first,
+    then legacy notify services (e.g. groups created with the old
+    ``notify: group`` YAML platform, or integrations not yet migrated to
+    the notify entity platform, such as some LG TVs).
+
+    Internal/system services (notify.notify, notify.send_message,
+    notify.persistent_notification) are excluded — they're plumbing, not
+    a useful notification destination on their own.
+    """
+    _EXCLUDED_SERVICES = {"notify", "send_message", "persistent_notification"}
+
+    options: list[str] = []
+
+    # Modern notify entities (e.g. notify.mobile_app_phone)
+    for state in hass.states.async_all("notify"):
+        options.append(state.entity_id)
+
+    # Legacy notify services — registered directly under the "notify" domain,
+    # not as entities (e.g. notify.tutti for a group, notify.lg_webos_tv).
+    legacy_services = hass.services.async_services().get("notify", {})
+    for service_name in legacy_services:
+        if service_name in _EXCLUDED_SERVICES:
+            continue
+        full_name = f"notify.{service_name}"
+        if full_name not in options:
+            options.append(full_name)
+
+    return options
+
+
+def _global_schema(hass, defaults: dict = {}) -> vol.Schema:
+    notify_options = _notify_options(hass)
+    current_notify = defaults.get(CONF_NOTIFY_ENTITY, "")
+    # Keep a previously saved value selectable even if it's no longer
+    # detected (e.g. the integration providing it is currently unavailable).
+    if current_notify and current_notify not in notify_options:
+        notify_options.append(current_notify)
+
     return vol.Schema(
         {
             vol.Required(
@@ -148,8 +188,12 @@ def _global_schema(defaults: dict = {}) -> vol.Schema:
 
             vol.Optional(
                 CONF_NOTIFY_ENTITY,
-                description={"suggested_value": defaults.get(CONF_NOTIFY_ENTITY, "")},
-            ): EntitySelector(EntitySelectorConfig(domain="notify")),
+                description={"suggested_value": current_notify},
+            ): SelectSelector(SelectSelectorConfig(
+                options=notify_options,
+                mode=SelectSelectorMode.DROPDOWN,
+                custom_value=True,
+            )),
         }
     )
 
@@ -160,6 +204,44 @@ def _num_loads_schema(default: int = 3) -> vol.Schema:
             vol.Required(CONF_NUM_LOADS, default=default): vol.All(
                 int, vol.Range(min=1, max=20)
             ),
+        }
+    )
+
+
+def _default_dashboard_language(hass, context: dict) -> str:
+    """Pick a sensible default dashboard language: context, then HA system, then en."""
+    ctx_lang = (context.get("language") or "").split("-")[0].lower()
+    sys_lang = (hass.config.language or "").split("-")[0].lower()
+    for candidate in (ctx_lang, sys_lang):
+        if candidate in _SUPPORTED_LANGUAGES:
+            return candidate
+    return "en"
+
+
+def _dashboard_schema(defaults: dict, default_lang: str) -> vol.Schema:
+    """Shared dashboard-options schema, used by both ConfigFlow and OptionsFlow."""
+    return vol.Schema(
+        {
+            vol.Required(
+                _CONF_CREATE_DASHBOARD,
+                default=defaults.get(_CONF_CREATE_DASHBOARD, True),
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_DASHBOARD_LANGUAGE,
+                default=defaults.get(CONF_DASHBOARD_LANGUAGE, default_lang),
+            ): SelectSelector(SelectSelectorConfig(
+                options=_SUPPORTED_LANGUAGES,
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key="dashboard_language",
+            )),
+            vol.Required(
+                CONF_DASHBOARD_USER_CONTROLLED,
+                default=defaults.get(CONF_DASHBOARD_USER_CONTROLLED, False),
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_DASHBOARD_REQUIRE_ADMIN,
+                default=defaults.get(CONF_DASHBOARD_REQUIRE_ADMIN, True),
+            ): BooleanSelector(),
         }
     )
 
@@ -212,14 +294,79 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
         self._current_load_index: int = 0
         self._create_dashboard: bool = True
         self._from_migration: bool = False
+        self._restored_options: dict[str, Any] = {}
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Route to migration or fresh setup."""
+        """Route to backup restore, migration, or fresh setup."""
+        await self.async_set_unique_id(DOMAIN)
+        self._abort_if_unique_id_configured()
+        backup = await async_load_backup(self.hass)
+        if backup and backup.get("data"):
+            return await self.async_step_restore_backup()
         if detect_old_package(self.hass):
             return await self.async_step_migrate()
         return await self.async_step_global()
+
+    async def async_step_restore_backup(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Offer to restore a configuration saved when the entry was removed."""
+        if user_input is not None:
+            if user_input.get("restore", True):
+                backup = await async_load_backup(self.hass)
+                self._data = dict(backup.get("data", {}))
+                self._restored_options = dict(backup.get("options", {}))
+                self._loads = self._data.get(CONF_LOADS, [])
+                self._num_loads = int(self._data.get(CONF_NUM_LOADS, len(self._loads)))
+                await async_clear_backup(self.hass)
+                return await self.async_step_restore_confirm()
+            await async_clear_backup(self.hass)
+            if detect_old_package(self.hass):
+                return await self.async_step_migrate()
+            return await self.async_step_global()
+
+        return self.async_show_form(
+            step_id="restore_backup",
+            data_schema=vol.Schema(
+                {vol.Required("restore", default=True): BooleanSelector()}
+            ),
+        )
+
+    async def async_step_restore_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Show the restored config for review, then create the entry directly
+        (skipping num_loads/load steps, which would otherwise wipe self._loads)."""
+        if user_input is not None:
+            if user_input.get("confirm", True):
+                return self.async_create_entry(
+                    title=self._data.get(CONF_INSTANCE_NAME, "Power Control"),
+                    data=self._data,
+                    options=self._restored_options,
+                )
+            return await self.async_step_global()
+
+        load_names = ", ".join(
+            l.get(LOAD_NAME, f"Load {i+1}")
+            for i, l in enumerate(self._loads[:5])
+        )
+        if len(self._loads) > 5:
+            load_names += f" ... (+{len(self._loads) - 5})"
+
+        return self.async_show_form(
+            step_id="restore_confirm",
+            data_schema=vol.Schema(
+                {vol.Required("confirm", default=True): BooleanSelector()}
+            ),
+            description_placeholders={
+                "load_count": str(self._num_loads),
+                "load_names": load_names,
+                "threshold_immediate": str(self._data.get(CONF_THRESHOLD_IMMEDIATE, "?")),
+                "threshold_delayed": str(self._data.get(CONF_THRESHOLD_DELAYED, "?")),
+            },
+        )
 
     async def async_step_migrate(
         self, user_input: dict[str, Any] | None = None
@@ -297,7 +444,7 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="global",
-            data_schema=_global_schema(self._data or {}),
+            data_schema=_global_schema(self.hass, self._data or {}),
             errors=errors,
         )
 
@@ -351,41 +498,22 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
                 _CONF_CREATE_DASHBOARD: self._create_dashboard,
                 CONF_DASHBOARD_LANGUAGE: user_input.get(CONF_DASHBOARD_LANGUAGE, "en"),
                 CONF_DASHBOARD_USER_CONTROLLED: user_input.get(CONF_DASHBOARD_USER_CONTROLLED, False),
+                CONF_DASHBOARD_REQUIRE_ADMIN: user_input.get(CONF_DASHBOARD_REQUIRE_ADMIN, True),
             }
             if self._from_migration:
                 return await self.async_step_migrate_cleanup()
             return self.async_create_entry(
                 title=self._data[CONF_INSTANCE_NAME],
                 data=self._data,
+                options=self._restored_options,
             )
 
-        # Pre-select language: prefer context language (set by frontend),
-        # fall back to HA system language, then "en"
-        ctx_lang = (self.context.get("language") or "").split("-")[0].lower()
-        sys_lang = (self.hass.config.language or "").split("-")[0].lower()
-        for candidate in (ctx_lang, sys_lang):
-            if candidate in _SUPPORTED_LANGUAGES:
-                default_lang = candidate
-                break
-        else:
-            default_lang = "en"
-        _LOGGER.debug("[%s] Dashboard lang — ctx=%r sys=%r → %s", DOMAIN, ctx_lang, sys_lang, default_lang)
+        default_lang = _default_dashboard_language(self.hass, self.context)
+        _LOGGER.debug("[%s] Dashboard lang default → %s", DOMAIN, default_lang)
 
         return self.async_show_form(
             step_id="dashboard",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(_CONF_CREATE_DASHBOARD, default=True): BooleanSelector(),
-                    vol.Required(
-                        CONF_DASHBOARD_LANGUAGE, default=default_lang
-                    ): SelectSelector(SelectSelectorConfig(
-                        options=_SUPPORTED_LANGUAGES,
-                        mode=SelectSelectorMode.DROPDOWN,
-                        translation_key="dashboard_language",
-                    )),
-                    vol.Required(CONF_DASHBOARD_USER_CONTROLLED, default=False): BooleanSelector(),
-                }
-            ),
+            data_schema=_dashboard_schema(self._data, default_lang),
         )
 
     async def async_step_migrate_cleanup(
@@ -403,6 +531,7 @@ class PowerControlConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(
                 title=self._data[CONF_INSTANCE_NAME],
                 data=self._data,
+                options=self._restored_options,
             )
 
         return self.async_show_form(
@@ -454,7 +583,7 @@ class PowerControlOptionsFlow(OptionsFlow):
         # Pass self._data so all current values appear as defaults
         return self.async_show_form(
             step_id="init",
-            data_schema=_global_schema(self._data),
+            data_schema=_global_schema(self.hass, self._data),
             errors=errors,
         )
 
@@ -493,7 +622,9 @@ class PowerControlOptionsFlow(OptionsFlow):
             self._current_load_index += 1
 
             if self._current_load_index >= self._num_loads:
-                return await self._save_and_finish()
+                self._data[CONF_NUM_LOADS] = self._num_loads
+                self._data[CONF_LOADS] = self._loads
+                return await self.async_step_dashboard()
 
             return await self.async_step_load()
 
@@ -506,6 +637,20 @@ class PowerControlOptionsFlow(OptionsFlow):
                 "load_number": str(self._current_load_index + 1),
                 "total_loads": str(self._num_loads),
             },
+        )
+
+    async def async_step_dashboard(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Dashboard settings, pre-populated with existing values."""
+        if user_input is not None:
+            self._data.update(user_input)
+            return await self._save_and_finish()
+
+        default_lang = _default_dashboard_language(self.hass, self.context)
+        return self.async_show_form(
+            step_id="dashboard",
+            data_schema=_dashboard_schema(self._data, default_lang),
         )
 
     async def _save_and_finish(self) -> FlowResult:

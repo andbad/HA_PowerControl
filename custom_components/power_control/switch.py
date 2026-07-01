@@ -8,9 +8,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import DOMAIN, CONF_INSTANCE_NAME
+from .const import DOMAIN, CONF_INSTANCE_NAME, CONF_ENABLED
 from .coordinator import PowerControlCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,10 +22,11 @@ async def async_setup_entry(
 ) -> None:
     """Create the enable/disable switch for this config entry."""
     coordinator: PowerControlCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator.enabled = entry.options.get(CONF_ENABLED, True)
     async_add_entities([PowerControlSwitch(coordinator, entry)])
 
 
-class PowerControlSwitch(RestoreEntity, SwitchEntity):
+class PowerControlSwitch(SwitchEntity):
     """Master switch that enables or disables the power shedding logic."""
 
     _attr_has_entity_name = True
@@ -50,18 +50,6 @@ class PowerControlSwitch(RestoreEntity, SwitchEntity):
             sw_version="1.0.0",
         )
 
-    # ── State persistence across restarts ─────────────────────────────────────
-
-    async def async_added_to_hass(self) -> None:
-        """Restore previous on/off state after HA restart."""
-        await super().async_added_to_hass()
-        last = await self.async_get_last_state()
-        if last is not None:
-            self._coordinator.enabled = last.state == "on"
-            _LOGGER.debug(
-                "[%s] Switch restored to: %s", DOMAIN, last.state
-            )
-
     # ── SwitchEntity interface ─────────────────────────────────────────────────
 
     @property
@@ -70,11 +58,17 @@ class PowerControlSwitch(RestoreEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs) -> None:  # type: ignore[override]
         self._coordinator.enabled = True
+        self.hass.config_entries.async_update_entry(
+            self._entry, options={**self._entry.options, CONF_ENABLED: True}
+        )
         self.async_write_ha_state()
         _LOGGER.info("[%s] Power Control ENABLED", DOMAIN)
 
     async def async_turn_off(self, **kwargs) -> None:  # type: ignore[override]
         self._coordinator.enabled = False
+        self.hass.config_entries.async_update_entry(
+            self._entry, options={**self._entry.options, CONF_ENABLED: False}
+        )
         # Clear all suspended powers so loads are not stuck off
         self._coordinator.reset_all_suspended()
         self.async_write_ha_state()

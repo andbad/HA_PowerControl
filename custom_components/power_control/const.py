@@ -27,7 +27,9 @@ LOAD_MIN_OFF_SEC = "min_off_sec"
 
 # ── dashboard user-control ────────────────────────────────────────────────────
 CONF_DASHBOARD_USER_CONTROLLED = "dashboard_user_controlled"
+CONF_DASHBOARD_REQUIRE_ADMIN = "dashboard_require_admin"
 CONF_DASHBOARD_SKIPPED_VERSION = "dashboard_skipped_version"
+CONF_ENABLED = "enabled"
 NOTIF_ID_REGEN_CONFIRM = "power_control_regen_confirm"
 SERVICE_REGENERATE_DASHBOARD = "regenerate_dashboard"
 

@@ -39,7 +39,13 @@
         "description": "Souhaitez-vous que Power Control crée automatiquement un tableau de bord Lovelace ? Il sera accessible depuis le menu latéral sous 'Power Control'.",
         "data": {
           "create_dashboard": "Créer le tableau de bord Lovelace",
-          "dashboard_language": "Langue du tableau de bord"
+          "dashboard_language": "Langue du tableau de bord",
+          "dashboard_user_controlled": "Gérer les mises à jour du tableau de bord manuellement",
+          "dashboard_require_admin": "Tableau de bord visible uniquement par les admins"
+        },
+        "data_description": {
+          "dashboard_user_controlled": "Si activé, un bouton apparaîtra pour déclencher manuellement la régénération du tableau de bord au lieu des mises à jour automatiques.",
+          "dashboard_require_admin": "Si activé, le tableau de bord dans la barre latérale ne sera visible que par les administrateurs Home Assistant."
         }
       },
       "migrate": {
@@ -59,6 +65,51 @@
       "migrate_cleanup": {
         "title": "Migration terminée",
         "description": "La configuration a été importée avec succès.\n\n**Étapes de nettoyage manuelles :**\n\n1. **Ancien package YAML** : vous pouvez supprimer `pc.yaml` du dossier `/config/packages/`.\n2. **Ancien tableau de bord** : supprimez manuellement l'ancien tableau de bord Lovelace via **Paramètres → Tableaux de bord**.\n\nL'ancien package a été **désactivé** automatiquement (`input_boolean.attiva_power_control` mis sur off)."
+      },
+      "restore_backup": {
+        "title": "Sauvegarde de configuration trouvée",
+        "description": "Une sauvegarde de configuration d'une installation précédente a été trouvée, incluant les charges, seuils et temporisations. Voulez-vous la restaurer ?",
+        "data": {
+          "restore": "Restaurer la configuration précédente"
+        }
+      },
+      "global": {
+        "title": "Paramètres globaux",
+        "description": "Configurez les seuils, la temporisation et les notifications pour le délestage des charges.",
+        "data": {
+          "instance_name": "Nom de l'instance",
+          "global_power_sensor": "Capteur de puissance globale (optionnel)",
+          "threshold_immediate": "Seuil immédiat (W)",
+          "threshold_delayed": "Seuil différé (W)",
+          "delay_immediate_sec": "Délai immédiat (s)",
+          "delay_delayed_min": "Délai différé (min)",
+          "wait_between_stops_sec": "Attente entre délestages (s)",
+          "wait_between_starts_min": "Attente entre réactivations (min)",
+          "wait_before_start_min": "Attente avant réactivation (min)",
+          "notify_entity": "Service de notification (optionnel)"
+        },
+        "data_description": {
+          "instance_name": "Un nom pour identifier cette instance de Power Control.",
+          "global_power_sensor": "Capteur mesurant la puissance totale consommée. Si laissé vide, la somme des capteurs des charges configurées est utilisée.",
+          "threshold_immediate": "Niveau de puissance au-delà duquel les charges sont délestées rapidement (après le délai immédiat).",
+          "threshold_delayed": "Niveau de puissance au-delà duquel les charges sont délestées lentement (après le délai différé). Doit être inférieur au seuil immédiat.",
+          "delay_immediate_sec": "Durée pendant laquelle le seuil immédiat doit être dépassé avant de délester une charge.",
+          "delay_delayed_min": "Durée pendant laquelle le seuil différé doit être dépassé avant de délester une charge.",
+          "wait_between_stops_sec": "Pause entre le délestage d'une charge et la vérification d'une autre.",
+          "wait_between_starts_min": "Pause entre la réactivation d'une charge et la suivante.",
+          "wait_before_start_min": "Durée pendant laquelle la puissance doit rester sous le seuil avant de réactiver une charge.",
+          "notify_entity": "Sélectionnez où envoyer les notifications : les entités notify modernes et les services notify existants (y compris les groupes de notification) sont tous deux répertoriés. Si votre cible n'apparaît pas, vous pouvez la saisir manuellement."
+        },
+        "error": {
+          "threshold_order": "Le seuil immédiat doit être supérieur au seuil différé."
+        }
+      },
+      "restore_confirm": {
+        "title": "Vérifier la configuration restaurée",
+        "description": "{load_count} charges seront restaurées : {load_names}.\nSeuils : immédiat {threshold_immediate} W, différé {threshold_delayed} W.\n\nConfirmez pour appliquer cette configuration, ou refusez pour démarrer une nouvelle configuration.",
+        "data": {
+          "confirm": "Appliquer la configuration restaurée"
+        }
       }
     },
     "error": {
@@ -98,6 +149,20 @@
           "power_sensor": "Capteur de puissance (entity_id)",
           "switch": "Interrupteur (entity_id)",
           "auto_restart": "Réenclenchement automatique activé"
+        }
+      },
+      "dashboard": {
+        "title": "Créer un tableau de bord",
+        "description": "Souhaitez-vous que Power Control crée automatiquement un tableau de bord Lovelace ? Il sera accessible depuis le menu latéral sous 'Power Control'.",
+        "data": {
+          "create_dashboard": "Créer le tableau de bord Lovelace",
+          "dashboard_language": "Langue du tableau de bord",
+          "dashboard_user_controlled": "Gérer les mises à jour du tableau de bord manuellement",
+          "dashboard_require_admin": "Tableau de bord visible uniquement par les admins"
+        },
+        "data_description": {
+          "dashboard_user_controlled": "Si activé, un bouton apparaîtra pour déclencher manuellement la régénération du tableau de bord au lieu des mises à jour automatiques.",
+          "dashboard_require_admin": "Si activé, le tableau de bord dans la barre latérale ne sera visible que par les administrateurs Home Assistant."
         }
       }
     },
@@ -146,7 +211,15 @@
     "timer_sec_remaining": "{s}s restantes",
     "timer_min_remaining": "{m}m {s}s restantes",
     "reorder_title": "Ordre de priorité des charges",
-    "shed_history_title": "Historique des délestages (3 dernières heures)"
+    "shed_history_title": "Historique des délestages (3 dernières heures)",
+    "notify_shed_title": "Limite de puissance dépassée",
+    "notify_shed_message": "{load_name} désactivé.",
+    "notify_restored_title": "Limite de puissance rétablie",
+    "notify_restored_message": "{load_name} réactivé.",
+    "notify_manual_shed_title": "Délestage manuel",
+    "notify_manual_shed_message": "{load_name} désactivé manuellement.",
+    "notify_manual_restart_title": "Redémarrage manuel",
+    "notify_manual_restart_message": "{load_name} réactivé manuellement."
   },
   "selector": {
     "dashboard_language": {

@@ -39,7 +39,13 @@
         "description": "¿Desea que Power Control cree automáticamente un panel Lovelace? Estará accesible desde el menú lateral como 'Power Control'.",
         "data": {
           "create_dashboard": "Crear panel Lovelace",
-          "dashboard_language": "Idioma del panel"
+          "dashboard_language": "Idioma del panel",
+          "dashboard_user_controlled": "Gestionar actualizaciones del panel manualmente",
+          "dashboard_require_admin": "Panel de control visible solo para admins"
+        },
+        "data_description": {
+          "dashboard_user_controlled": "Si está activado, aparecerá un botón para regenerar manualmente el panel en lugar de actualizaciones automáticas.",
+          "dashboard_require_admin": "Si está activado, el panel lateral solo será visible para los administradores de Home Assistant."
         }
       },
       "migrate": {
@@ -59,10 +65,55 @@
       "migrate_cleanup": {
         "title": "Migración completada",
         "description": "La configuración se ha importado correctamente.\n\n**Pasos de limpieza manual:**\n\n1. **Paquete YAML antiguo**: puede eliminar `pc.yaml` de la carpeta `/config/packages/`.\n2. **Panel antiguo**: elimine manualmente el antiguo panel de Lovelace en **Configuración → Paneles**.\n\nEl paquete antiguo ha sido **desactivado** automáticamente (`input_boolean.attiva_power_control` puesto en off)."
+      },
+      "restore_backup": {
+        "title": "Copia de seguridad encontrada",
+        "description": "Se encontró una copia de seguridad de una instalación anterior, incluyendo cargas, umbrales y tiempos. ¿Desea restaurarla?",
+        "data": {
+          "restore": "Restaurar configuración anterior"
+        }
+      },
+      "global": {
+        "title": "Configuración global",
+        "description": "Configura umbrales, tiempos y notificaciones para el corte de cargas.",
+        "data": {
+          "instance_name": "Nombre de instancia",
+          "global_power_sensor": "Sensor de potencia global (opcional)",
+          "threshold_immediate": "Umbral inmediato (W)",
+          "threshold_delayed": "Umbral retardado (W)",
+          "delay_immediate_sec": "Retraso inmediato (s)",
+          "delay_delayed_min": "Retraso retardado (min)",
+          "wait_between_stops_sec": "Espera entre cortes (s)",
+          "wait_between_starts_min": "Espera entre reactivaciones (min)",
+          "wait_before_start_min": "Espera antes de reactivar (min)",
+          "notify_entity": "Servicio de notificación (opcional)"
+        },
+        "data_description": {
+          "instance_name": "Un nombre para identificar esta instancia de Power Control.",
+          "global_power_sensor": "Sensor que mide la potencia total consumida. Si se deja vacío, se usa la suma de los sensores de las cargas configuradas.",
+          "threshold_immediate": "Nivel de potencia por encima del cual las cargas se cortan rápidamente (tras el retraso inmediato).",
+          "threshold_delayed": "Nivel de potencia por encima del cual las cargas se cortan lentamente (tras el retraso retardado). Debe ser menor que el umbral inmediato.",
+          "delay_immediate_sec": "Cuánto tiempo debe superarse el umbral inmediato antes de cortar una carga.",
+          "delay_delayed_min": "Cuánto tiempo debe superarse el umbral retardado antes de cortar una carga.",
+          "wait_between_stops_sec": "Pausa entre el corte de una carga y la comprobación de si cortar otra.",
+          "wait_between_starts_min": "Pausa entre la reactivación de una carga y la siguiente.",
+          "wait_before_start_min": "Cuánto tiempo debe permanecer la potencia bajo el umbral antes de reactivar una carga.",
+          "notify_entity": "Selecciona dónde enviar las notificaciones: se muestran tanto las entidades notify modernas como los servicios notify antiguos (incluidos los grupos de notificación). Si tu destino no aparece, puedes escribirlo manualmente."
+        },
+        "error": {
+          "threshold_order": "El umbral inmediato debe ser mayor que el umbral retardado."
+        }
+      },
+      "restore_confirm": {
+        "title": "Revisar configuración restaurada",
+        "description": "Se restaurarán {load_count} cargas: {load_names}.\nUmbrales: inmediato {threshold_immediate} W, retardado {threshold_delayed} W.\n\nConfirma para aplicar esta configuración, o rechaza para iniciar una nueva configuración desde cero.",
+        "data": {
+          "confirm": "Aplicar configuración restaurada"
+        }
       }
     },
     "error": {
-      "threshold_order": "El umbral inmediato debe ser mayor que el umbral diferido."
+      "threshold_order": "El umbral inmediato debe ser mayor que el umbral retardado."
     },
     "abort": {
       "already_configured": "Power Control ya está configurado."
@@ -98,6 +149,20 @@
           "power_sensor": "Sensor de potencia (entity_id)",
           "switch": "Interruptor (entity_id)",
           "auto_restart": "Reconexión automática habilitada"
+        }
+      },
+      "dashboard": {
+        "title": "Crear panel de control",
+        "description": "¿Desea que Power Control cree automáticamente un panel Lovelace? Estará accesible desde el menú lateral como 'Power Control'.",
+        "data": {
+          "create_dashboard": "Crear panel Lovelace",
+          "dashboard_language": "Idioma del panel",
+          "dashboard_user_controlled": "Gestionar actualizaciones del panel manualmente",
+          "dashboard_require_admin": "Panel de control visible solo para admins"
+        },
+        "data_description": {
+          "dashboard_user_controlled": "Si está activado, aparecerá un botón para regenerar manualmente el panel en lugar de actualizaciones automáticas.",
+          "dashboard_require_admin": "Si está activado, el panel lateral solo será visible para los administradores de Home Assistant."
         }
       }
     },
@@ -146,7 +211,15 @@
     "timer_sec_remaining": "{s}s restantes",
     "timer_min_remaining": "{m}m {s}s restantes",
     "reorder_title": "Orden de prioridad de cargas",
-    "shed_history_title": "Historial de desconexiones (últimas 3 horas)"
+    "shed_history_title": "Historial de desconexiones (últimas 3 horas)",
+    "notify_shed_title": "Límite de potencia superado",
+    "notify_shed_message": "{load_name} desactivado.",
+    "notify_restored_title": "Límite de potencia restablecido",
+    "notify_restored_message": "{load_name} reactivado.",
+    "notify_manual_shed_title": "Corte manual",
+    "notify_manual_shed_message": "{load_name} desactivado manualmente.",
+    "notify_manual_restart_title": "Reinicio manual",
+    "notify_manual_restart_message": "{load_name} reactivado manualmente."
   },
   "selector": {
     "dashboard_language": {
