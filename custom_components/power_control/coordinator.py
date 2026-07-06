@@ -11,6 +11,10 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, State, callback
 from homeassistant.helpers import entity_registry as er
+try:
+    from homeassistant.helpers.event import async_track_state_change_event
+except ImportError:
+    async_track_state_change_event = None
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -181,11 +185,24 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             )
             self.hass.async_create_task(self.async_request_refresh())
 
-        self._global_sensor_unsub = async_track_state_change(
-            self.hass,
-            global_sensor,
-            _on_sensor_change,
-        )
+        if async_track_state_change_event:
+            @callback
+            def _on_sensor_change_event(event):
+                _on_sensor_change(
+                    event.data["entity_id"],
+                    event.data.get("old_state"),
+                    event.data.get("new_state"),
+                )
+
+            self._global_sensor_unsub = async_track_state_change_event(
+                self.hass, global_sensor, _on_sensor_change_event
+            )
+        else:
+            self._global_sensor_unsub = async_track_state_change(
+                self.hass,
+                global_sensor,
+                _on_sensor_change,
+            )
 
         _LOGGER.debug(
             "[%s] Registered state-change listener on %s", DOMAIN, global_sensor
