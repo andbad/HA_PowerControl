@@ -7,7 +7,7 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import CoreState, HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import entity_registry as er
 import homeassistant.helpers.config_validation as cv
 from homeassistant.util import slugify
@@ -122,9 +122,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
-    # Create / handle Lovelace dashboard
+    # Create / handle Lovelace dashboard.
+    # Must run after Lovelace is fully initialised (hass.data[LOVELACE_DOMAIN]
+    # is populated only once HA reaches the "running" state).  If we are still
+    # booting we defer to homeassistant_started, exactly as async_create_dashboard
+    # does internally for the non-user-controlled path.
     if entry.data.get("create_dashboard", False):
-        await _async_handle_dashboard_setup(hass, entry)
+        if hass.state == CoreState.running:
+            await _async_handle_dashboard_setup(hass, entry)
+        else:
+            @callback
+            def _on_ha_started_dashboard(event) -> None:  # type: ignore[type-arg]
+                hass.async_create_task(_async_handle_dashboard_setup(hass, entry))
+
+            hass.bus.async_listen_once("homeassistant_started", _on_ha_started_dashboard)
 
 
     _register_services(hass)
