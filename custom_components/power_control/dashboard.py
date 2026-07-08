@@ -581,9 +581,14 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # HA restarts. Write directly to the Store used by DashboardsCollection.
         reg_store = ha_storage.Store(hass, 1, "lovelace_dashboards")
         reg_data = await reg_store.async_load() or {"items": []}
-        if not any(i.get("id") == DASHBOARD_URL_PATH for i in reg_data["items"]):
-            reg_data["items"].append(item_config)
-            await reg_store.async_save(reg_data)
+        # Remove any stale entries with the same url_path (different id) that
+        # may have been left by previous versions of the integration.
+        reg_data["items"] = [
+            i for i in reg_data["items"]
+            if i.get("url_path") != DASHBOARD_URL_PATH
+        ]
+        reg_data["items"].append(item_config)
+        await reg_store.async_save(reg_data)
         _LOGGER.debug("[%s] LovelaceStorage injected and registry updated for /%s", DOMAIN, DASHBOARD_URL_PATH)
     else:
         _LOGGER.debug("[%s] Dashboard /%s exists — overwriting content", DOMAIN, DASHBOARD_URL_PATH)
