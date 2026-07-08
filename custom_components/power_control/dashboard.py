@@ -636,6 +636,16 @@ async def async_dashboard_exists(hass: HomeAssistant, entry: ConfigEntry) -> boo
     return bool(dashboards and DASHBOARD_URL_PATH in dashboards)
 
 
+async def async_get_stored_dashboard_version(hass: HomeAssistant) -> int:
+    """Return the version stored in lovelace.power-control, or 0 if not found."""
+    store = ha_storage.Store(hass, 1, f"lovelace.{DASHBOARD_URL_PATH}")
+    try:
+        data = await store.async_load()
+        return int((data or {}).get("config", {}).get("version", 0))
+    except Exception:  # noqa: BLE001
+        return 0
+
+
 async def async_remove_dashboard(hass: HomeAssistant) -> None:
     """Remove the Power Control Lovelace dashboard and its sidebar panel."""
     # Remove sidebar panel

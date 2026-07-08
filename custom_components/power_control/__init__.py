@@ -18,7 +18,7 @@ from .const import (
     CONF_DASHBOARD_LANGUAGE,
     NOTIF_ID_REGEN_CONFIRM, SERVICE_REGENERATE_DASHBOARD,
 )
-from .dashboard import async_create_dashboard, async_remove_dashboard, async_rebuild_dashboard, DASHBOARD_VERSION, translate
+from .dashboard import async_create_dashboard, async_remove_dashboard, async_rebuild_dashboard, async_get_stored_dashboard_version, DASHBOARD_VERSION, translate
 from .coordinator import PowerControlCoordinator
 from .notify import async_notify
 from .backup import async_save_backup
@@ -163,7 +163,16 @@ async def _async_handle_dashboard_setup(hass: HomeAssistant, entry: ConfigEntry)
         return
 
     # Dashboard exists and user is in control.
-    # Show notification only if version is outdated and not already skipped.
+    # Check the actual stored version before deciding whether to notify.
+    stored_version = await async_get_stored_dashboard_version(hass)
+    if stored_version == DASHBOARD_VERSION:
+        # Dashboard is already up to date — persist the skip so we never notify again.
+        if skipped_version != DASHBOARD_VERSION:
+            await _async_skip_dashboard_version(hass, entry)
+        _LOGGER.debug("[%s] Dashboard already at version %s — no update needed", DOMAIN, DASHBOARD_VERSION)
+        return
+
+    # Show notification only if not already skipped.
     if skipped_version == DASHBOARD_VERSION:
         _LOGGER.debug("[%s] Dashboard update skipped (version %s)", DOMAIN, DASHBOARD_VERSION)
         return
