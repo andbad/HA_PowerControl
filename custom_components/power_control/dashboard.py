@@ -1,7 +1,6 @@
 """Programmatic Lovelace dashboard creation for Power Control."""
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import pathlib
@@ -20,6 +19,7 @@ from homeassistant.components.lovelace.const import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, CoreState, callback
+from homeassistant.helpers import storage as ha_storage
 from homeassistant.util import slugify
 
 from .const import (
@@ -566,24 +566,25 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     is_new = DASHBOARD_URL_PATH not in (dashboards or {})
 
     if is_new:
-        # Register via DashboardsCollection so the entry is persisted in
-        # lovelace_dashboards storage and survives HA restarts.
-        # The CHANGE_ADDED listener already registered by HA will inject the
-        # LovelaceStorage object into hass.data and register the sidebar panel.
         item_config = {
+            "id": DASHBOARD_URL_PATH,
             CONF_URL_PATH: DASHBOARD_URL_PATH,
             CONF_TITLE: title,
             CONF_ICON: "mdi:lightning-bolt-circle",
             CONF_SHOW_IN_SIDEBAR: True,
             CONF_REQUIRE_ADMIN: require_admin,
         }
-        dc = lv_dashboard.DashboardsCollection(hass)
-        await dc.async_load()
-        await dc.async_create_item(item_config)
-        # Yield to the event loop so the CHANGE_ADDED listener can inject
-        # LovelaceStorage into hass.data before we call async_save.
-        await asyncio.sleep(0)
-        _LOGGER.debug("[%s] Dashboard registered via DashboardsCollection", DOMAIN)
+        # Inject LovelaceStorage directly into hass.data so the dashboard is
+        # immediately available without triggering premature panel registration.
+        dashboards[DASHBOARD_URL_PATH] = lv_dashboard.LovelaceStorage(hass, item_config)
+        # Also persist the entry in lovelace_dashboards storage so it survives
+        # HA restarts. Write directly to the Store used by DashboardsCollection.
+        reg_store = ha_storage.Store(hass, 1, "lovelace_dashboards")
+        reg_data = await reg_store.async_load() or {"items": []}
+        if not any(i.get("id") == DASHBOARD_URL_PATH for i in reg_data["items"]):
+            reg_data["items"].append(item_config)
+            await reg_store.async_save(reg_data)
+        _LOGGER.debug("[%s] LovelaceStorage injected and registry updated for /%s", DOMAIN, DASHBOARD_URL_PATH)
     else:
         _LOGGER.debug("[%s] Dashboard /%s exists — overwriting content", DOMAIN, DASHBOARD_URL_PATH)
 
@@ -597,14 +598,12 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     config["version"] = DASHBOARD_VERSION
     await dashboard_store.async_save(config)
 
-    # For overwrite (dashboard already existed): update the panel registration.
-    # For new dashboards the CHANGE_ADDED listener already handled panel registration.
-    if not is_new:
-        _register_dashboard_panel(
-            hass, title, "mdi:lightning-bolt-circle",
-            require_admin=require_admin,
-            update=True,
-        )
+    # Register (or update) the sidebar panel only after content is in memory.
+    _register_dashboard_panel(
+        hass, title, "mdi:lightning-bolt-circle",
+        require_admin=require_admin,
+        update=not is_new,
+    )
 
     _LOGGER.info(
         "[%s] Dashboard saved at /%s (%d load cards)",
