@@ -530,6 +530,8 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry, lang: str) 
 
 async def _async_preload_translations(hass: HomeAssistant, entry: ConfigEntry) -> str:
     """Resolve language and preload translation files into cache off the event loop."""
+    # Invalidate strings cache on each rebuild so language changes are picked up
+    _STRINGS_CACHE.clear()
     raw_lang = (
         entry.data.get(CONF_DASHBOARD_LANGUAGE)
         or getattr(hass.config, "language", "en")
