@@ -342,7 +342,8 @@ def _register_services(hass: HomeAssistant) -> None:
         # Immediately push the reordered in-memory state to all listeners so
         # sensors reflect the new load order before async_request_refresh runs.
         coord.publish_current_state()
-        await async_rebuild_dashboard(hass, coord.config_entry)
+        if not coord.config_entry.data.get(CONF_DASHBOARD_USER_CONTROLLED, False):
+            await async_rebuild_dashboard(hass, coord.config_entry)
         await coord.async_request_refresh()
         _LOGGER.info("[%s] Service: moved load %d %s (now at %d)", DOMAIN, index, direction, swap)
 
