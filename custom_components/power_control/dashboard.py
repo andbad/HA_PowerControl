@@ -19,7 +19,7 @@ from homeassistant.components.lovelace.const import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, CoreState, callback
-from homeassistant.helpers import storage as ha_storage
+from homeassistant.helpers import entity_registry as er, storage as ha_storage
 from homeassistant.util import slugify
 
 from .const import (
@@ -310,14 +310,21 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     # ── Per-load cards ────────────────────────────────────────────────────────
     load_cards = []
     load_slugs: list[tuple[str, str]] = []  # (name, suspended_sensor_entity_id)
+    registry = er.async_get(hass)
     for i, load in enumerate(loads):
         name = load.get(LOAD_NAME, f"Load {i + 1}")
-        name_slug = slugify(f"power_control {name} suspended power")
-        load_slugs.append((name, f"sensor.{name_slug}"))
+        # Resolve the suspended-power sensor by its stable unique_id (position-based)
+        # so that reordering does not break the dashboard card references.
+        unique_id = f"{entry.entry_id}_load_{i}_suspended"
+        suspended_sensor = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+        if suspended_sensor is None:
+            # Fallback to name-based slug if registry lookup fails (e.g. first boot)
+            name_slug = slugify(f"power_control {name} suspended power")
+            suspended_sensor = f"sensor.{name_slug}"
+        load_slugs.append((name, suspended_sensor))
         switch_entity = load.get("switch", "")
         power_sensor = load.get("power_sensor", "")
         auto_restart = load.get("auto_restart", True)
-        suspended_sensor = f"sensor.{name_slug}"
         priority = _priority_label(lang, i, len(loads))
 
         entities: list[dict] = [{"type": "section", "label": _t(lang, "section_status")}]
