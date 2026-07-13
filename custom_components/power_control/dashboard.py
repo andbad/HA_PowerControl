@@ -19,6 +19,7 @@ from homeassistant.components.lovelace.const import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, CoreState, callback
+from homeassistant.helpers import entity_registry as er, storage as ha_storage
 from homeassistant.util import slugify
 
 from .const import (
@@ -309,14 +310,21 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     # ── Per-load cards ────────────────────────────────────────────────────────
     load_cards = []
     load_slugs: list[tuple[str, str]] = []  # (name, suspended_sensor_entity_id)
+    registry = er.async_get(hass)
     for i, load in enumerate(loads):
         name = load.get(LOAD_NAME, f"Load {i + 1}")
-        name_slug = slugify(f"power_control {name} suspended power")
-        load_slugs.append((name, f"sensor.{name_slug}"))
+        # Resolve the suspended-power sensor by its stable unique_id (position-based)
+        # so that reordering does not break the dashboard card references.
+        unique_id = f"{entry.entry_id}_load_{i}_suspended"
+        suspended_sensor = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+        if suspended_sensor is None:
+            # Fallback to name-based slug if registry lookup fails (e.g. first boot)
+            name_slug = slugify(f"power_control {name} suspended power")
+            suspended_sensor = f"sensor.{name_slug}"
+        load_slugs.append((name, suspended_sensor))
         switch_entity = load.get("switch", "")
         power_sensor = load.get("power_sensor", "")
         auto_restart = load.get("auto_restart", True)
-        suspended_sensor = f"sensor.{name_slug}"
         priority = _priority_label(lang, i, len(loads))
 
         entities: list[dict] = [{"type": "section", "label": _t(lang, "section_status")}]
@@ -562,11 +570,13 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             dashboards.pop(DASHBOARD_URL_PATH, None)
             dashboards = _get_lovelace_dashboards(hass)
 
-    if DASHBOARD_URL_PATH not in (dashboards or {}):
-        # Inject LovelaceStorage directly — never use DashboardsCollection.async_create_item
-        # because its internal CHANGE_ADDED listener calls _register_panel immediately,
-        # before we have a chance to write the dashboard content. This causes the
-        # frontend to see an empty "New section" dashboard on first load.
+    # Track whether the sidebar panel was already registered before any pop/reinject
+    # so _register_dashboard_panel is called with the correct update= flag.
+    # If the LovelaceStorage existed before version check, the panel was already registered.
+    panel_existed = existing_store is not None
+    is_new = DASHBOARD_URL_PATH not in (dashboards or {})
+
+    if is_new:
         item_config = {
             "id": DASHBOARD_URL_PATH,
             CONF_URL_PATH: DASHBOARD_URL_PATH,
@@ -575,8 +585,22 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             CONF_SHOW_IN_SIDEBAR: True,
             CONF_REQUIRE_ADMIN: require_admin,
         }
+        # Inject LovelaceStorage directly into hass.data so the dashboard is
+        # immediately available without triggering premature panel registration.
         dashboards[DASHBOARD_URL_PATH] = lv_dashboard.LovelaceStorage(hass, item_config)
-        _LOGGER.debug("[%s] LovelaceStorage injected for /%s", DOMAIN, DASHBOARD_URL_PATH)
+        # Also persist the entry in lovelace_dashboards storage so it survives
+        # HA restarts. Write directly to the Store used by DashboardsCollection.
+        reg_store = ha_storage.Store(hass, 1, "lovelace_dashboards")
+        reg_data = await reg_store.async_load() or {"items": []}
+        # Remove any stale entries with the same url_path (different id) that
+        # may have been left by previous versions of the integration.
+        reg_data["items"] = [
+            i for i in reg_data["items"]
+            if i.get("url_path") != DASHBOARD_URL_PATH
+        ]
+        reg_data["items"].append(item_config)
+        await reg_store.async_save(reg_data)
+        _LOGGER.debug("[%s] LovelaceStorage injected and registry updated for /%s", DOMAIN, DASHBOARD_URL_PATH)
     else:
         _LOGGER.debug("[%s] Dashboard /%s exists — overwriting content", DOMAIN, DASHBOARD_URL_PATH)
 
@@ -589,14 +613,14 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     config = _build_dashboard_config(hass, entry)
     config["version"] = DASHBOARD_VERSION
     await dashboard_store.async_save(config)
-    # async_save already populates _data internally — no need to call async_load.
 
-    # Register (or update) the panel only after content is in memory,
-    # so the frontend never sees an empty dashboard on first load.
+    # Register (or update) the sidebar panel only after content is in memory.
+    # Use panel_existed (based on pre-pop state) not is_new, because a version
+    # upgrade pops the store making is_new=True even when the panel already exists.
     _register_dashboard_panel(
         hass, title, "mdi:lightning-bolt-circle",
         require_admin=require_admin,
-        update=DASHBOARD_URL_PATH in (_get_lovelace_dashboards(hass) or {}),
+        update=panel_existed,
     )
 
     _LOGGER.info(
@@ -628,6 +652,16 @@ async def async_dashboard_exists(hass: HomeAssistant, entry: ConfigEntry) -> boo
     """Return True if the Power Control dashboard is already present in lovelace."""
     dashboards = _get_lovelace_dashboards(hass)
     return bool(dashboards and DASHBOARD_URL_PATH in dashboards)
+
+
+async def async_get_stored_dashboard_version(hass: HomeAssistant) -> int:
+    """Return the version stored in lovelace.power-control, or 0 if not found."""
+    store = ha_storage.Store(hass, 1, f"lovelace.{DASHBOARD_URL_PATH}")
+    try:
+        data = await store.async_load()
+        return int((data or {}).get("config", {}).get("version", 0))
+    except Exception:  # noqa: BLE001
+        return 0
 
 
 async def async_remove_dashboard(hass: HomeAssistant) -> None:

@@ -470,7 +470,7 @@ class TestGlobalSensorListener:
 
         unsub_mock = MagicMock()
         with patch(
-            "custom_components.power_control.coordinator.async_track_state_change",
+            "custom_components.power_control.coordinator.async_track_state_change_event",
             return_value=unsub_mock,
         ) as track_mock:
             coord.setup_global_sensor_listener()
@@ -492,7 +492,7 @@ class TestGlobalSensorListener:
         coord._global_sensor_unsub = None
 
         with patch(
-            "custom_components.power_control.coordinator.async_track_state_change",
+            "custom_components.power_control.coordinator.async_track_state_change_event",
         ) as track_mock:
             coord.setup_global_sensor_listener()
 
@@ -512,7 +512,7 @@ class TestGlobalSensorListener:
         coord._global_sensor_unsub = old_unsub
 
         with patch(
-            "custom_components.power_control.coordinator.async_track_state_change",
+            "custom_components.power_control.coordinator.async_track_state_change_event",
             return_value=MagicMock(),
         ):
             coord.setup_global_sensor_listener()
@@ -558,7 +558,7 @@ class TestGlobalSensorListener:
             return MagicMock()
 
         with patch(
-            "custom_components.power_control.coordinator.async_track_state_change",
+            "custom_components.power_control.coordinator.async_track_state_change_event",
             side_effect=capture_track,
         ):
             coord.setup_global_sensor_listener()
@@ -572,7 +572,9 @@ class TestGlobalSensorListener:
             coro.close()  # prevent "coroutine never awaited" ResourceWarning
         mock_hass.async_create_task = MagicMock(side_effect=_create_task)
 
-        captured_callback("sensor.shelly_em", None, new_state)
+        event = MagicMock()
+        event.data = {"entity_id": "sensor.shelly_em", "old_state": None, "new_state": new_state}
+        captured_callback(event)
 
         mock_hass.async_create_task.assert_called_once()
 
@@ -596,7 +598,7 @@ class TestGlobalSensorListener:
             return MagicMock()
 
         with patch(
-            "custom_components.power_control.coordinator.async_track_state_change",
+            "custom_components.power_control.coordinator.async_track_state_change_event",
             side_effect=capture_track,
         ):
             coord.setup_global_sensor_listener()
@@ -607,7 +609,9 @@ class TestGlobalSensorListener:
             new_state = MagicMock() if bad_state else None
             if new_state:
                 new_state.state = bad_state
-            captured_callback("sensor.shelly_em", None, new_state)
+            event = MagicMock()
+            event.data = {"entity_id": "sensor.shelly_em", "old_state": None, "new_state": new_state}
+            captured_callback(event)
 
         mock_hass.async_create_task.assert_not_called()
 

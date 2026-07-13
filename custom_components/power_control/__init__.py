@@ -7,7 +7,7 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import CoreState, HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import entity_registry as er
 import homeassistant.helpers.config_validation as cv
 from homeassistant.util import slugify
@@ -18,7 +18,7 @@ from .const import (
     CONF_DASHBOARD_LANGUAGE,
     NOTIF_ID_REGEN_CONFIRM, SERVICE_REGENERATE_DASHBOARD,
 )
-from .dashboard import async_create_dashboard, async_remove_dashboard, async_rebuild_dashboard, DASHBOARD_VERSION, translate
+from .dashboard import async_create_dashboard, async_remove_dashboard, async_rebuild_dashboard, async_get_stored_dashboard_version, DASHBOARD_VERSION, translate
 from .coordinator import PowerControlCoordinator
 from .notify import async_notify
 from .backup import async_save_backup
@@ -122,9 +122,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
-    # Create / handle Lovelace dashboard
+    # Create / handle Lovelace dashboard.
+    # Must run after Lovelace is fully initialised (hass.data[LOVELACE_DOMAIN]
+    # is populated only once HA reaches the "running" state).  If we are still
+    # booting we defer to homeassistant_started, exactly as async_create_dashboard
+    # does internally for the non-user-controlled path.
     if entry.data.get("create_dashboard", False):
-        await _async_handle_dashboard_setup(hass, entry)
+        if hass.state == CoreState.running:
+            await _async_handle_dashboard_setup(hass, entry)
+        else:
+            @callback
+            def _on_ha_started_dashboard(event) -> None:  # type: ignore[type-arg]
+                hass.async_create_task(_async_handle_dashboard_setup(hass, entry))
+
+            hass.bus.async_listen_once("homeassistant_started", _on_ha_started_dashboard)
 
 
     _register_services(hass)
@@ -152,7 +163,16 @@ async def _async_handle_dashboard_setup(hass: HomeAssistant, entry: ConfigEntry)
         return
 
     # Dashboard exists and user is in control.
-    # Show notification only if version is outdated and not already skipped.
+    # Check the actual stored version before deciding whether to notify.
+    stored_version = await async_get_stored_dashboard_version(hass)
+    if stored_version == DASHBOARD_VERSION:
+        # Dashboard is already up to date — persist the skip so we never notify again.
+        if skipped_version != DASHBOARD_VERSION:
+            await _async_skip_dashboard_version(hass, entry)
+        _LOGGER.debug("[%s] Dashboard already at version %s — no update needed", DOMAIN, DASHBOARD_VERSION)
+        return
+
+    # Show notification only if not already skipped.
     if skipped_version == DASHBOARD_VERSION:
         _LOGGER.debug("[%s] Dashboard update skipped (version %s)", DOMAIN, DASHBOARD_VERSION)
         return
@@ -319,7 +339,11 @@ def _register_services(hass: HomeAssistant) -> None:
             data={**coord.config_entry.data, CONF_LOADS: loads},
         )
         coord.rebuild_loads()
-        await async_rebuild_dashboard(hass, coord.config_entry)
+        # Immediately push the reordered in-memory state to all listeners so
+        # sensors reflect the new load order before async_request_refresh runs.
+        coord.publish_current_state()
+        if not coord.config_entry.data.get(CONF_DASHBOARD_USER_CONTROLLED, False):
+            await async_rebuild_dashboard(hass, coord.config_entry)
         await coord.async_request_refresh()
         _LOGGER.info("[%s] Service: moved load %d %s (now at %d)", DOMAIN, index, direction, swap)
 
