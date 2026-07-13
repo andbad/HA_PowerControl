@@ -563,6 +563,10 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             dashboards.pop(DASHBOARD_URL_PATH, None)
             dashboards = _get_lovelace_dashboards(hass)
 
+    # Track whether the sidebar panel was already registered before any pop/reinject
+    # so _register_dashboard_panel is called with the correct update= flag.
+    # If the LovelaceStorage existed before version check, the panel was already registered.
+    panel_existed = existing_store is not None
     is_new = DASHBOARD_URL_PATH not in (dashboards or {})
 
     if is_new:
@@ -604,10 +608,12 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await dashboard_store.async_save(config)
 
     # Register (or update) the sidebar panel only after content is in memory.
+    # Use panel_existed (based on pre-pop state) not is_new, because a version
+    # upgrade pops the store making is_new=True even when the panel already exists.
     _register_dashboard_panel(
         hass, title, "mdi:lightning-bolt-circle",
         require_admin=require_admin,
-        update=not is_new,
+        update=panel_existed,
     )
 
     _LOGGER.info(
