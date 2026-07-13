@@ -11,7 +11,22 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, State, callback
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.event import async_track_state_change
+try:
+    from homeassistant.helpers.event import async_track_state_change_event
+except ImportError:
+    from homeassistant.helpers.event import async_track_state_change as _legacy
+
+    class _LegacyEvent:
+        def __init__(self, entity_id, old_state, new_state):
+            self.data = {"entity_id": entity_id, "old_state": old_state, "new_state": new_state}
+
+    def async_track_state_change_event(hass, entity_ids, action):
+        @callback
+        def _wrap(entity_id, old_state, new_state):
+            action(_LegacyEvent(entity_id, old_state, new_state))
+
+        return _legacy(hass, entity_ids, _wrap)
+
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .notify import async_notify
@@ -181,10 +196,16 @@ class PowerControlCoordinator(DataUpdateCoordinator[PowerControlData]):
             )
             self.hass.async_create_task(self.async_request_refresh())
 
-        self._global_sensor_unsub = async_track_state_change(
-            self.hass,
-            global_sensor,
-            _on_sensor_change,
+        @callback
+        def _on_sensor_change_event(event):
+            _on_sensor_change(
+                event.data["entity_id"],
+                event.data.get("old_state"),
+                event.data.get("new_state"),
+            )
+
+        self._global_sensor_unsub = async_track_state_change_event(
+            self.hass, global_sensor, _on_sensor_change_event
         )
 
         _LOGGER.debug(
