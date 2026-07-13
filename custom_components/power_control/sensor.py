@@ -201,12 +201,18 @@ class PowerControlLoadSensor(
         super().__init__(coordinator)
         self._entry = entry
         self._load_index = load_index
-        load = coordinator.loads[load_index]
-        load_name = (load.name or "").strip()
-        display_name = load_name if load_name else f"Load {load_index + 1}"
         self._attr_unique_id = f"{entry.entry_id}_load_{load_index}_suspended"
-        self._attr_name = f"{display_name} - suspended power"
         self._attr_device_info = _device_info(entry)
+
+    @property
+    def name(self) -> str:
+        """Return the load name dynamically so it follows reordering."""
+        if self.coordinator.data is not None and self._load_index < len(self.coordinator.data.loads):
+            load_name = (self.coordinator.data.loads[self._load_index].name or "").strip()
+        else:
+            load_name = ""
+        display_name = load_name if load_name else f"Load {self._load_index + 1}"
+        return f"{display_name} - suspended power"
 
     @property
     def native_value(self) -> float | None:
