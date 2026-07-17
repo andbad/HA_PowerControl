@@ -273,21 +273,8 @@ def _build_shed_history_card(lang: str, load_slugs: list[tuple[str, str]]) -> di
 
 
 
-def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
+def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry, lang: str) -> dict:
     """Build the full Lovelace dashboard config dict for this entry."""
-    # Invalidate strings cache on each rebuild so language changes are picked up
-    _STRINGS_CACHE.clear()
-    # Resolve language: use HA language, fall back to "en"
-    # Resolve language from entry config (set by user during setup),
-    # falling back to HA system language and then "en".
-    raw_lang = (
-        entry.data.get(CONF_DASHBOARD_LANGUAGE)
-        or getattr(hass.config, "language", "en")
-        or "en"
-    )
-    lang = raw_lang.split("-")[0].lower()
-    if not (_TRANSLATIONS_DIR / f"{lang}.json").exists():
-        lang = "en"
     _LOGGER.debug(
         "[%s] Building dashboard with lang=%s, gauge_title=%r",
         DOMAIN, lang, _t(lang, "gauge_title"),
@@ -541,6 +528,27 @@ def _build_dashboard_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     }
 
 
+async def _async_preload_translations(hass: HomeAssistant, entry: ConfigEntry) -> str:
+    """Resolve language and preload translation files into cache off the event loop."""
+    # Invalidate strings cache on each rebuild so language changes are picked up
+    _STRINGS_CACHE.clear()
+    raw_lang = (
+        entry.data.get(CONF_DASHBOARD_LANGUAGE)
+        or getattr(hass.config, "language", "en")
+        or "en"
+    )
+    lang = raw_lang.split("-")[0].lower()
+    available = await hass.async_add_executor_job(
+        lambda: [f.stem for f in _TRANSLATIONS_DIR.glob("*.json")]
+    )
+    if lang not in available:
+        lang = "en"
+    # Preload both target language and English fallback into cache
+    for code in {lang, "en"}:
+        await hass.async_add_executor_job(_load_strings, code)
+    return lang
+
+
 # ── Creation logic ─────────────────────────────────────────────────────────────
 
 async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -610,7 +618,8 @@ async def _do_create_dashboard(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.error("[%s] Dashboard store not found — cannot save content", DOMAIN)
         return False
 
-    config = _build_dashboard_config(hass, entry)
+    lang = await _async_preload_translations(hass, entry)
+    config = _build_dashboard_config(hass, entry, lang)
     config["version"] = DASHBOARD_VERSION
     await dashboard_store.async_save(config)
 
