@@ -10,7 +10,6 @@ from homeassistant.const import Platform
 from homeassistant.core import CoreState, HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import entity_registry as er
 import homeassistant.helpers.config_validation as cv
-from homeassistant.util import slugify
 
 from .const import (
     DOMAIN, CONF_NOTIFY_ENTITY, CONF_NOTIFY_SERVICE, CONF_LOADS,
@@ -73,31 +72,7 @@ def _migrate_entity_ids(hass: HomeAssistant, entry: ConfigEntry) -> None:
         except Exception as exc:  # noqa: BLE001
             _LOGGER.warning("[%s] Migration failed %s → %s: %s", DOMAIN, old_id, new_id, exc)
 
-    # 2. Per-load suspended_power sensors — derive from current load names
-    loads_cfg = entry.data.get("loads", [])
-    for i, load_cfg in enumerate(loads_cfg):
-        unique_id = f"{entry.entry_id}_load_{i}_suspended"
-        current_entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
-        if current_entity_id is None:
-            continue
 
-        load_name = (load_cfg.get("name") or "").strip()
-        display_name = load_name if load_name else f"Load {i + 1}"
-        expected_entity_id = f"sensor.{slugify(f'power_control {display_name} suspended power')}"
-
-        if current_entity_id == expected_entity_id:
-            continue
-        if registry.async_get(expected_entity_id) is not None:
-            _LOGGER.warning(
-                "[%s] Cannot migrate %s → %s: target already exists",
-                DOMAIN, current_entity_id, expected_entity_id,
-            )
-            continue
-        try:
-            registry.async_update_entity(current_entity_id, new_entity_id=expected_entity_id)
-            _LOGGER.info("[%s] Migrated entity_id: %s → %s", DOMAIN, current_entity_id, expected_entity_id)
-        except Exception as exc:  # noqa: BLE001
-            _LOGGER.warning("[%s] Migration failed %s → %s: %s", DOMAIN, current_entity_id, expected_entity_id, exc)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
