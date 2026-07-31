@@ -1283,6 +1283,118 @@ class TestIntegrationScenarios:
         # Load 4 shed
         assert coord._loads[3].is_suspended
 
+    # ── T9: Sforamento durante riattivazione ──────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t09_spike_resets_timer(self, mock_hass, mock_config_entry):
+        """T9: Spike occurs mid-timer → _under_threshold_since reset to None.
+        _maybe_restore restarts the timer; restore does not happen on the same call."""
+        from custom_components.power_control.const import CONF_WAIT_BEFORE_START_MIN
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord._loads[4].suspended_power = 700.0
+        coord._loads[4].switch_state = "off"
+        for i in range(4):
+            coord._loads[i].current_power = 500.0
+        # Spike happened → timer was reset to None (simulates _maybe_restore seeing power > threshold)
+        coord._under_threshold_since = None
+        # Set wait_before_start_min via options so _get_conf picks it up
+        coord.config_entry.options = {CONF_WAIT_BEFORE_START_MIN: 5}
+
+        # async_check_and_start should start the timer but NOT restore yet (first call after spike)
+        await coord.async_check_and_start(current_power=2000.0)
+
+        # Timer is now set (started) but restore has not happened
+        assert coord._under_threshold_since is not None
+        assert coord._loads[4].is_suspended
+        coord._call_switch.assert_not_awaited()
+
+    # ── T10: Mix auto-restart disabilitato, manuale e automatico ──────────────
+    @pytest.mark.asyncio
+    async def test_t10_mix_restore(self, mock_hass, mock_config_entry):
+        """T10: Loads 3 (auto_restart=False), 4, 5 suspended.
+        Load 4 manually restarted (watchdog clears suspended_power).
+        After watchdog: restore should pick load 4 (index 3) — already cleared,
+        then load 5. Load 3 (index 2) stays off (auto_restart=False)."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry, load3_auto_restart=True)
+        # Suspend loads 3, 4, 5
+        for i in [2, 3, 4]:
+            coord._loads[i].suspended_power = 1200.0
+            coord._loads[i].switch_state = "off"
+
+        # User manually restarts load 4 → switch comes on
+        coord._loads[3].switch_state = "on"
+        # Watchdog fires and clears suspended_power for load 4
+        coord._watchdog_manual_restart()
+
+        assert coord._loads[3].suspended_power == 0.0   # watchdog cleared it
+        assert coord._loads[2].suspended_power == 1200.0  # load 3 unchanged
+        assert coord._loads[4].suspended_power == 1200.0  # load 5 unchanged
+
+        # Now power is low → restore eligible loads
+        coord._under_threshold_since = datetime.now() - timedelta(minutes=10)
+        await coord._restore_one_load(current_power=1200.0, threshold_delayed=DEL_THRESH)
+
+        # Load 3 (index 2): auto_restart=False → still suspended
+        assert coord._loads[2].is_suspended
+        # Load 5 (index 4): auto_restart=True, headroom ok → restored
+        assert not coord._loads[4].is_suspended
+
+    # ── T11: PC disabilitato — nessun distacco ────────────────────────────────
+    @pytest.mark.asyncio
+    async def test_t11_pc_disabled_no_shed(self, mock_hass, mock_config_entry):
+        """T11: With coordinator disabled, _async_update_data returns without shedding."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord.enabled = False
+        for load in coord._loads:
+            load.current_power = 1000.0  # total 5000W > IMM
+
+        # async_check_and_stop returns immediately when enabled=False
+        await coord.async_check_and_stop(current_power=5000.0)
+
+        for load in coord._loads:
+            assert not load.is_suspended
+        coord._call_switch.assert_not_awaited()
+
+    # ── T15: Carico unavailable (potenza = 0, switch già off) ─────────────────
+    @pytest.mark.asyncio
+    async def test_t15_unavailable_load_skipped(self, mock_hass, mock_config_entry):
+        """T15: Load 5 switch already off (power=0). 4x1200W=4800W > IMM.
+        Shed must skip load 5 (already off) and hit load 4."""
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord._loads[4].current_power = 0.0   # off / unavailable
+        coord._loads[4].switch_state = "off"
+        coord._loads[4].suspended_power = 0.0
+        for i in range(4):
+            coord._loads[i].current_power = 1200.0
+
+        await coord._shed_one_load(current_power=4800.0, active_threshold=IMM_THRESH)
+
+        assert not coord._loads[4].is_suspended   # skipped — power ≤ MIN_ACTIVE_POWER_W
+        assert coord._loads[3].is_suspended       # load 4 shed instead
+
+    # ── T16: Doppio picco — timer di riattivazione deve ripartire da zero ─────
+    @pytest.mark.asyncio
+    async def test_t16_double_spike_timer_reset(self, mock_hass, mock_config_entry):
+        """T16: Load 5 suspended. Timer started, spike occurs → _under_threshold_since reset.
+        After second drop, timer restarts from zero. Calling _maybe_restore immediately
+        after the second drop must NOT restore (timer just started, not expired)."""
+        from custom_components.power_control.const import CONF_WAIT_BEFORE_START_MIN
+        coord = _make_scenario_coord(mock_hass, mock_config_entry)
+        coord._loads[4].suspended_power = 600.0
+        coord._loads[4].switch_state = "off"
+        for i in range(4):
+            coord._loads[i].current_power = 600.0
+        coord.config_entry.options = {CONF_WAIT_BEFORE_START_MIN: 5}
+
+        # Spike already reset the timer to None
+        coord._under_threshold_since = None
+
+        # Second drop: async_check_and_start called → should start timer, not restore
+        await coord.async_check_and_start(current_power=2400.0)
+
+        assert coord._under_threshold_since is not None  # timer restarted
+        assert coord._loads[4].is_suspended              # not yet restored
+        coord._call_switch.assert_not_awaited()
+
     # ── T12: force_stop_load logic ────────────────────────────────────────────
     @pytest.mark.asyncio
     async def test_t12_force_stop(self, mock_hass, mock_config_entry):
