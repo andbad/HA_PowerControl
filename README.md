@@ -181,6 +181,24 @@ Both fields are optional. Omit one to leave that threshold unchanged. Call the s
 
 > **Note:** overrides are stored in memory only. They are lost when Home Assistant restarts.
 
+> **Important — `global_power_sensor` must measure total house consumption.**
+> Source-switching profiles only work correctly if `global_power_sensor` reflects
+> the total power drawn by the house, not just grid import/export.
+>
+> A common pitfall with solar/battery systems: if your meter is clamped on the
+> grid connection point (POD) — for example a Shelly EM installed before the
+> inverter's backup output — it will read ~0 W during a grid outage, because no
+> power is flowing to or from the grid. Power Control will see 0 W load and never
+> shed anything, even if the inverter's EPS/backup output is overloaded. The
+> `set_thresholds` override for your backup profile is applied correctly, but the
+> coordinator has nothing to react to.
+>
+> **Fix:** point `global_power_sensor` at a meter downstream of where
+> solar, battery, and grid combine — one that measures what the house actually
+> consumes regardless of source. If no such sensor is available, the built-in
+> virtual sensor (sum of per-load power sensors) is a reliable fallback for
+> EPS/backup scenarios.
+
 **Example — switch to solar profile:**
 ```yaml
 service: power_control.set_thresholds
